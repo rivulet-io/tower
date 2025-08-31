@@ -256,7 +256,7 @@ func (t *Tower) SetMembers(key string) ([]PrimitiveData, error) {
 
 	// 모든 멤버 수집
 	result := make([]PrimitiveData, 0, setData.Count)
-	prefix := setData.Prefix + ": {:set:} :"
+	prefix := string(MakeSetEntryKey(setData.Prefix)) + ":"
 	err = t.rangePrefix(prefix, func(k string, df *DataFrame) error {
 		var value PrimitiveData
 		switch df.Type() {

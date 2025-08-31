@@ -286,7 +286,7 @@ func (t *Tower) MapKeys(key string) ([]PrimitiveData, error) {
 
 	// 모든 키 수집
 	result := make([]PrimitiveData, 0, mapData.Count)
-	prefix := mapData.Prefix + ": {:map:} :"
+	prefix := string(MakeMapEntryKey(mapData.Prefix)) + ":"
 	err = t.rangePrefix(prefix, func(k string, df *DataFrame) error {
 		// k는 key:{:map:}:field
 		// field 추출
@@ -331,7 +331,7 @@ func (t *Tower) MapValues(key string) ([]PrimitiveData, error) {
 
 	// 모든 값 수집
 	result := make([]PrimitiveData, 0, mapData.Count)
-	prefix := mapData.Prefix + ": {:map:} :"
+	prefix := string(MakeMapEntryKey(mapData.Prefix)) + ":"
 	err = t.rangePrefix(prefix, func(k string, df *DataFrame) error {
 		var value PrimitiveData
 		switch df.Type() {
