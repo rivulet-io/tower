@@ -52,11 +52,12 @@ func (df *DataFrame) Type() DataType {
 	return df.typ
 }
 
-func (df *DataFrame) SetInt(v int64) {
+func (df *DataFrame) SetInt(v int64) error {
 	buf := [8]byte{}
 	binary.LittleEndian.PutUint64(buf[:], uint64(v))
 	df.typ = TypeInt
 	df.payload = buf[:]
+	return nil
 }
 
 func (df *DataFrame) Int() (int64, error) {
@@ -70,11 +71,12 @@ func (df *DataFrame) Int() (int64, error) {
 	return v, nil
 }
 
-func (df *DataFrame) SetFloat(v float64) {
+func (df *DataFrame) SetFloat(v float64) error {
 	buf := [8]byte{}
 	binary.LittleEndian.PutUint64(buf[:], math.Float64bits(v))
 	df.typ = TypeFloat
 	df.payload = buf[:]
+	return nil
 }
 
 func (df *DataFrame) Float() (float64, error) {
@@ -88,7 +90,7 @@ func (df *DataFrame) Float() (float64, error) {
 	return math.Float64frombits(bits), nil
 }
 
-func (df *DataFrame) SetString(v string) {
+func (df *DataFrame) SetString(v string) error {
 	data := []byte(v)
 	length := uint32(len(data))
 	buf := make([]byte, 4+len(data))
@@ -96,6 +98,7 @@ func (df *DataFrame) SetString(v string) {
 	copy(buf[4:], data)
 	df.typ = TypeString
 	df.payload = buf
+	return nil
 }
 
 func (df *DataFrame) String() (string, error) {
@@ -112,13 +115,14 @@ func (df *DataFrame) String() (string, error) {
 	return string(df.payload[4:]), nil
 }
 
-func (df *DataFrame) SetBool(v bool) {
+func (df *DataFrame) SetBool(v bool) error {
 	var b byte
 	if v {
 		b = 1
 	}
 	df.typ = TypeBool
 	df.payload = []byte{b}
+	return nil
 }
 
 func (df *DataFrame) Bool() (bool, error) {
@@ -131,11 +135,12 @@ func (df *DataFrame) Bool() (bool, error) {
 	return df.payload[0] != 0, nil
 }
 
-func (df *DataFrame) SetTimestamp(v time.Time) {
+func (df *DataFrame) SetTimestamp(v time.Time) error {
 	buf := [8]byte{}
 	binary.LittleEndian.PutUint64(buf[:], uint64(v.UnixNano()))
 	df.typ = TypeTimestamp
 	df.payload = buf[:]
+	return nil
 }
 
 func (df *DataFrame) Timestamp() (time.Time, error) {
@@ -149,11 +154,12 @@ func (df *DataFrame) Timestamp() (time.Time, error) {
 	return time.Unix(0, nano), nil
 }
 
-func (df *DataFrame) SetDuration(v time.Duration) {
+func (df *DataFrame) SetDuration(v time.Duration) error {
 	buf := [8]byte{}
 	binary.LittleEndian.PutUint64(buf[:], uint64(v.Nanoseconds()))
 	df.typ = TypeDuration
 	df.payload = buf[:]
+	return nil
 }
 
 func (df *DataFrame) Duration() (time.Duration, error) {
@@ -167,10 +173,11 @@ func (df *DataFrame) Duration() (time.Duration, error) {
 	return time.Duration(nano), nil
 }
 
-func (df *DataFrame) SetBinary(v []byte) {
+func (df *DataFrame) SetBinary(v []byte) error {
 	df.typ = TypeBinary
 	df.payload = make([]byte, len(v))
 	copy(df.payload, v)
+	return nil
 }
 
 func (df *DataFrame) Binary() ([]byte, error) {
@@ -182,10 +189,11 @@ func (df *DataFrame) Binary() ([]byte, error) {
 	return data, nil
 }
 
-func (df *DataFrame) SetUUID(v [16]byte) {
+func (df *DataFrame) SetUUID(v [16]byte) error {
 	df.typ = TypeUUID
 	df.payload = make([]byte, 16)
 	copy(df.payload, v[:])
+	return nil
 }
 
 func (df *DataFrame) UUID() ([16]byte, error) {
@@ -200,9 +208,10 @@ func (df *DataFrame) UUID() ([16]byte, error) {
 	return uuid, nil
 }
 
-func (df *DataFrame) SetTime(v time.Time) {
+func (df *DataFrame) SetTime(v time.Time) error {
 	df.typ = TypeTime
 	df.payload = []byte(v.Format(time.RFC3339Nano))
+	return nil
 }
 
 func (df *DataFrame) Time() (time.Time, error) {
