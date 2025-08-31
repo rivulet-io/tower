@@ -99,3 +99,10 @@ func (t *Tower) get(key string) (*DataFrame, error) {
 
 	return df, nil
 }
+
+func (t *Tower) delete(key string) error {
+	if err := t.db.Delete([]byte(key), nil); err != nil {
+		return fmt.Errorf("failed to delete key %s: %w", key, err)
+	}
+	return nil
+}
