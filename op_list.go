@@ -5,7 +5,7 @@ import (
 )
 
 // 리스트 관리 연산
-func (t *Tower) LCreate(key string) error {
+func (t *Tower) CreateList(key string) error {
 	unlock := t.lock(key)
 	defer unlock()
 
@@ -37,7 +37,7 @@ func (t *Tower) LCreate(key string) error {
 	return nil
 }
 
-func (t *Tower) LDelete(key string) error {
+func (t *Tower) DeleteList(key string) error {
 	unlock := t.lock(key)
 	defer unlock()
 
@@ -71,7 +71,7 @@ func (t *Tower) LDelete(key string) error {
 	return nil
 }
 
-func (t *Tower) LExists(key string) (bool, error) {
+func (t *Tower) ListExists(key string) (bool, error) {
 	unlock := t.rlock(key)
 	defer unlock()
 
@@ -81,7 +81,7 @@ func (t *Tower) LExists(key string) (bool, error) {
 }
 
 // 기본 Push/Pop 연산
-func (t *Tower) LPush(key string, value PrimitiveData) (int64, error) {
+func (t *Tower) PushLeft(key string, value PrimitiveData) (int64, error) {
 	unlock := t.lock(key)
 	defer unlock()
 
@@ -154,7 +154,7 @@ func (t *Tower) LPush(key string, value PrimitiveData) (int64, error) {
 	return listData.Length, nil
 }
 
-func (t *Tower) RPush(key string, value PrimitiveData) (int64, error) {
+func (t *Tower) PushRight(key string, value PrimitiveData) (int64, error) {
 	unlock := t.lock(key)
 	defer unlock()
 
@@ -227,7 +227,7 @@ func (t *Tower) RPush(key string, value PrimitiveData) (int64, error) {
 	return listData.Length, nil
 }
 
-func (t *Tower) LPop(key string) (PrimitiveData, error) {
+func (t *Tower) PopLeft(key string) (PrimitiveData, error) {
 	unlock := t.lock(key)
 	defer unlock()
 
@@ -297,7 +297,7 @@ func (t *Tower) LPop(key string) (PrimitiveData, error) {
 	return value, nil
 }
 
-func (t *Tower) RPop(key string) (PrimitiveData, error) {
+func (t *Tower) PopRight(key string) (PrimitiveData, error) {
 	unlock := t.lock(key)
 	defer unlock()
 
@@ -368,7 +368,7 @@ func (t *Tower) RPop(key string) (PrimitiveData, error) {
 }
 
 // 조회 연산
-func (t *Tower) LLen(key string) (int64, error) {
+func (t *Tower) ListLength(key string) (int64, error) {
 	unlock := t.rlock(key)
 	defer unlock()
 
@@ -387,7 +387,7 @@ func (t *Tower) LLen(key string) (int64, error) {
 	return listData.Length, nil
 }
 
-func (t *Tower) LIndex(key string, index int64) (PrimitiveData, error) {
+func (t *Tower) ListIndex(key string, index int64) (PrimitiveData, error) {
 	unlock := t.rlock(key)
 	defer unlock()
 
@@ -451,7 +451,7 @@ func (t *Tower) LIndex(key string, index int64) (PrimitiveData, error) {
 	return value, nil
 }
 
-func (t *Tower) LRange(key string, start, end int64) ([]PrimitiveData, error) {
+func (t *Tower) ListRange(key string, start, end int64) ([]PrimitiveData, error) {
 	unlock := t.rlock(key)
 	defer unlock()
 
@@ -532,7 +532,7 @@ func (t *Tower) LRange(key string, start, end int64) ([]PrimitiveData, error) {
 }
 
 // 수정 연산
-func (t *Tower) LSet(key string, index int64, value PrimitiveData) error {
+func (t *Tower) ListSet(key string, index int64, value PrimitiveData) error {
 	unlock := t.lock(key)
 	defer unlock()
 
@@ -605,7 +605,7 @@ func (t *Tower) LSet(key string, index int64, value PrimitiveData) error {
 	return nil
 }
 
-func (t *Tower) LTrim(key string, start, end int64) error {
+func (t *Tower) ListTrim(key string, start, end int64) error {
 	unlock := t.lock(key)
 	defer unlock()
 
