@@ -7,7 +7,7 @@ A high-performance, thread-safe key-value database built on top of [CockroachDB'
 - **🚀 High Performance**: Built on CockroachDB's Pebble LSM-tree storage engine
 - **🔒 Thread-Safe**: Concurrent operations with fine-grained per-key locking
 - **📊 Rich Data Types**: Native support for strings, integers, floats, booleans, timestamps, durations, UUIDs, and binary data
-- **🗂️ Advanced Data Structures**: Built-in Lists, Maps, and Sets with atomic operations
+- **🗂️ Advanced Data Structures**: Built-in Lists, Maps, Sets, and Time Series with atomic operations
 - **💾 Flexible Storage**: In-memory for testing/caching or persistent disk storage
 - **🎯 Type-Specific Operations**: Comprehensive atomic operations for each data type
 - **⚡ Memory Efficient**: Configurable cache sizes and memory table management
@@ -20,6 +20,7 @@ package main
 
 import (
     "fmt"
+    "time"
     "github.com/rivulet-io/tower"
 )
 
@@ -57,6 +58,24 @@ func main() {
     }
     
     fmt.Println(newValue) // Output: Hello, World! 🚀
+
+// Time Series operations
+if err := db.TimeSeriesCreate("metrics"); err != nil {
+    panic(err)
+}
+
+now := time.Now()
+if err := db.TimeSeriesAdd("metrics", now, tower.PrimitiveInt(100)); err != nil {
+    panic(err)
+}
+
+dataPoint, err := db.TimeSeriesGet("metrics", now)
+if err != nil {
+    panic(err)
+}
+
+fmt.Printf("Time Series Value: %v\n", dataPoint) // Output: Time Series Value: 100
+
 }
 }
 ```
@@ -181,6 +200,40 @@ members, _ := db.SetMembers("myset")               // Get all members
 // Cleanup  
 err = db.ClearSet("myset")                         // Remove all members
 err = db.DeleteSet("myset")                        // Delete entire set
+```
+
+### Time Series
+Time-stamped data storage with efficient range queries and atomic operations:
+
+```go
+// Create and manage time series
+err := db.TimeSeriesCreate("sensor-data")
+exists, _ := db.TimeSeriesExists("sensor-data")
+
+// Add data points with timestamps
+now := time.Now()
+err = db.TimeSeriesAdd("sensor-data", now, tower.PrimitiveFloat(23.5))           // Temperature reading
+err = db.TimeSeriesAdd("sensor-data", now.Add(time.Minute), tower.PrimitiveInt(85)) // Humidity
+
+// Retrieve data points
+temperature, _ := db.TimeSeriesGet("sensor-data", now)                          // Get specific point
+humidity, _ := db.TimeSeriesGet("sensor-data", now.Add(time.Minute))
+
+// Range queries
+startTime := now.Add(-time.Hour)
+endTime := now.Add(time.Hour)
+dataPoints, _ := db.TimeSeriesRange("sensor-data", startTime, endTime)          // Get all points in range
+
+// Iterate through results
+for timestamp, value := range dataPoints {
+    fmt.Printf("Time: %v, Value: %v\n", timestamp, value)
+}
+
+// Remove data points
+err = db.TimeSeriesRemove("sensor-data", now)                                   // Remove specific point
+
+// Cleanup
+err = db.TimeSeriesDelete("sensor-data")                                        // Delete entire time series
 ```
 
 ## ⚙️ Configuration
