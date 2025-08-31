@@ -377,7 +377,7 @@ func (dd *DecimalData) Marshal() ([]byte, error) {
 }
 
 func UnmarshalDataFrameDecimalData(data []byte) (*DecimalData, error) {
-	if len(data) < 10 { // Minimum: sign(1) + length(4) + scale(4) + at least 1 coeff byte
+	if len(data) < 9 { // Minimum: sign(1) + length(4) + scale(4), coeff bytes can be 0
 		return nil, &DataFrameError{Op: "UnmarshalDataFrameDecimalData", Type: TypeDecimal, Msg: "data too short"}
 	}
 
