@@ -272,6 +272,111 @@ err = db.TimeSeriesRemove("sensor-data", now)                                   
 err = db.TimeSeriesDelete("sensor-data")                                        // Delete entire time series
 ```
 
+## 🔢 BigInt Operations
+
+Tower provides comprehensive support for arbitrary-precision integers using Go's `math/big.Int`, perfect for cryptography, scientific computing, and applications requiring numbers larger than `int64`:
+
+```go
+// Basic operations with large numbers
+bigNum := new(big.Int).SetString("1234567890123456789012345678901234567890", 10)
+err := db.SetBigInt("large_number", bigNum)
+stored, _ := db.GetBigInt("large_number")                    // Returns *big.Int
+
+// Arithmetic operations (all return *big.Int)
+result, _ := db.AddBigInt("large_number", big.NewInt(1000000))
+result, _ = db.SubBigInt("large_number", big.NewInt(500000))
+result, _ = db.MulBigInt("large_number", big.NewInt(2))
+result, _ = db.DivBigInt("large_number", big.NewInt(3))
+result, _ = db.ModBigInt("large_number", big.NewInt(7))
+
+// Mathematical operations
+result, _ = db.NegBigInt("large_number")                    // Negation
+result, _ = db.AbsBigInt("large_number")                    // Absolute value
+
+// Comparison operations
+cmp, _ := db.CmpBigInt("large_number", big.NewInt(1000))   // Returns -1, 0, or 1
+fmt.Printf("Comparison result: %d\n", cmp)
+
+// Practical examples
+// Cryptography: Large prime numbers
+prime := new(big.Int).SetString("170141183460469231731687303715884105727", 10)
+err = db.SetBigInt("prime", prime)
+
+// Scientific computing: Large calculations
+mass := new(big.Int).SetString("5972000000000000000000000", 10) // Earth's mass in kg
+err = db.SetBigInt("earth_mass", mass)
+
+// Financial: Large monetary values in smallest units
+totalValue := new(big.Int).SetString("1000000000000000000", 10) // 1 quadrillion in cents
+err = db.SetBigInt("total_value", totalValue)
+```
+
+**Key Features:**
+- ✅ **Arbitrary Precision**: No overflow limits (unlike `int64`)
+- ✅ **Cryptography Ready**: Perfect for RSA keys, large primes
+- ✅ **Scientific Computing**: Handle astronomical numbers, physics calculations
+- ✅ **Financial Applications**: Precise calculations with large monetary values
+- ✅ **Thread-Safe**: All operations are atomic and concurrent-safe
+
+## 💰 Decimal Operations
+
+Tower implements high-precision fixed-point decimal arithmetic using `math/big.Int` for the coefficient, ideal for financial calculations, currency operations, and applications requiring exact decimal representation:
+
+```go
+// Basic decimal operations
+coefficient := big.NewInt(1999)  // Represents 19.99
+scale := int32(2)                // 2 decimal places
+err := db.SetDecimal("price", coefficient, scale)
+
+// Get decimal value
+coeff, scale, _ := db.GetDecimal("price")
+fmt.Printf("Price: %s (scale: %d)\n", coeff.String(), scale)
+
+// Arithmetic operations with automatic scale alignment
+// Add 5.50 to 19.99 = 25.49
+resultCoeff, resultScale, _ := db.AddDecimal("price", big.NewInt(550), 2)
+fmt.Printf("New price: %s (scale: %d)\n", resultCoeff.String(), resultScale)
+
+// Multiply by 1.10 (10% increase) = 27.539
+resultCoeff, resultScale, _ = db.MulDecimal("price", big.NewInt(110), 2)
+fmt.Printf("10%% increase: %s (scale: %d)\n", resultCoeff.String(), resultScale)
+
+// Divide by 2.0 = 13.7695
+resultCoeff, resultScale, _ = db.DivDecimal("price", big.NewInt(200), 2, 4)
+fmt.Printf("Half price: %s (scale: %d)\n", resultCoeff.String(), resultScale)
+
+// Float conversion with Banker's rounding
+err = db.SetDecimalFromFloat("rate", 0.123456789, 8)      // 8 decimal places
+floatValue, _ := db.GetDecimalAsFloat("rate")
+fmt.Printf("Rate as float: %.8f\n", floatValue)
+
+// Financial calculations
+// Calculate compound interest: P * (1 + r/n)^(nt)
+principal := big.NewInt(100000)  // $1000.00
+rate := big.NewInt(5)            // 5.00% annual interest
+err = db.SetDecimal("principal", principal, 2)
+err = db.SetDecimal("rate", rate, 2)
+
+// Add interest
+interest := big.NewInt(50)       // $0.50 interest
+newBalance, _, _ := db.AddDecimal("principal", interest, 2)
+```
+
+**Key Features:**
+- ✅ **Exact Precision**: No floating-point errors in financial calculations
+- ✅ **Automatic Scale Alignment**: Handles different decimal places seamlessly
+- ✅ **Banker's Rounding**: Statistically unbiased rounding for financial accuracy
+- ✅ **Arbitrary Precision**: No overflow limits for large monetary values
+- ✅ **Float Conversion**: Safe conversion to/from `float64` with precision limits
+- ✅ **Thread-Safe**: All operations are atomic and concurrent-safe
+
+**Use Cases:**
+- 💳 **E-commerce**: Precise price calculations, tax computations
+- 🏦 **Banking**: Interest calculations, currency conversions
+- 📊 **Financial Analysis**: Portfolio valuations, risk calculations
+- 🛒 **Retail**: Inventory costing, discount calculations
+- 💰 **Cryptocurrency**: Precise token amounts, exchange rates
+
 ## ⚙️ Configuration
 
 ### Storage Options
