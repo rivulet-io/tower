@@ -106,3 +106,31 @@ func (t *Tower) delete(key string) error {
 	}
 	return nil
 }
+
+func (t *Tower) rangePrefix(prefix string, fn func(key string, df *DataFrame) error) error {
+	iter, err := t.db.NewIter(&pebble.IterOptions{
+		LowerBound: []byte(prefix),
+		UpperBound: []byte(prefix + "\xff"),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create iterator: %w", err)
+	}
+	defer iter.Close()
+
+	for iter.First(); iter.Valid(); iter.Next() {
+		key := string(iter.Key())
+		df, err := UnmarshalDataFrame(iter.Value())
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal dataframe for key %s: %w", key, err)
+		}
+		if err := fn(key, df); err != nil {
+			return fmt.Errorf("callback error for key %s: %w", key, err)
+		}
+	}
+
+	if err := iter.Error(); err != nil {
+		return fmt.Errorf("iterator error: %w", err)
+	}
+
+	return nil
+}
