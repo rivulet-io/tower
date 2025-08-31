@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type DataType uint8
@@ -213,23 +215,23 @@ func (df *DataFrame) Binary() ([]byte, error) {
 	return data, nil
 }
 
-func (df *DataFrame) SetUUID(v [16]byte) error {
+func (df *DataFrame) SetUUID(v *uuid.UUID) error {
 	df.typ = TypeUUID
 	df.payload = make([]byte, 16)
 	copy(df.payload, v[:])
 	return nil
 }
 
-func (df *DataFrame) UUID() ([16]byte, error) {
+func (df *DataFrame) UUID() (*uuid.UUID, error) {
 	if df.typ != TypeUUID {
-		return [16]byte{}, &DataFrameError{Op: "UUID", Type: df.typ, Msg: "type mismatch"}
+		return nil, &DataFrameError{Op: "UUID", Type: df.typ, Msg: "type mismatch"}
 	}
 	if len(df.payload) != 16 {
-		return [16]byte{}, &DataFrameError{Op: "UUID", Type: df.typ, Msg: "invalid payload length"}
+		return nil, &DataFrameError{Op: "UUID", Type: df.typ, Msg: "invalid payload length"}
 	}
-	var uuid [16]byte
-	copy(uuid[:], df.payload)
-	return uuid, nil
+	id := &uuid.UUID{}
+	copy(id[:], df.payload)
+	return id, nil
 }
 
 func (df *DataFrame) SetTime(v time.Time) error {
