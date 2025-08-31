@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"math/big"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +16,8 @@ const (
 	TypeNull DataType = iota
 	TypeInt
 	TypeFloat
+	TypeDecimal
+	TypeBigInt
 	TypeString
 	TypeBool
 	TypeTimestamp
@@ -250,4 +253,149 @@ func (df *DataFrame) Time() (time.Time, error) {
 		return time.Time{}, &DataFrameError{Op: "Time", Type: df.typ, Msg: err.Error()}
 	}
 	return t, nil
+}
+
+// ================================
+// BigInt Support
+// ================================
+
+type BigIntData struct {
+	Value *big.Int
+}
+
+func (bid *BigIntData) Marshal() ([]byte, error) {
+	if bid.Value == nil {
+		return nil, fmt.Errorf("BigInt value cannot be nil")
+	}
+
+	bytes := bid.Value.Bytes()
+	buf := make([]byte, 1+len(bytes)) // 1 byte for sign + data
+
+	// Store sign (0 = positive/zero, 1 = negative)
+	if bid.Value.Sign() < 0 {
+		buf[0] = 1
+	} else {
+		buf[0] = 0
+	}
+
+	copy(buf[1:], bytes)
+	return buf, nil
+}
+
+func UnmarshalDataFrameBigIntData(data []byte) (*BigIntData, error) {
+	if len(data) < 1 {
+		return nil, &DataFrameError{Op: "UnmarshalDataFrameBigIntData", Type: TypeBigInt, Msg: "data too short"}
+	}
+
+	bid := &BigIntData{Value: new(big.Int)}
+
+	// Read sign
+	sign := data[0]
+	bytes := data[1:]
+
+	bid.Value.SetBytes(bytes)
+
+	// Apply sign
+	if sign == 1 {
+		bid.Value.Neg(bid.Value)
+	}
+
+	return bid, nil
+}
+
+func (df *DataFrame) SetBigInt(value *big.Int) error {
+	if value == nil {
+		return &DataFrameError{
+			Op:   "SetBigInt",
+			Type: TypeBigInt,
+			Msg:  "value cannot be nil",
+		}
+	}
+
+	data := &BigIntData{Value: new(big.Int).Set(value)}
+	buf, err := data.Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to marshal BigInt data: %w", err)
+	}
+
+	df.typ = TypeBigInt
+	df.payload = buf
+	return nil
+}
+
+func (df *DataFrame) BigInt() (*big.Int, error) {
+	if df.typ != TypeBigInt {
+		return nil, &DataFrameError{Op: "BigInt", Type: df.typ, Msg: "type mismatch"}
+	}
+
+	data, err := UnmarshalDataFrameBigIntData(df.payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal BigInt data: %w", err)
+	}
+
+	return data.Value, nil
+}
+
+// ================================
+// Decimal Support (Fixed-Point Arithmetic)
+// ================================
+
+type DecimalData struct {
+	Coefficient int64 // The significand (mantissa)
+	Scale       int32 // Number of decimal places (0 = integer)
+}
+
+func (dd *DecimalData) Marshal() ([]byte, error) {
+	buf := make([]byte, 12) // 8 bytes for coefficient + 4 bytes for scale
+	binary.LittleEndian.PutUint64(buf[0:8], uint64(dd.Coefficient))
+	binary.LittleEndian.PutUint32(buf[8:12], uint32(dd.Scale))
+	return buf, nil
+}
+
+func UnmarshalDataFrameDecimalData(data []byte) (*DecimalData, error) {
+	if len(data) != 12 {
+		return nil, &DataFrameError{Op: "UnmarshalDataFrameDecimalData", Type: TypeDecimal, Msg: "invalid data length"}
+	}
+
+	dd := &DecimalData{}
+	dd.Coefficient = int64(binary.LittleEndian.Uint64(data[0:8]))
+	dd.Scale = int32(binary.LittleEndian.Uint32(data[8:12]))
+	return dd, nil
+}
+
+func (df *DataFrame) SetDecimal(coefficient int64, scale int32) error {
+	if scale < 0 {
+		return &DataFrameError{
+			Op:   "SetDecimal",
+			Type: TypeDecimal,
+			Msg:  "scale cannot be negative",
+		}
+	}
+
+	data := &DecimalData{
+		Coefficient: coefficient,
+		Scale:       scale,
+	}
+
+	buf, err := data.Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to marshal decimal data: %w", err)
+	}
+
+	df.typ = TypeDecimal
+	df.payload = buf
+	return nil
+}
+
+func (df *DataFrame) Decimal() (coefficient int64, scale int32, err error) {
+	if df.typ != TypeDecimal {
+		return 0, 0, &DataFrameError{Op: "Decimal", Type: df.typ, Msg: "type mismatch"}
+	}
+
+	data, err := UnmarshalDataFrameDecimalData(df.payload)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to unmarshal decimal data: %w", err)
+	}
+
+	return data.Coefficient, data.Scale, nil
 }

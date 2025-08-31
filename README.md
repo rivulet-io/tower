@@ -6,7 +6,7 @@ A high-performance, thread-safe key-value database built on top of [CockroachDB'
 
 - **🚀 High Performance**: Built on CockroachDB's Pebble LSM-tree storage engine
 - **🔒 Thread-Safe**: Concurrent operations with fine-grained per-key locking
-- **📊 Rich Data Types**: Native support for strings, integers, floats, booleans, timestamps, durations, UUIDs, and binary data
+- **📊 Rich Data Types**: Native support for strings, integers, floats, booleans, timestamps, durations, UUIDs, binary data, BigInts, and Decimals
 - **🗂️ Advanced Data Structures**: Built-in Lists, Maps, Sets, and Time Series with atomic operations
 - **💾 Flexible Storage**: In-memory for testing/caching or persistent disk storage
 - **🎯 Type-Specific Operations**: Comprehensive atomic operations for each data type
@@ -20,6 +20,7 @@ package main
 
 import (
     "fmt"
+    "math/big"
     "time"
     "github.com/rivulet-io/tower"
 )
@@ -74,7 +75,36 @@ if err != nil {
     panic(err)
 }
 
-fmt.Printf("Time Series Value: %v\n", dataPoint) // Output: Time Series Value: 100
+    fmt.Printf("Time Series Value: %v
+", dataPoint) // Output: Time Series Value: 100
+    
+    // BigInt operations (for cryptography, scientific computing)
+    bigNum := new(big.Int).SetString("123456789012345678901234567890", 10)
+    if err := db.SetBigInt("big_number", bigNum); err != nil {
+        panic(err)
+    }
+    
+    result, err := db.AddBigInt("big_number", big.NewInt(1000000))
+    if err != nil {
+        panic(err)
+    }
+    
+    fmt.Printf("BigInt Result: %s
+", result.String())
+    
+    // Decimal operations (for financial calculations)
+    if err := db.SetDecimalFromFloat("price", 19.99, 2); err != nil {
+        panic(err)
+    }
+    
+    priceCoeff, priceScale, err := db.GetDecimal("price")
+    if err != nil {
+        panic(err)
+    }
+    
+    fmt.Printf("Decimal Price: %d (scale: %d) = %.2f
+", priceCoeff, priceScale, float64(priceCoeff)/100)
+}
 
 }
 }
@@ -126,6 +156,12 @@ Tower supports the following primitive data types with comprehensive atomic oper
 | **UUID** | `uuid.UUID` | `SetUUID`, `GetUUID`, `GenerateUUID`, `EqualUUID` | UUID operations |
 | | | `CompareUUID`, `UUIDToString`, `StringToUUID` | UUID utilities |
 | **Binary** | `[]byte` | `SetBinary`, `GetBinary`, `AppendBinary` | Binary operations |
+| **BigInt** | `*big.Int` | `SetBigInt`, `GetBigInt`, `AddBigInt`, `SubBigInt` | Large integer operations |
+| | | `MulBigInt`, `DivBigInt`, `ModBigInt`, `NegBigInt` | BigInt arithmetic |
+| | | `AbsBigInt`, `CmpBigInt` | BigInt utilities |
+| **Decimal** | `int64,int32` | `SetDecimal`, `GetDecimal`, `AddDecimal`, `SubDecimal` | Fixed-point arithmetic |
+| | | `MulDecimal`, `DivDecimal`, `CmpDecimal` | Decimal operations |
+| | | `SetDecimalFromFloat`, `GetDecimalAsFloat` | Float conversion |
 
 ## 🗂️ Data Structures
 
