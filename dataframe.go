@@ -2,6 +2,7 @@ package tower
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 	"time"
 )
@@ -24,6 +25,16 @@ const (
 	TypeMap
 	TypeSet
 )
+
+type DataFrameError struct {
+	Op   string
+	Type DataType
+	Msg  string
+}
+
+func (e *DataFrameError) Error() string {
+	return fmt.Sprintf("dataframe %s error for type %v: %s", e.Op, e.Type, e.Msg)
+}
 
 type DataFrame struct {
 	typ     DataType
@@ -48,12 +59,15 @@ func (df *DataFrame) SetInt(v int64) {
 	df.payload = buf[:]
 }
 
-func (df *DataFrame) Int() (int64, bool) {
-	if df.typ != TypeInt || len(df.payload) != 8 {
-		return 0, false
+func (df *DataFrame) Int() (int64, error) {
+	if df.typ != TypeInt {
+		return 0, &DataFrameError{Op: "Int", Type: df.typ, Msg: "type mismatch"}
+	}
+	if len(df.payload) != 8 {
+		return 0, &DataFrameError{Op: "Int", Type: df.typ, Msg: "invalid payload length"}
 	}
 	v := int64(binary.LittleEndian.Uint64(df.payload))
-	return v, true
+	return v, nil
 }
 
 func (df *DataFrame) SetFloat(v float64) {
@@ -63,12 +77,15 @@ func (df *DataFrame) SetFloat(v float64) {
 	df.payload = buf[:]
 }
 
-func (df *DataFrame) Float() (float64, bool) {
-	if df.typ != TypeFloat || len(df.payload) != 8 {
-		return 0, false
+func (df *DataFrame) Float() (float64, error) {
+	if df.typ != TypeFloat {
+		return 0, &DataFrameError{Op: "Float", Type: df.typ, Msg: "type mismatch"}
+	}
+	if len(df.payload) != 8 {
+		return 0, &DataFrameError{Op: "Float", Type: df.typ, Msg: "invalid payload length"}
 	}
 	bits := binary.LittleEndian.Uint64(df.payload)
-	return math.Float64frombits(bits), true
+	return math.Float64frombits(bits), nil
 }
 
 func (df *DataFrame) SetString(v string) {
@@ -81,15 +98,18 @@ func (df *DataFrame) SetString(v string) {
 	df.payload = buf
 }
 
-func (df *DataFrame) String() (string, bool) {
-	if df.typ != TypeString || len(df.payload) < 4 {
-		return "", false
+func (df *DataFrame) String() (string, error) {
+	if df.typ != TypeString {
+		return "", &DataFrameError{Op: "String", Type: df.typ, Msg: "type mismatch"}
+	}
+	if len(df.payload) < 4 {
+		return "", &DataFrameError{Op: "String", Type: df.typ, Msg: "payload too short"}
 	}
 	length := binary.LittleEndian.Uint32(df.payload[:4])
 	if len(df.payload) != int(4+length) {
-		return "", false
+		return "", &DataFrameError{Op: "String", Type: df.typ, Msg: "invalid payload length"}
 	}
-	return string(df.payload[4:]), true
+	return string(df.payload[4:]), nil
 }
 
 func (df *DataFrame) SetBool(v bool) {
@@ -101,11 +121,14 @@ func (df *DataFrame) SetBool(v bool) {
 	df.payload = []byte{b}
 }
 
-func (df *DataFrame) Bool() (bool, bool) {
-	if df.typ != TypeBool || len(df.payload) != 1 {
-		return false, false
+func (df *DataFrame) Bool() (bool, error) {
+	if df.typ != TypeBool {
+		return false, &DataFrameError{Op: "Bool", Type: df.typ, Msg: "type mismatch"}
 	}
-	return df.payload[0] != 0, true
+	if len(df.payload) != 1 {
+		return false, &DataFrameError{Op: "Bool", Type: df.typ, Msg: "invalid payload length"}
+	}
+	return df.payload[0] != 0, nil
 }
 
 func (df *DataFrame) SetTimestamp(v time.Time) {
@@ -115,12 +138,15 @@ func (df *DataFrame) SetTimestamp(v time.Time) {
 	df.payload = buf[:]
 }
 
-func (df *DataFrame) Timestamp() (time.Time, bool) {
-	if df.typ != TypeTimestamp || len(df.payload) != 8 {
-		return time.Time{}, false
+func (df *DataFrame) Timestamp() (time.Time, error) {
+	if df.typ != TypeTimestamp {
+		return time.Time{}, &DataFrameError{Op: "Timestamp", Type: df.typ, Msg: "type mismatch"}
+	}
+	if len(df.payload) != 8 {
+		return time.Time{}, &DataFrameError{Op: "Timestamp", Type: df.typ, Msg: "invalid payload length"}
 	}
 	nano := int64(binary.LittleEndian.Uint64(df.payload))
-	return time.Unix(0, nano), true
+	return time.Unix(0, nano), nil
 }
 
 func (df *DataFrame) SetDuration(v time.Duration) {
@@ -130,12 +156,15 @@ func (df *DataFrame) SetDuration(v time.Duration) {
 	df.payload = buf[:]
 }
 
-func (df *DataFrame) Duration() (time.Duration, bool) {
-	if df.typ != TypeDuration || len(df.payload) != 8 {
-		return 0, false
+func (df *DataFrame) Duration() (time.Duration, error) {
+	if df.typ != TypeDuration {
+		return 0, &DataFrameError{Op: "Duration", Type: df.typ, Msg: "type mismatch"}
+	}
+	if len(df.payload) != 8 {
+		return 0, &DataFrameError{Op: "Duration", Type: df.typ, Msg: "invalid payload length"}
 	}
 	nano := int64(binary.LittleEndian.Uint64(df.payload))
-	return time.Duration(nano), true
+	return time.Duration(nano), nil
 }
 
 func (df *DataFrame) SetBinary(v []byte) {
@@ -144,13 +173,13 @@ func (df *DataFrame) SetBinary(v []byte) {
 	copy(df.payload, v)
 }
 
-func (df *DataFrame) Binary() ([]byte, bool) {
+func (df *DataFrame) Binary() ([]byte, error) {
 	if df.typ != TypeBinary {
-		return nil, false
+		return nil, &DataFrameError{Op: "Binary", Type: df.typ, Msg: "type mismatch"}
 	}
 	data := make([]byte, len(df.payload))
 	copy(data, df.payload)
-	return data, true
+	return data, nil
 }
 
 func (df *DataFrame) SetUUID(v [16]byte) {
@@ -159,13 +188,16 @@ func (df *DataFrame) SetUUID(v [16]byte) {
 	copy(df.payload, v[:])
 }
 
-func (df *DataFrame) UUID() ([16]byte, bool) {
-	if df.typ != TypeUUID || len(df.payload) != 16 {
-		return [16]byte{}, false
+func (df *DataFrame) UUID() ([16]byte, error) {
+	if df.typ != TypeUUID {
+		return [16]byte{}, &DataFrameError{Op: "UUID", Type: df.typ, Msg: "type mismatch"}
+	}
+	if len(df.payload) != 16 {
+		return [16]byte{}, &DataFrameError{Op: "UUID", Type: df.typ, Msg: "invalid payload length"}
 	}
 	var uuid [16]byte
 	copy(uuid[:], df.payload)
-	return uuid, true
+	return uuid, nil
 }
 
 func (df *DataFrame) SetTime(v time.Time) {
@@ -173,13 +205,13 @@ func (df *DataFrame) SetTime(v time.Time) {
 	df.payload = []byte(v.Format(time.RFC3339Nano))
 }
 
-func (df *DataFrame) Time() (time.Time, bool) {
+func (df *DataFrame) Time() (time.Time, error) {
 	if df.typ != TypeTime {
-		return time.Time{}, false
+		return time.Time{}, &DataFrameError{Op: "Time", Type: df.typ, Msg: "type mismatch"}
 	}
 	t, err := time.Parse(time.RFC3339Nano, string(df.payload))
 	if err != nil {
-		return time.Time{}, false
+		return time.Time{}, &DataFrameError{Op: "Time", Type: df.typ, Msg: err.Error()}
 	}
-	return t, true
+	return t, nil
 }
