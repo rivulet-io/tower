@@ -5,50 +5,6 @@ import (
 	"math"
 )
 
-// 리스트 인덱스 재설정 헬퍼 함수
-func (t *Tower) reindexList(key string, listData *ListData) error {
-	if listData.Length == 0 {
-		listData.HeadIndex = 0
-		listData.TailIndex = -1
-		return nil
-	}
-
-	// 새로운 인덱스 범위 계산 (0부터 시작)
-	newHeadIndex := int64(0)
-	newTailIndex := listData.Length - 1
-
-	// 모든 아이템을 새로운 인덱스로 재설정
-	for i := int64(0); i < listData.Length; i++ {
-		oldIndex := listData.HeadIndex + i
-		newIndex := newHeadIndex + i
-
-		// 기존 아이템 가져오기
-		oldItemKey := string(MakeListItemKey(key, oldIndex))
-		itemDf, err := t.get(oldItemKey)
-		if err != nil {
-			continue // 아이템이 없으면 건너뜀
-		}
-
-		// 새로운 키로 저장
-		newItemKey := string(MakeListItemKey(key, newIndex))
-		if err := t.set(newItemKey, itemDf); err != nil {
-			return fmt.Errorf("failed to reindex item: %w", err)
-		}
-
-		// 기존 아이템 삭제
-		if err := t.delete(oldItemKey); err != nil {
-			// 삭제 실패해도 계속 진행
-			continue
-		}
-	}
-
-	// 메타데이터 업데이트
-	listData.HeadIndex = newHeadIndex
-	listData.TailIndex = newTailIndex
-
-	return nil
-}
-
 // 리스트 관리 연산
 func (t *Tower) CreateList(key string) error {
 	unlock := t.lock(key)
