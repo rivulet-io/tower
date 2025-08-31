@@ -52,7 +52,7 @@ func (t *Tower) Close() error {
 	return t.db.Close()
 }
 
-func (t *Tower) Lock(key string) (unlock func()) {
+func (t *Tower) lock(key string) (unlock func()) {
 	locker, _ := t.lockers.LoadOrStore(key, &sync.RWMutex{})
 	locker.Lock()
 	return func() {
@@ -60,7 +60,7 @@ func (t *Tower) Lock(key string) (unlock func()) {
 	}
 }
 
-func (t *Tower) RLock(key string) (unlock func()) {
+func (t *Tower) rlock(key string) (unlock func()) {
 	locker, _ := t.lockers.LoadOrStore(key, &sync.RWMutex{})
 	locker.RLock()
 	return func() {
