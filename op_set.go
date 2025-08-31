@@ -316,3 +316,45 @@ func (t *Tower) SetCardinality(key string) (int64, error) {
 
 	return int64(setData.Count), nil
 }
+
+func (t *Tower) ClearSet(key string) error {
+	unlock := t.lock(key)
+	defer unlock()
+
+	setKey := key
+
+	// Set 메타데이터 가져오기
+	df, err := t.get(setKey)
+	if err != nil {
+		return fmt.Errorf("set %s does not exist: %w", key, err)
+	}
+
+	setData, err := df.Set()
+	if err != nil {
+		return fmt.Errorf("failed to get set data: %w", err)
+	}
+
+	// 모든 멤버 삭제
+	if setData.Count > 0 {
+		prefix := string(MakeSetEntryKey(setData.Prefix)) + ":"
+		err = t.rangePrefix(prefix, func(k string, df *DataFrame) error {
+			return t.delete(k)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to clear set members: %w", err)
+		}
+	}
+
+	// 메타데이터 업데이트 (Count를 0으로 리셋)
+	setData.Count = 0
+
+	if err := df.SetSet(setData); err != nil {
+		return fmt.Errorf("failed to update set metadata: %w", err)
+	}
+
+	if err := t.set(setKey, df); err != nil {
+		return fmt.Errorf("failed to update set metadata: %w", err)
+	}
+
+	return nil
+}

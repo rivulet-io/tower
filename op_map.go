@@ -391,3 +391,45 @@ func (t *Tower) MapLength(key string) (int64, error) {
 
 	return int64(mapData.Count), nil
 }
+
+func (t *Tower) ClearMap(key string) error {
+	unlock := t.lock(key)
+	defer unlock()
+
+	mapKey := key
+
+	// Map 메타데이터 가져오기
+	df, err := t.get(mapKey)
+	if err != nil {
+		return fmt.Errorf("map %s does not exist: %w", key, err)
+	}
+
+	mapData, err := df.Map()
+	if err != nil {
+		return fmt.Errorf("failed to get map data: %w", err)
+	}
+
+	// 모든 필드 삭제
+	if mapData.Count > 0 {
+		prefix := string(MakeMapEntryKey(mapData.Prefix)) + ":"
+		err = t.rangePrefix(prefix, func(k string, df *DataFrame) error {
+			return t.delete(k)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to clear map fields: %w", err)
+		}
+	}
+
+	// 메타데이터 업데이트 (Count를 0으로 리셋)
+	mapData.Count = 0
+
+	if err := df.SetMap(mapData); err != nil {
+		return fmt.Errorf("failed to update map metadata: %w", err)
+	}
+
+	if err := t.set(mapKey, df); err != nil {
+		return fmt.Errorf("failed to update map metadata: %w", err)
+	}
+
+	return nil
+}
