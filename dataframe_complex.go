@@ -3,6 +3,7 @@ package tower
 import (
 	"encoding/binary"
 	"fmt"
+	"time"
 )
 
 type ListData struct {
@@ -234,5 +235,77 @@ func MakeMapItemKey(prefix string, field string) []byte {
 	copy(buf[len(prefix)+1:], []byte(MapTypeMarker))
 	buf[len(prefix)+1+len(MapTypeMarker)] = ':'
 	copy(buf[len(prefix)+1+len(MapTypeMarker)+1:], []byte(field))
+	return buf
+}
+
+type TimeseriesData struct {
+	Prefix string
+}
+
+func (td *TimeseriesData) Marshal() ([]byte, error) {
+	return []byte(td.Prefix), nil
+}
+
+func UnmarshalDataFrameTimeseriesData(data []byte) (*TimeseriesData, error) {
+	if len(data) < 1 {
+		return nil, &DataFrameError{Op: "UnmarshalDataFrameTimeseriesData", Type: TypeTimeseries, Msg: "data too short"}
+	}
+
+	td := &TimeseriesData{}
+	td.Prefix = string(data)
+
+	return td, nil
+}
+
+func (df *DataFrame) SetTimeseries(data *TimeseriesData) error {
+	if data == nil {
+		return &DataFrameError{
+			Op:   "SetTimeseries",
+			Type: TypeTimeseries,
+			Msg:  "data cannot be nil",
+		}
+	}
+
+	buf, err := data.Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to marshal timeseries data: %w", err)
+	}
+
+	df.typ = TypeTimeseries
+	df.payload = buf
+
+	return nil
+}
+
+func (df *DataFrame) Timeseries() (*TimeseriesData, error) {
+	if df.typ != TypeTimeseries {
+		return nil, &DataFrameError{Op: "Timeseries", Type: df.typ, Msg: "type mismatch"}
+	}
+
+	value, err := UnmarshalDataFrameTimeseriesData(df.payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal timeseries data: %w", err)
+	}
+
+	return value, nil
+}
+
+const TimeseriesTypeMarker = "{:ts:}"
+
+func MakeTimeseriesEntryKey(prefix string) []byte {
+	buf := make([]byte, len(prefix)+len(TimeseriesTypeMarker)+1)
+	copy(buf, []byte(prefix))
+	buf[len(prefix)] = ':'
+	copy(buf[len(prefix)+1:], []byte(TimeseriesTypeMarker))
+	return buf
+}
+
+func MakeTimeseriesDataPointKey(prefix string, timestamp time.Time) []byte {
+	buf := make([]byte, len(prefix)+len(TimeseriesTypeMarker)+8+2)
+	copy(buf, []byte(prefix))
+	buf[len(prefix)] = ':'
+	copy(buf[len(prefix)+1:], []byte(TimeseriesTypeMarker))
+	buf[len(prefix)+1+len(TimeseriesTypeMarker)] = ':'
+	binary.LittleEndian.PutUint64(buf[len(prefix)+1+len(TimeseriesTypeMarker)+1:], uint64(timestamp.UTC().UnixNano()))
 	return buf
 }

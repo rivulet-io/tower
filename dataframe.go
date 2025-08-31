@@ -26,6 +26,7 @@ const (
 	TypeList
 	TypeMap
 	TypeSet
+	TypeTimeseries
 )
 
 type DataFrameError struct {
