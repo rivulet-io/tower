@@ -49,13 +49,23 @@ func (t *Tower) DeleteMap(key string) error {
 		return fmt.Errorf("map %s does not exist: %w", key, err)
 	}
 
-	_, err = df.Map()
+	mapData, err := df.Map()
 	if err != nil {
 		return fmt.Errorf("failed to get map data: %w", err)
 	}
 
-	// 모든 필드 삭제 (하지만 실제로는 필드들을 모르기 때문에 메타데이터만 삭제)
-	// 실제 구현에서는 모든 필드를 삭제해야 하지만, 여기서는 메타데이터만 삭제
+	// 모든 필드 삭제
+	if mapData.Count > 0 {
+		prefix := string(MakeMapEntryKey(mapData.Prefix)) + ":"
+		err = t.rangePrefix(prefix, func(k string, df *DataFrame) error {
+			return t.delete(k)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to delete map fields: %w", err)
+		}
+	}
+
+	// 메타데이터 삭제
 	if err := t.delete(mapKey); err != nil {
 		return fmt.Errorf("failed to delete map metadata: %w", err)
 	}

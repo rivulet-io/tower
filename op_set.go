@@ -48,13 +48,23 @@ func (t *Tower) DeleteSet(key string) error {
 		return fmt.Errorf("set %s does not exist: %w", key, err)
 	}
 
-	_, err = df.Set()
+	setData, err := df.Set()
 	if err != nil {
 		return fmt.Errorf("failed to get set data: %w", err)
 	}
 
-	// 모든 멤버 삭제 (하지만 실제로는 멤버들을 모르기 때문에 메타데이터만 삭제)
-	// 실제 구현에서는 모든 멤버를 삭제해야 하지만, 여기서는 메타데이터만 삭제
+	// 모든 멤버 삭제
+	if setData.Count > 0 {
+		prefix := string(MakeSetEntryKey(setData.Prefix)) + ":"
+		err = t.rangePrefix(prefix, func(k string, df *DataFrame) error {
+			return t.delete(k)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to delete set members: %w", err)
+		}
+	}
+
+	// 메타데이터 삭제
 	if err := t.delete(setKey); err != nil {
 		return fmt.Errorf("failed to delete set metadata: %w", err)
 	}
