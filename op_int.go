@@ -238,3 +238,344 @@ func (t *Tower) SwapInt(key string, newValue int64) (int64, error) {
 
 	return current, nil
 }
+
+// 비교 연산
+func (t *Tower) CompareInt(key string, value int64) (int, error) {
+	unlock := t.rlock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	if current < value {
+		return -1, nil
+	} else if current > value {
+		return 1, nil
+	}
+	return 0, nil
+}
+
+// 조건부 설정 연산
+func (t *Tower) SetIntIfGreater(key string, value int64) (int64, error) {
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	if value > current {
+		if err := df.SetInt(value); err != nil {
+			return 0, fmt.Errorf("failed to set int value: %w", err)
+		}
+		if err := t.set(key, df); err != nil {
+			return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+		}
+		return value, nil
+	}
+	return current, nil
+}
+
+func (t *Tower) SetIntIfLess(key string, value int64) (int64, error) {
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	if value < current {
+		if err := df.SetInt(value); err != nil {
+			return 0, fmt.Errorf("failed to set int value: %w", err)
+		}
+		if err := t.set(key, df); err != nil {
+			return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+		}
+		return value, nil
+	}
+	return current, nil
+}
+
+func (t *Tower) SetIntIfEqual(key string, expected, newValue int64) (int64, error) {
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	if current == expected {
+		if err := df.SetInt(newValue); err != nil {
+			return 0, fmt.Errorf("failed to set int value: %w", err)
+		}
+		if err := t.set(key, df); err != nil {
+			return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+		}
+		return newValue, nil
+	}
+	return current, nil
+}
+
+// 범위 및 제한 연산
+func (t *Tower) ClampInt(key string, min, max int64) (int64, error) {
+	if min > max {
+		return 0, fmt.Errorf("min cannot be greater than max")
+	}
+
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	newValue := current
+	if newValue < min {
+		newValue = min
+	} else if newValue > max {
+		newValue = max
+	}
+
+	if newValue != current {
+		if err := df.SetInt(newValue); err != nil {
+			return 0, fmt.Errorf("failed to set int value: %w", err)
+		}
+		if err := t.set(key, df); err != nil {
+			return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+		}
+	}
+
+	return newValue, nil
+}
+
+func (t *Tower) MinInt(key string, value int64) (int64, error) {
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	newValue := current
+	if value < current {
+		newValue = value
+	}
+
+	if newValue != current {
+		if err := df.SetInt(newValue); err != nil {
+			return 0, fmt.Errorf("failed to set int value: %w", err)
+		}
+		if err := t.set(key, df); err != nil {
+			return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+		}
+	}
+
+	return newValue, nil
+}
+
+func (t *Tower) MaxInt(key string, value int64) (int64, error) {
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	newValue := current
+	if value > current {
+		newValue = value
+	}
+
+	if newValue != current {
+		if err := df.SetInt(newValue); err != nil {
+			return 0, fmt.Errorf("failed to set int value: %w", err)
+		}
+		if err := t.set(key, df); err != nil {
+			return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+		}
+	}
+
+	return newValue, nil
+}
+
+// 비트 연산
+func (t *Tower) AndInt(key string, mask int64) (int64, error) {
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	newValue := current & mask
+	if err := df.SetInt(newValue); err != nil {
+		return 0, fmt.Errorf("failed to set int value: %w", err)
+	}
+
+	if err := t.set(key, df); err != nil {
+		return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+	}
+
+	return newValue, nil
+}
+
+func (t *Tower) OrInt(key string, mask int64) (int64, error) {
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	newValue := current | mask
+	if err := df.SetInt(newValue); err != nil {
+		return 0, fmt.Errorf("failed to set int value: %w", err)
+	}
+
+	if err := t.set(key, df); err != nil {
+		return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+	}
+
+	return newValue, nil
+}
+
+func (t *Tower) XorInt(key string, mask int64) (int64, error) {
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	newValue := current ^ mask
+	if err := df.SetInt(newValue); err != nil {
+		return 0, fmt.Errorf("failed to set int value: %w", err)
+	}
+
+	if err := t.set(key, df); err != nil {
+		return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+	}
+
+	return newValue, nil
+}
+
+func (t *Tower) ShiftLeftInt(key string, bits uint) (int64, error) {
+	if bits > 63 {
+		return 0, fmt.Errorf("shift bits cannot be greater than 63")
+	}
+
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	newValue := current << bits
+	if err := df.SetInt(newValue); err != nil {
+		return 0, fmt.Errorf("failed to set int value: %w", err)
+	}
+
+	if err := t.set(key, df); err != nil {
+		return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+	}
+
+	return newValue, nil
+}
+
+func (t *Tower) ShiftRightInt(key string, bits uint) (int64, error) {
+	if bits > 63 {
+		return 0, fmt.Errorf("shift bits cannot be greater than 63")
+	}
+
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+
+	current, err := df.Int()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get int value for key %s: %w", key, err)
+	}
+
+	newValue := current >> bits
+	if err := df.SetInt(newValue); err != nil {
+		return 0, fmt.Errorf("failed to set int value: %w", err)
+	}
+
+	if err := t.set(key, df); err != nil {
+		return 0, fmt.Errorf("failed to set key %s: %w", key, err)
+	}
+
+	return newValue, nil
+}
