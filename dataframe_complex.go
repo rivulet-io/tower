@@ -88,12 +88,12 @@ func MakeListItemKey(prefix string, index int64) []byte {
 
 type SetData struct {
 	Prefix string
-	Count  int64
+	Count  uint64
 }
 
 func (sd *SetData) Marshal() ([]byte, error) {
 	buf := make([]byte, 8+len(sd.Prefix))
-	binary.LittleEndian.PutUint64(buf[0:8], uint64(sd.Count))
+	binary.LittleEndian.PutUint64(buf[0:8], sd.Count)
 	copy(buf[8:], []byte(sd.Prefix))
 	return buf, nil
 }
@@ -103,7 +103,7 @@ func UnmarshalDataFrameSetData(data []byte) (*SetData, error) {
 		return nil, &DataFrameError{Op: "UnmarshalDataFrameSetData", Type: TypeSet, Msg: "data too short"}
 	}
 	sd := &SetData{}
-	sd.Count = int64(binary.LittleEndian.Uint64(data[0:8]))
+	sd.Count = binary.LittleEndian.Uint64(data[0:8])
 	sd.Prefix = string(data[8:])
 	return sd, nil
 }
@@ -163,12 +163,12 @@ func MakeSetItemKey(prefix string, member string) []byte {
 
 type MapData struct {
 	Prefix string
-	Count  int64
+	Count  uint64
 }
 
 func (md *MapData) Marshal() ([]byte, error) {
 	buf := make([]byte, 8+len(md.Prefix))
-	binary.LittleEndian.PutUint64(buf[0:8], uint64(md.Count))
+	binary.LittleEndian.PutUint64(buf[0:8], md.Count)
 	copy(buf[8:], []byte(md.Prefix))
 	return buf, nil
 }
@@ -179,7 +179,7 @@ func UnmarshalDataFrameMapData(data []byte) (*MapData, error) {
 	}
 
 	md := &MapData{}
-	md.Count = int64(binary.LittleEndian.Uint64(data[0:8]))
+	md.Count = binary.LittleEndian.Uint64(data[0:8])
 	md.Prefix = string(data[8:])
 	return md, nil
 }
