@@ -2,6 +2,7 @@ package tower
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
@@ -24,7 +25,8 @@ func OnDisk() vfs.FS {
 }
 
 type Tower struct {
-	db *pebble.DB
+	db      *pebble.DB
+	lockers *ConcurrentMap[string, *sync.RWMutex]
 }
 
 func NewTower(opt *Options) (*Tower, error) {
@@ -40,9 +42,28 @@ func NewTower(opt *Options) (*Tower, error) {
 		return nil, fmt.Errorf("failed to open pebble db: %w", err)
 	}
 
-	return &Tower{db: db}, nil
+	return &Tower{
+		db:      db,
+		lockers: NewConcurrentMap[string, *sync.RWMutex](),
+	}, nil
 }
 
 func (t *Tower) Close() error {
 	return t.db.Close()
+}
+
+func (t *Tower) Lock(key string) (unlock func()) {
+	locker, _ := t.lockers.LoadOrStore(key, &sync.RWMutex{})
+	locker.Lock()
+	return func() {
+		locker.Unlock()
+	}
+}
+
+func (t *Tower) RLock(key string) (unlock func()) {
+	locker, _ := t.lockers.LoadOrStore(key, &sync.RWMutex{})
+	locker.RLock()
+	return func() {
+		locker.RUnlock()
+	}
 }
