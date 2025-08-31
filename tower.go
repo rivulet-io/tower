@@ -67,3 +67,35 @@ func (t *Tower) rlock(key string) (unlock func()) {
 		locker.RUnlock()
 	}
 }
+
+func (t *Tower) set(key string, value *DataFrame) error {
+	if value == nil {
+		return fmt.Errorf("value cannot be nil")
+	}
+
+	data, err := value.Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to marshal dataframe: %w", err)
+	}
+
+	if err := t.db.Set([]byte(key), data, nil); err != nil {
+		return fmt.Errorf("failed to set key %s: %w", key, err)
+	}
+
+	return nil
+}
+
+func (t *Tower) get(key string) (*DataFrame, error) {
+	data, closer, err := t.db.Get([]byte(key))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get key %s: %w", key, err)
+	}
+	defer closer.Close()
+
+	df, err := UnmarshalDataFrame(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal dataframe for key %s: %w", key, err)
+	}
+
+	return df, nil
+}

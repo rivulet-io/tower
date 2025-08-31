@@ -41,6 +41,30 @@ type DataFrame struct {
 	payload []byte
 }
 
+func (df *DataFrame) Marshal() ([]byte, error) {
+	if df == nil {
+		return nil, fmt.Errorf("cannot marshal nil DataFrame")
+	}
+
+	buf := make([]byte, 1+len(df.payload))
+	buf[0] = byte(df.typ)
+	copy(buf[1:], df.payload)
+	return buf, nil
+}
+
+func UnmarshalDataFrame(data []byte) (*DataFrame, error) {
+	if len(data) < 1 {
+		return nil, fmt.Errorf("data too short to unmarshal DataFrame")
+	}
+
+	df := &DataFrame{
+		typ:     DataType(data[0]),
+		payload: make([]byte, len(data)-1),
+	}
+	copy(df.payload, data[1:])
+	return df, nil
+}
+
 func NULLDataFrame() *DataFrame {
 	return &DataFrame{
 		typ:     TypeNull,
