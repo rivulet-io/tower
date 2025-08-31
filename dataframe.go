@@ -2,7 +2,6 @@ package tower
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"math"
 	"time"
 )
@@ -170,21 +169,15 @@ func (df *DataFrame) UUID() ([16]byte, bool) {
 }
 
 func (df *DataFrame) SetTime(v time.Time) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		// Handle error, but for simplicity, assume no error
-		return
-	}
 	df.typ = TypeTime
-	df.payload = data
+	df.payload = []byte(v.Format(time.RFC3339Nano))
 }
 
 func (df *DataFrame) Time() (time.Time, bool) {
 	if df.typ != TypeTime {
 		return time.Time{}, false
 	}
-	var t time.Time
-	err := json.Unmarshal(df.payload, &t)
+	t, err := time.Parse(time.RFC3339Nano, string(df.payload))
 	if err != nil {
 		return time.Time{}, false
 	}
