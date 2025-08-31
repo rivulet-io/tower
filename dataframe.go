@@ -341,29 +341,81 @@ func (df *DataFrame) BigInt() (*big.Int, error) {
 // ================================
 
 type DecimalData struct {
-	Coefficient int64 // The significand (mantissa)
-	Scale       int32 // Number of decimal places (0 = integer)
+	Coefficient *big.Int // The significand (mantissa) as big.Int
+	Scale       int32    // Number of decimal places (0 = integer)
 }
 
 func (dd *DecimalData) Marshal() ([]byte, error) {
-	buf := make([]byte, 12) // 8 bytes for coefficient + 4 bytes for scale
-	binary.LittleEndian.PutUint64(buf[0:8], uint64(dd.Coefficient))
-	binary.LittleEndian.PutUint32(buf[8:12], uint32(dd.Scale))
+	if dd.Coefficient == nil {
+		return nil, fmt.Errorf("Decimal coefficient cannot be nil")
+	}
+
+	coeffBytes := dd.Coefficient.Bytes()
+	scaleBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(scaleBytes, uint32(dd.Scale))
+
+	// Format: sign(1) + coeff_length(4) + coeff_bytes + scale(4)
+	buf := make([]byte, 1+4+len(coeffBytes)+4)
+
+	// Store sign (0 = positive/zero, 1 = negative)
+	if dd.Coefficient.Sign() < 0 {
+		buf[0] = 1
+	} else {
+		buf[0] = 0
+	}
+
+	// Store coefficient length
+	binary.LittleEndian.PutUint32(buf[1:5], uint32(len(coeffBytes)))
+
+	// Store coefficient bytes
+	copy(buf[5:5+len(coeffBytes)], coeffBytes)
+
+	// Store scale
+	copy(buf[5+len(coeffBytes):], scaleBytes)
+
 	return buf, nil
 }
 
 func UnmarshalDataFrameDecimalData(data []byte) (*DecimalData, error) {
-	if len(data) != 12 {
+	if len(data) < 10 { // Minimum: sign(1) + length(4) + scale(4) + at least 1 coeff byte
+		return nil, &DataFrameError{Op: "UnmarshalDataFrameDecimalData", Type: TypeDecimal, Msg: "data too short"}
+	}
+
+	dd := &DecimalData{Coefficient: new(big.Int)}
+
+	// Read sign
+	sign := data[0]
+
+	// Read coefficient length
+	coeffLen := binary.LittleEndian.Uint32(data[1:5])
+	if len(data) < int(5+coeffLen+4) {
 		return nil, &DataFrameError{Op: "UnmarshalDataFrameDecimalData", Type: TypeDecimal, Msg: "invalid data length"}
 	}
 
-	dd := &DecimalData{}
-	dd.Coefficient = int64(binary.LittleEndian.Uint64(data[0:8]))
-	dd.Scale = int32(binary.LittleEndian.Uint32(data[8:12]))
+	// Read coefficient bytes
+	coeffBytes := data[5 : 5+coeffLen]
+	dd.Coefficient.SetBytes(coeffBytes)
+
+	// Apply sign
+	if sign == 1 {
+		dd.Coefficient.Neg(dd.Coefficient)
+	}
+
+	// Read scale
+	scaleStart := 5 + coeffLen
+	dd.Scale = int32(binary.LittleEndian.Uint32(data[scaleStart : scaleStart+4]))
+
 	return dd, nil
 }
 
-func (df *DataFrame) SetDecimal(coefficient int64, scale int32) error {
+func (df *DataFrame) SetDecimal(coefficient *big.Int, scale int32) error {
+	if coefficient == nil {
+		return &DataFrameError{
+			Op:   "SetDecimal",
+			Type: TypeDecimal,
+			Msg:  "coefficient cannot be nil",
+		}
+	}
 	if scale < 0 {
 		return &DataFrameError{
 			Op:   "SetDecimal",
@@ -373,7 +425,7 @@ func (df *DataFrame) SetDecimal(coefficient int64, scale int32) error {
 	}
 
 	data := &DecimalData{
-		Coefficient: coefficient,
+		Coefficient: new(big.Int).Set(coefficient),
 		Scale:       scale,
 	}
 
@@ -387,15 +439,15 @@ func (df *DataFrame) SetDecimal(coefficient int64, scale int32) error {
 	return nil
 }
 
-func (df *DataFrame) Decimal() (coefficient int64, scale int32, err error) {
+func (df *DataFrame) Decimal() (coefficient *big.Int, scale int32, err error) {
 	if df.typ != TypeDecimal {
-		return 0, 0, &DataFrameError{Op: "Decimal", Type: df.typ, Msg: "type mismatch"}
+		return nil, 0, &DataFrameError{Op: "Decimal", Type: df.typ, Msg: "type mismatch"}
 	}
 
 	data, err := UnmarshalDataFrameDecimalData(df.payload)
 	if err != nil {
-		return 0, 0, fmt.Errorf("failed to unmarshal decimal data: %w", err)
+		return nil, 0, fmt.Errorf("failed to unmarshal decimal data: %w", err)
 	}
 
-	return data.Coefficient, data.Scale, nil
+	return new(big.Int).Set(data.Coefficient), data.Scale, nil
 }

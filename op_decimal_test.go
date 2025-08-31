@@ -2,6 +2,7 @@ package tower
 
 import (
 	"math"
+	"math/big"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func TestDecimalOperations(t *testing.T) {
 	// Test SetDecimal and GetDecimal
 	t.Run("set and get decimal", func(t *testing.T) {
 		key := "test_decimal"
-		coefficient := int64(12345)
+		coefficient := big.NewInt(12345)
 		scale := int32(2) // Represents 123.45
 
 		err := tower.SetDecimal(key, coefficient, scale)
@@ -34,8 +35,8 @@ func TestDecimalOperations(t *testing.T) {
 			t.Errorf("GetDecimal failed: %v", err)
 		}
 
-		if resultCoeff != coefficient || resultScale != scale {
-			t.Errorf("Expected (%d, %d), got (%d, %d)", coefficient, scale, resultCoeff, resultScale)
+		if resultCoeff.Cmp(coefficient) != 0 || resultScale != scale {
+			t.Errorf("Expected (%s, %d), got (%s, %d)", coefficient.String(), scale, resultCoeff.String(), resultScale)
 		}
 	})
 
@@ -65,20 +66,20 @@ func TestDecimalOperations(t *testing.T) {
 	t.Run("add decimal", func(t *testing.T) {
 		key := "add_decimal"
 		// 100.50 (coefficient=10050, scale=2)
-		tower.SetDecimal(key, 10050, 2)
+		tower.SetDecimal(key, big.NewInt(10050), 2)
 
 		// Add 25.25 (coefficient=2525, scale=2)
-		resultCoeff, resultScale, err := tower.AddDecimal(key, 2525, 2)
+		resultCoeff, resultScale, err := tower.AddDecimal(key, big.NewInt(2525), 2)
 		if err != nil {
 			t.Errorf("AddDecimal failed: %v", err)
 		}
 
 		// Expected: 125.75 (coefficient=12575, scale=2)
-		expectedCoeff := int64(12575)
+		expectedCoeff := big.NewInt(12575)
 		expectedScale := int32(2)
 
-		if resultCoeff != expectedCoeff || resultScale != expectedScale {
-			t.Errorf("Expected (%d, %d), got (%d, %d)", expectedCoeff, expectedScale, resultCoeff, resultScale)
+		if resultCoeff.Cmp(expectedCoeff) != 0 || resultScale != expectedScale {
+			t.Errorf("Expected (%s, %d), got (%s, %d)", expectedCoeff.String(), expectedScale, resultCoeff.String(), resultScale)
 		}
 	})
 
@@ -86,20 +87,20 @@ func TestDecimalOperations(t *testing.T) {
 	t.Run("add decimal with different scales", func(t *testing.T) {
 		key := "scale_decimal"
 		// 10.5 (coefficient=105, scale=1)
-		tower.SetDecimal(key, 105, 1)
+		tower.SetDecimal(key, big.NewInt(105), 1)
 
 		// Add 2.25 (coefficient=225, scale=2)
-		resultCoeff, resultScale, err := tower.AddDecimal(key, 225, 2)
+		resultCoeff, resultScale, err := tower.AddDecimal(key, big.NewInt(225), 2)
 		if err != nil {
 			t.Errorf("AddDecimal with different scales failed: %v", err)
 		}
 
 		// Expected: 12.75 (coefficient=1275, scale=2)
-		expectedCoeff := int64(1275)
+		expectedCoeff := big.NewInt(1275)
 		expectedScale := int32(2)
 
-		if resultCoeff != expectedCoeff || resultScale != expectedScale {
-			t.Errorf("Expected (%d, %d), got (%d, %d)", expectedCoeff, expectedScale, resultCoeff, resultScale)
+		if resultCoeff.Cmp(expectedCoeff) != 0 || resultScale != expectedScale {
+			t.Errorf("Expected (%s, %d), got (%s, %d)", expectedCoeff.String(), expectedScale, resultCoeff.String(), resultScale)
 		}
 	})
 
@@ -107,20 +108,20 @@ func TestDecimalOperations(t *testing.T) {
 	t.Run("multiply decimal", func(t *testing.T) {
 		key := "mul_decimal"
 		// 12.34 (coefficient=1234, scale=2)
-		tower.SetDecimal(key, 1234, 2)
+		tower.SetDecimal(key, big.NewInt(1234), 2)
 
 		// Multiply by 2.5 (coefficient=25, scale=1)
-		resultCoeff, resultScale, err := tower.MulDecimal(key, 25, 1)
+		resultCoeff, resultScale, err := tower.MulDecimal(key, big.NewInt(25), 1)
 		if err != nil {
 			t.Errorf("MulDecimal failed: %v", err)
 		}
 
 		// Expected: 30.85 (coefficient=3085, scale=2) -> 수정: 30.850 (coefficient=30850, scale=3)
-		expectedCoeff := int64(30850)
+		expectedCoeff := big.NewInt(30850)
 		expectedScale := int32(3)
 
-		if resultCoeff != expectedCoeff || resultScale != expectedScale {
-			t.Errorf("Expected (%d, %d), got (%d, %d)", expectedCoeff, expectedScale, resultCoeff, resultScale)
+		if resultCoeff.Cmp(expectedCoeff) != 0 || resultScale != expectedScale {
+			t.Errorf("Expected (%s, %d), got (%s, %d)", expectedCoeff.String(), expectedScale, resultCoeff.String(), resultScale)
 		}
 	})
 }

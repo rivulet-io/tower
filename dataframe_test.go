@@ -371,7 +371,7 @@ func TestDataFrameIsNull(t *testing.T) {
 func TestDataFrameError(t *testing.T) {
 	err := &DataFrameError{
 		Op:   "test",
-		Type: TypeString,
+		Type: TypeDecimal,
 		Msg:  "test error",
 	}
 
