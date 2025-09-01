@@ -7,7 +7,7 @@ A high-performance, thread-safe key-value database built on top of [CockroachDB'
 - **🚀 High Performance**: Built on CockroachDB's Pebble LSM-tree storage engine
 - **🔒 Thread-Safe**: Concurrent operations with fine-grained per-key locking
 - **📊 Rich Data Types**: Native support for strings, integers, floats, booleans, timestamps, durations, UUIDs, binary data, BigInts, and Decimals
-- **🗂️ Advanced Data Structures**: Built-in Lists, Maps, Sets, and Time Series with atomic operations
+- **🗂️ Advanced Data Structures**: Built-in Lists, Maps, Sets, Time Series, and Bloom Filters with atomic operations
 - **💾 Flexible Storage**: In-memory for testing/caching or persistent disk storage
 - **🎯 Type-Specific Operations**: Comprehensive atomic operations for each data type
 - **⚡ Memory Efficient**: Configurable cache sizes and memory table management
@@ -271,6 +271,45 @@ err = db.TimeSeriesRemove("sensor-data", now)                                   
 // Cleanup
 err = db.TimeSeriesDelete("sensor-data")                                        // Delete entire time series
 ```
+
+### Bloom Filters
+Probabilistic data structures for efficient membership testing with configurable false positive rates:
+
+```go
+// Create and manage bloom filters (default 3 hash slots)
+err := db.CreateBloomFilter("user_cache", 0)         // Use default slots (3)
+err = db.CreateBloomFilter("large_filter", 5)        // Use 5 hash slots
+
+// Add items to the filter
+err = db.BloomFilterAdd("user_cache", "user123")     // Add user ID
+err = db.BloomFilterAdd("user_cache", "user456")
+
+// Test membership (may have false positives)
+exists, _ := db.BloomFilterContains("user_cache", "user123")  // true
+exists, _ = db.BloomFilterContains("user_cache", "user999")   // false (or false positive)
+
+// Get filter statistics
+count, _ := db.BloomFilterCount("user_cache")        // Get item count
+
+// Clear all items
+err = db.BloomFilterClear("user_cache")              // Reset filter
+
+// Cleanup
+err = db.DeleteBloomFilter("user_cache")             // Delete entire filter
+```
+
+**Key Characteristics:**
+- **Space Efficient**: Uses multiple hash functions with configurable slots (3-5)
+- **Fast Operations**: Constant-time add and lookup operations
+- **Probabilistic**: May return false positives but never false negatives
+- **Configurable**: Adjust hash slots for different false positive rates
+- **Thread-Safe**: Concurrent operations with fine-grained locking
+
+**Use Cases:**
+- **Caching**: Check cache membership before expensive lookups
+- **Deduplication**: Prevent processing duplicate items
+- **Security**: Rate limiting and spam detection
+- **Big Data**: Large-scale data filtering and preprocessing
 
 ## 🔢 BigInt Operations
 
