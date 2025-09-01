@@ -30,6 +30,7 @@ const (
 	TypeMap
 	TypeSet
 	TypeTimeseries
+	TypeBloomFilter
 )
 
 type DataFrameError struct {

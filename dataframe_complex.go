@@ -309,3 +309,88 @@ func MakeTimeseriesDataPointKey(prefix string, timestamp time.Time) []byte {
 	binary.LittleEndian.PutUint64(buf[len(prefix)+1+len(TimeseriesTypeMarker)+1:], uint64(timestamp.UTC().UnixNano()))
 	return buf
 }
+
+type BloomFilterData struct {
+	Prefix string
+	Slots  int
+	Salt   string
+	Count  uint64
+}
+
+func (bfd *BloomFilterData) Marshal() ([]byte, error) {
+	buf := make([]byte, 4+len(bfd.Salt)+1+8+len(bfd.Prefix))
+	binary.LittleEndian.PutUint32(buf[0:4], uint32(bfd.Slots))
+	copy(buf[4:], []byte(bfd.Salt))
+	buf[4+len(bfd.Salt)] = ':'
+	binary.LittleEndian.PutUint64(buf[4+len(bfd.Salt)+1:], bfd.Count)
+	copy(buf[4+len(bfd.Salt)+1+8:], []byte(bfd.Prefix))
+	return buf, nil
+}
+
+func UnmarshalDataFrameBloomFilterData(data []byte) (*BloomFilterData, error) {
+	if len(data) < 4+len("bloom_salt_2025")+1+8 {
+		return nil, &DataFrameError{Op: "UnmarshalDataFrameBloomFilterData", Type: TypeBloomFilter, Msg: "data too short"}
+	}
+	bfd := &BloomFilterData{}
+	bfd.Slots = int(binary.LittleEndian.Uint32(data[0:4]))
+	bfd.Salt = string(data[4 : 4+len("bloom_salt_2025")])
+	if data[4+len("bloom_salt_2025")] != ':' {
+		return nil, &DataFrameError{Op: "UnmarshalDataFrameBloomFilterData", Type: TypeBloomFilter, Msg: "invalid separator"}
+	}
+	bfd.Count = binary.LittleEndian.Uint64(data[4+len("bloom_salt_2025")+1 : 4+len("bloom_salt_2025")+1+8])
+	bfd.Prefix = string(data[4+len("bloom_salt_2025")+1+8:])
+	return bfd, nil
+}
+
+func (df *DataFrame) SetBloomFilter(data *BloomFilterData) error {
+	if data == nil {
+		return &DataFrameError{
+			Op:   "SetBloomFilter",
+			Type: TypeBloomFilter,
+			Msg:  "data cannot be nil",
+		}
+	}
+
+	buf, err := data.Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to marshal bloom filter data: %w", err)
+	}
+
+	df.typ = TypeBloomFilter
+	df.payload = buf
+
+	return nil
+}
+
+func (df *DataFrame) BloomFilter() (*BloomFilterData, error) {
+	if df.typ != TypeBloomFilter {
+		return nil, &DataFrameError{Op: "BloomFilter", Type: df.typ, Msg: "type mismatch"}
+	}
+
+	value, err := UnmarshalDataFrameBloomFilterData(df.payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal bloom filter data: %w", err)
+	}
+
+	return value, nil
+}
+
+const BloomFilterTypeMarker = "{:bloom:}"
+
+func MakeBloomFilterEntryKey(prefix string) []byte {
+	buf := make([]byte, len(prefix)+len(BloomFilterTypeMarker)+1)
+	copy(buf, []byte(prefix))
+	buf[len(prefix)] = ':'
+	copy(buf[len(prefix)+1:], []byte(BloomFilterTypeMarker))
+	return buf
+}
+
+func MakeBloomFilterItemKey(prefix string, item string) []byte {
+	buf := make([]byte, len(prefix)+len(BloomFilterTypeMarker)+len(item)+2)
+	copy(buf, []byte(prefix))
+	buf[len(prefix)] = ':'
+	copy(buf[len(prefix)+1:], []byte(BloomFilterTypeMarker))
+	buf[len(prefix)+1+len(BloomFilterTypeMarker)] = ':'
+	copy(buf[len(prefix)+1+len(BloomFilterTypeMarker)+1:], []byte(item))
+	return buf
+}
