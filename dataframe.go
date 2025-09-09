@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/RoaringBitmap/roaring/v2"
+	"github.com/RoaringBitmap/roaring/v2/roaring64"
 	"github.com/google/uuid"
 )
 
@@ -25,6 +27,8 @@ const (
 	TypeDuration
 	TypeBinary
 	TypeUUID
+	TypeRoaringBitmap
+	TypeRoaringBitmap64
 	TypeJSON
 	TypeList
 	TypeMap
@@ -451,4 +455,69 @@ func (df *DataFrame) Decimal() (coefficient *big.Int, scale int32, err error) {
 	}
 
 	return new(big.Int).Set(data.Coefficient), data.Scale, nil
+}
+
+func (df *DataFrame) SetRoaringBitmap(v *roaring.Bitmap) error {
+	if v == nil {
+		return &DataFrameError{
+			Op:   "SetRoaringBitmap",
+			Type: TypeNull,
+			Msg:  "bitmap cannot be nil",
+		}
+	}
+
+	data, err := v.MarshalBinary()
+	if err != nil {
+		return fmt.Errorf("failed to marshal roaring bitmap: %w", err)
+	}
+
+	df.typ = TypeRoaringBitmap
+	df.payload = data
+
+	return nil
+}
+
+func (df *DataFrame) RoaringBitmap() (*roaring.Bitmap, error) {
+	if df.typ != TypeRoaringBitmap {
+		return nil, &DataFrameError{Op: "RoaringBitmap", Type: df.typ, Msg: "type mismatch"}
+	}
+
+	bitmap := roaring.New()
+	if err := bitmap.UnmarshalBinary(df.payload); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal roaring bitmap: %w", err)
+	}
+
+	return bitmap, nil
+}
+
+func (df *DataFrame) SetRoaringBitmap64(v *roaring64.Bitmap) error {
+	if v == nil {
+		return &DataFrameError{
+			Op:   "SetRoaringBitmap64",
+			Type: TypeNull,
+			Msg:  "bitmap cannot be nil",
+		}
+	}
+
+	data, err := v.MarshalBinary()
+	if err != nil {
+		return fmt.Errorf("failed to marshal roaring64 bitmap: %w", err)
+	}
+
+	df.typ = TypeRoaringBitmap64
+	df.payload = data
+	return nil
+}
+
+func (df *DataFrame) RoaringBitmap64() (*roaring64.Bitmap, error) {
+	if df.typ != TypeRoaringBitmap64 {
+		return nil, &DataFrameError{Op: "RoaringBitmap64", Type: df.typ, Msg: "type mismatch"}
+	}
+
+	bitmap := roaring64.New()
+	if err := bitmap.UnmarshalBinary(df.payload); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal roaring64 bitmap: %w", err)
+	}
+
+	return bitmap, nil
 }
