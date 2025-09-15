@@ -35,6 +35,7 @@ const (
 	TypeSet
 	TypeTimeseries
 	TypeBloomFilter
+	TypeShamirShare
 )
 
 type DataFrameError struct {
@@ -455,6 +456,141 @@ func (df *DataFrame) Decimal() (coefficient *big.Int, scale int32, err error) {
 	}
 
 	return new(big.Int).Set(data.Coefficient), data.Scale, nil
+}
+
+// ================================
+// Shamir Secret Share Support
+// ================================
+
+type ShamirShareData struct {
+	Shares map[byte][]byte // Map of share ID to share data
+}
+
+func (ssd *ShamirShareData) Marshal() ([]byte, error) {
+	if ssd.Shares == nil {
+		return nil, fmt.Errorf("Shamir shares cannot be nil")
+	}
+
+	// Calculate total size needed
+	// Format: num_shares(4) + [share_id(1) + share_length(4) + share_bytes]*num_shares
+	totalSize := 4 // for num_shares
+	for _, share := range ssd.Shares {
+		totalSize += 1 + 4 + len(share) // share_id + share_length + share_bytes
+	}
+
+	buf := make([]byte, totalSize)
+	offset := 0
+
+	// Store number of shares
+	binary.LittleEndian.PutUint32(buf[offset:offset+4], uint32(len(ssd.Shares)))
+	offset += 4
+
+	// Store each share
+	for shareID, share := range ssd.Shares {
+		// Store share ID
+		buf[offset] = shareID
+		offset++
+
+		// Store share length
+		binary.LittleEndian.PutUint32(buf[offset:offset+4], uint32(len(share)))
+		offset += 4
+
+		// Store share bytes
+		copy(buf[offset:offset+len(share)], share)
+		offset += len(share)
+	}
+
+	return buf, nil
+}
+
+func UnmarshalDataFrameShamirShareData(data []byte) (*ShamirShareData, error) {
+	if len(data) < 4 {
+		return nil, &DataFrameError{Op: "UnmarshalDataFrameShamirShareData", Type: TypeShamirShare, Msg: "data too short"}
+	}
+
+	ssd := &ShamirShareData{Shares: make(map[byte][]byte)}
+	offset := 0
+
+	// Read number of shares
+	numShares := binary.LittleEndian.Uint32(data[offset:offset+4])
+	offset += 4
+
+	// Read each share
+	for i := uint32(0); i < numShares; i++ {
+		if offset >= len(data) {
+			return nil, &DataFrameError{Op: "UnmarshalDataFrameShamirShareData", Type: TypeShamirShare, Msg: "invalid data length"}
+		}
+
+		// Read share ID
+		shareID := data[offset]
+		offset++
+
+		// Read share length
+		if offset+4 > len(data) {
+			return nil, &DataFrameError{Op: "UnmarshalDataFrameShamirShareData", Type: TypeShamirShare, Msg: "invalid data length"}
+		}
+		shareLength := binary.LittleEndian.Uint32(data[offset:offset+4])
+		offset += 4
+
+		// Read share bytes
+		if offset+int(shareLength) > len(data) {
+			return nil, &DataFrameError{Op: "UnmarshalDataFrameShamirShareData", Type: TypeShamirShare, Msg: "invalid data length"}
+		}
+		share := make([]byte, shareLength)
+		copy(share, data[offset:offset+int(shareLength)])
+		offset += int(shareLength)
+
+		ssd.Shares[shareID] = share
+	}
+
+	return ssd, nil
+}
+
+func (df *DataFrame) SetShamirShare(shares map[byte][]byte) error {
+	if shares == nil {
+		return &DataFrameError{
+			Op:   "SetShamirShare",
+			Type: TypeShamirShare,
+			Msg:  "shares cannot be nil",
+		}
+	}
+
+	data := &ShamirShareData{Shares: make(map[byte][]byte)}
+	for shareID, share := range shares {
+		shareCopy := make([]byte, len(share))
+		copy(shareCopy, share)
+		data.Shares[shareID] = shareCopy
+	}
+
+	buf, err := data.Marshal()
+	if err != nil {
+		return fmt.Errorf("failed to marshal Shamir share data: %w", err)
+	}
+
+	df.typ = TypeShamirShare
+	df.payload = buf
+	return nil
+}
+
+func (df *DataFrame) ShamirShare() (map[byte][]byte, error) {
+	if df.typ != TypeShamirShare {
+		return nil, &DataFrameError{Op: "ShamirShare", Type: df.typ, Msg: "type mismatch"}
+	}
+
+	data, err := UnmarshalDataFrameShamirShareData(df.payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal Shamir share data: %w", err)
+	}
+
+	// Return a copy of the shares to prevent mutation
+	shares := make(map[byte][]byte)
+	for shareID, share := range data.Shares {
+		shareCopy := make([]byte, len(share))
+		copy(shareCopy, share)
+		shares[shareID] = shareCopy
+	}
+
+	return shares, nil
 }
 
 func (df *DataFrame) SetRoaringBitmap(v *roaring.Bitmap) error {
