@@ -17,9 +17,31 @@ func main() {
 	}
 	defer db.Close()
 
-	db.CreateMap("example_map")
-	db.MapSet("example_map", tower.PrimitiveString("key1"), tower.PrimitiveString("value1"))
-	value, _ := db.MapGet("example_map", tower.PrimitiveString("key1"))
-	strValue, _ := value.String()
-	println("Retrieved value:", strValue)
+	db.CreateList("my_list")
+	db.PushLeft("my_list", tower.PrimitiveString("hello1"))
+	db.PushLeft("my_list", tower.PrimitiveString("hello2"))
+	db.PushLeft("my_list", tower.PrimitiveString("hello3"))
+	db.PushLeft("my_list", tower.PrimitiveString("hello4"))
+	db.PushLeft("my_list", tower.PrimitiveString("hello5"))
+	db.PushLeft("my_list", tower.PrimitiveString("hello6"))
+	db.PushRight("my_list", tower.PrimitiveString("world1"))
+	db.PushRight("my_list", tower.PrimitiveString("world2"))
+	db.PushRight("my_list", tower.PrimitiveString("world3"))
+	db.PushRight("my_list", tower.PrimitiveString("world4"))
+	db.PushRight("my_list", tower.PrimitiveString("world5"))
+	db.PushRight("my_list", tower.PrimitiveString("world6"))
+
+	values, err := db.ListRange("my_list", 0, -1)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, v := range values {
+		str, err := v.String()
+		if err != nil {
+			panic(err)
+		}
+		println(str)
+	}
+
 }
