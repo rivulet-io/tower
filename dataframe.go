@@ -122,6 +122,10 @@ func (df *DataFrame) IsExpired(input time.Time) bool {
 	return !input.Before(df.expiresAt)
 }
 
+func (df *DataFrame) ClearExpiration() {
+	df.expiresAt = time.Time{}
+}
+
 func (df *DataFrame) SetInt(v int64) error {
 	buf := [8]byte{}
 	binary.BigEndian.PutUint64(buf[:], uint64(v))
