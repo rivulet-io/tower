@@ -58,7 +58,7 @@ func (t *Tower) extractCandidatesForExpiration(criteria time.Time) ([]string, er
 	v := t.floorTTLTimestamp(criteria)
 	key := t.makeTTLKey(v)
 
-	members, err := t.ListRange(key, 0, -1) // get all members
+	members, err := t.ListGetAllMembersAndDelete(key)
 	if err != nil {
 		// If the list does not exist, return empty list
 		return []string{}, nil

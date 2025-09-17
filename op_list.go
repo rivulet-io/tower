@@ -468,6 +468,10 @@ func (t *Tower) ListRange(key string, start, end int64) ([]PrimitiveData, error)
 	unlock := t.lock(key)
 	defer unlock()
 
+	return t.listRange(key, start, end)
+}
+
+func (t *Tower) listRange(key string, start, end int64) ([]PrimitiveData, error) {
 	listKey := key
 
 	df, err := t.get(listKey)
@@ -700,4 +704,34 @@ func (t *Tower) ListTrim(key string, start, end int64) error {
 	}
 
 	return nil
+}
+
+func (t *Tower) ListGetAllMembersAndDelete(key string) ([]PrimitiveData, error) {
+	unlock := t.lock(key)
+	defer unlock()
+
+	df, err := t.get(key)
+	if err != nil {
+		return nil, fmt.Errorf("list %s does not exist: %w", key, err)
+	}
+
+	listData, err := df.List()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get list data: %w", err)
+	}
+
+	if listData.Length == 0 {
+		return []PrimitiveData{}, nil
+	}
+
+	members, err := t.listRange(key, 0, -1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get list members: %w", err)
+	}
+
+	if err := t.deleteList(key); err != nil {
+		return nil, fmt.Errorf("failed to delete list: %w", err)
+	}
+
+	return members, nil
 }
