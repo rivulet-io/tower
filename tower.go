@@ -87,7 +87,7 @@ func (t *Tower) get(key string) (*DataFrame, error) {
 	df, err := UnmarshalDataFrame(data)
 	if err != nil {
 		if isReal := IsDataframeExpiredError(err); isReal != nil {
-			_ = t.delete(key) // Clean up expired data
+			_ = t.smartDelete(key, df.typ) // Clean up expired data
 		}
 
 		return nil, fmt.Errorf("failed to unmarshal dataframe for key %s: %w", key, err)
@@ -101,6 +101,23 @@ func (t *Tower) delete(key string) error {
 		return fmt.Errorf("failed to delete key %s: %w", key, err)
 	}
 	return nil
+}
+
+func (t *Tower) smartDelete(key string, dataType DataType) error {
+	switch dataType {
+	case TypeList:
+		return t.DeleteList(key)
+	case TypeMap:
+		return t.DeleteMap(key)
+	case TypeSet:
+		return t.DeleteSet(key)
+	case TypeTimeseries:
+		return t.DeleteTimeSeries(key)
+	case TypeBloomFilter:
+		return t.DeleteBloomFilter(key)
+	}
+
+	return t.delete(key)
 }
 
 func (t *Tower) rangePrefix(prefix string, fn func(key string, df *DataFrame) error) error {
