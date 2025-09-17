@@ -8,6 +8,7 @@ A high-performance, thread-safe key-value database built on top of [CockroachDB'
 - **🔒 Thread-Safe**: Concurrent operations with fine-grained per-key locking
 - **📊 Rich Data Types**: Native support for strings, integers, floats, booleans, timestamps, durations, UUIDs, binary data, BigInts, and Decimals
 - **🗂️ Advanced Data Structures**: Built-in Lists, Maps, Sets, Time Series, and Bloom Filters with atomic operations
+- **⏰ TTL Support**: Automatic expiration of keys with configurable time-to-live
 - **💾 Flexible Storage**: In-memory for testing/caching or persistent disk storage
 - **🎯 Type-Specific Operations**: Comprehensive atomic operations for each data type
 - **⚡ Memory Efficient**: Configurable cache sizes and memory table management
@@ -102,8 +103,18 @@ if err != nil {
         panic(err)
     }
     
-    fmt.Printf("Decimal Price: %d (scale: %d) = %.2f
-", priceCoeff, priceScale, float64(priceCoeff)/100)
+    fmt.Printf("Decimal Price: %d (scale: %d) = %.2f\n", priceCoeff, priceScale, float64(priceCoeff)/100)
+    
+    // TTL operations (automatic key expiration)
+    expireAt := time.Now().Add(1 * time.Hour)
+    if err := db.SetTTL("temporary_data", expireAt); err != nil {
+        panic(err)
+    }
+    
+    // Start background cleanup timer
+    db.StartTTLTimer()
+    
+    fmt.Println("TTL set for temporary_data - will expire in 1 hour")
 }
 
 }
@@ -310,6 +321,38 @@ err = db.DeleteBloomFilter("user_cache")             // Delete entire filter
 - **Deduplication**: Prevent processing duplicate items
 - **Security**: Rate limiting and spam detection
 - **Big Data**: Large-scale data filtering and preprocessing
+
+## ⏰ TTL Operations
+
+Tower supports automatic key expiration through Time-To-Live (TTL) functionality, allowing keys to be automatically deleted after a specified time period:
+
+```go
+// Set TTL for a key
+expireAt := time.Now().Add(1 * time.Hour)
+err := db.SetTTL("session_key", expireAt)
+
+// Remove TTL from a key
+err = db.RemoveTTL("permanent_key")
+
+// Start automatic cleanup (runs in background)
+db.StartTTLTimer()
+
+// Manual cleanup of expired keys
+err = db.TruncateExpired()
+```
+
+**Key Features:**
+- ✅ **Automatic Expiration**: Keys are automatically deleted when TTL expires
+- ✅ **Background Cleanup**: Optional background timer for periodic cleanup
+- ✅ **Manual Control**: Remove TTL or manually trigger cleanup
+- ✅ **Thread-Safe**: All operations are atomic and concurrent-safe
+- ✅ **Precision**: Configurable precision (default 1 minute)
+
+**Use Cases:**
+- **Session Management**: Expire user sessions automatically
+- **Caching**: Set cache entries with expiration times
+- **Temporary Data**: Store temporary data that should be cleaned up
+- **Rate Limiting**: Implement time-based rate limiting
 
 ## 🔢 BigInt Operations
 
