@@ -49,8 +49,9 @@ func (e *DataFrameError) Error() string {
 }
 
 type DataFrame struct {
-	typ     DataType
-	payload []byte
+	typ       DataType
+	payload   []byte
+	expiresAt time.Time // zero value means no expiration
 }
 
 func (df *DataFrame) Marshal() ([]byte, error) {
@@ -58,9 +59,14 @@ func (df *DataFrame) Marshal() ([]byte, error) {
 		return nil, fmt.Errorf("cannot marshal nil DataFrame")
 	}
 
-	buf := make([]byte, 1+len(df.payload))
-	buf[0] = byte(df.typ)
-	copy(buf[1:], df.payload)
+	buf := make([]byte, 1+len(df.payload)+8)
+	cursor := 0
+	buf[cursor] = byte(df.typ)
+	cursor++
+	binary.BigEndian.PutUint64(buf[cursor:], uint64(df.expiresAt.UnixMilli()))
+	cursor += 8
+	copy(buf[cursor:], df.payload)
+
 	return buf, nil
 }
 
@@ -70,22 +76,40 @@ func UnmarshalDataFrame(data []byte) (*DataFrame, error) {
 	}
 
 	df := &DataFrame{
-		typ:     DataType(data[0]),
-		payload: make([]byte, len(data)-1),
+		typ:       DataType(data[0]),
+		expiresAt: time.UnixMilli(int64(binary.BigEndian.Uint64(data[1:9]))),
+		payload:   make([]byte, len(data)-1),
 	}
-	copy(df.payload, data[1:])
+	copy(df.payload, data[9:])
 	return df, nil
 }
 
 func NULLDataFrame() *DataFrame {
 	return &DataFrame{
-		typ:     TypeNull,
-		payload: nil,
+		typ:       TypeNull,
+		expiresAt: time.Time{},
+		payload:   nil,
 	}
 }
 
 func (df *DataFrame) Type() DataType {
 	return df.typ
+}
+
+func (df *DataFrame) SetExpiration(t time.Time) {
+	df.expiresAt = t
+}
+
+func (df *DataFrame) Expiration() time.Time {
+	return df.expiresAt
+}
+
+func (df *DataFrame) IsExpired(input time.Time) bool {
+	if df.expiresAt.IsZero() {
+		return false
+	}
+
+	return !input.Before(df.expiresAt)
 }
 
 func (df *DataFrame) SetInt(v int64) error {
