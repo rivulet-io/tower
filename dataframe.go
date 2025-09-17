@@ -59,7 +59,7 @@ func (df *DataFrame) Marshal() ([]byte, error) {
 		return nil, fmt.Errorf("cannot marshal nil DataFrame")
 	}
 
-	buf := make([]byte, 1+len(df.payload)+8)
+	buf := make([]byte, 1+8+len(df.payload))
 	cursor := 0
 	buf[cursor] = byte(df.typ)
 	cursor++
@@ -76,16 +76,20 @@ func UnmarshalDataFrame(data []byte) (*DataFrame, error) {
 	}
 
 	expirtesAt := time.UnixMilli(int64(binary.BigEndian.Uint64(data[1:9])))
-	if !expirtesAt.IsZero() && time.Now().After(expirtesAt) {
-		return nil, NewDataframeExpiredError("unknown", expirtesAt)
-	}
 
 	df := &DataFrame{
 		typ:       DataType(data[0]),
 		expiresAt: expirtesAt,
-		payload:   make([]byte, len(data)-9),
 	}
-	copy(df.payload, data[9:])
+
+	if !expirtesAt.IsZero() && Now().After(expirtesAt) {
+		return df, NewDataframeExpiredError("unknown", expirtesAt)
+	}
+
+	payload := make([]byte, len(data)-9)
+	copy(payload, data[9:])
+
+	df.payload = payload
 
 	return df, nil
 }
