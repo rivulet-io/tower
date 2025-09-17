@@ -61,23 +61,22 @@ func main() {
     
     fmt.Println(newValue) // Output: Hello, World! 🚀
 
-// Time Series operations
-if err := db.TimeSeriesCreate("metrics"); err != nil {
-    panic(err)
-}
+    // Time Series operations
+    if err := db.TimeSeriesCreate("metrics"); err != nil {
+        panic(err)
+    }
 
-now := time.Now()
-if err := db.TimeSeriesAdd("metrics", now, tower.PrimitiveInt(100)); err != nil {
-    panic(err)
-}
+    now := time.Now()
+    if err := db.TimeSeriesAdd("metrics", now, tower.PrimitiveInt(100)); err != nil {
+        panic(err)
+    }
 
-dataPoint, err := db.TimeSeriesGet("metrics", now)
-if err != nil {
-    panic(err)
-}
+    dataPoint, err := db.TimeSeriesGet("metrics", now)
+    if err != nil {
+        panic(err)
+    }
 
-    fmt.Printf("Time Series Value: %v
-", dataPoint) // Output: Time Series Value: 100
+    fmt.Printf("Time Series Value: %v\n", dataPoint) // Output: Time Series Value: 100
     
     // BigInt operations (for cryptography, scientific computing)
     bigNum := new(big.Int).SetString("123456789012345678901234567890", 10)
@@ -90,8 +89,7 @@ if err != nil {
         panic(err)
     }
     
-    fmt.Printf("BigInt Result: %s
-", result.String())
+    fmt.Printf("BigInt Result: %s\n", result.String())
     
     // Decimal operations (for financial calculations)
     if err := db.SetDecimalFromFloat("price", 19.99, 2); err != nil {
@@ -115,9 +113,6 @@ if err != nil {
     db.StartTTLTimer()
     
     fmt.Println("TTL set for temporary_data - will expire in 1 hour")
-}
-
-}
 }
 ```
 
