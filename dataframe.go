@@ -2,6 +2,7 @@ package tower
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -29,6 +30,7 @@ const (
 	TypeUUID
 	TypeRoaringBitmap
 	TypeRoaringBitmap64
+	TypePassword
 	TypeJSON
 	TypeList
 	TypeMap
@@ -694,4 +696,51 @@ func (df *DataFrame) RoaringBitmap64() (*roaring64.Bitmap, error) {
 	}
 
 	return bitmap, nil
+}
+
+type PasswordData struct {
+	Hash      []byte            `json:"hash"`
+	Salt      []byte            `json:"salt"`
+	Algorithm PasswordAlgorithm `json:"algorithm"`
+}
+
+func (df *DataFrame) SetPassword(algo PasswordAlgorithm, hash []byte, salt []byte) error {
+	if len(hash) == 0 || len(salt) == 0 {
+		return &DataFrameError{
+			Op:   "SetPassword",
+			Type: TypePassword,
+			Msg:  "hash and salt cannot be empty",
+		}
+	}
+
+	value := &PasswordData{
+		Algorithm: algo,
+		Hash:      make([]byte, len(hash)),
+		Salt:      make([]byte, len(salt)),
+	}
+	copy(value.Hash, hash)
+	copy(value.Salt, salt)
+
+	data, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("failed to marshal password data: %w", err)
+	}
+
+	df.typ = TypePassword
+	df.payload = data
+
+	return nil
+}
+
+func (df *DataFrame) Password() (algo PasswordAlgorithm, hash []byte, salt []byte, err error) {
+	if df.typ != TypePassword {
+		return 0, nil, nil, &DataFrameError{Op: "Password", Type: df.typ, Msg: "type mismatch"}
+	}
+
+	value := &PasswordData{}
+	if err := json.Unmarshal(df.payload, value); err != nil {
+		return 0, nil, nil, fmt.Errorf("failed to unmarshal password data: %w", err)
+	}
+
+	return value.Algorithm, value.Hash, value.Salt, nil
 }
