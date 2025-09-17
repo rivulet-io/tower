@@ -88,7 +88,7 @@ func (t *Tower) CombineShares(key string) ([]byte, error) {
 
 // CombineSharesFrom reconstructs the secret from provided shares (not necessarily all stored shares)
 func (t *Tower) CombineSharesFrom(shares map[byte][]byte) ([]byte, error) {
-	if shares == nil || len(shares) == 0 {
+	if len(shares) == 0 {
 		return nil, fmt.Errorf("shares cannot be nil or empty")
 	}
 
