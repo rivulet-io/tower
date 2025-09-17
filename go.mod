@@ -7,6 +7,7 @@ require (
 	github.com/cockroachdb/pebble v1.1.5
 	github.com/corvus-ch/shamir v1.0.1
 	github.com/google/uuid v1.6.0
+	golang.org/x/crypto v0.42.0
 )
 
 require (
@@ -35,7 +36,7 @@ require (
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )
