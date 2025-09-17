@@ -23,7 +23,7 @@ func (t *Tower) SetRoaringBitmap(key string, value *roaring.Bitmap) error {
 }
 
 func (t *Tower) GetRoaringBitmap(key string) (*roaring.Bitmap, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -118,7 +118,7 @@ func (t *Tower) RemoveBit(key string, bit uint32) error {
 }
 
 func (t *Tower) HasBit(key string, bit uint32) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -317,7 +317,7 @@ func (t *Tower) XorBits(key string, bits ...uint32) error {
 
 // 추가 유틸리티 함수
 func (t *Tower) CardinalityRoaringBitmap(key string) (uint64, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

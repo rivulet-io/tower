@@ -22,7 +22,7 @@ func (t *Tower) SetTime(key string, value time.Time) error {
 }
 
 func (t *Tower) GetTime(key string) (time.Time, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -71,7 +71,7 @@ func (t *Tower) SubDurationFromTime(key string, duration time.Duration) (time.Ti
 
 // 비교 연산
 func (t *Tower) TimeBefore(key string, other time.Time) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -88,7 +88,7 @@ func (t *Tower) TimeBefore(key string, other time.Time) (bool, error) {
 }
 
 func (t *Tower) TimeAfter(key string, other time.Time) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -105,7 +105,7 @@ func (t *Tower) TimeAfter(key string, other time.Time) (bool, error) {
 }
 
 func (t *Tower) TimeEqual(key string, other time.Time) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -122,7 +122,7 @@ func (t *Tower) TimeEqual(key string, other time.Time) (bool, error) {
 }
 
 func (t *Tower) TimeDiff(key string, other time.Time) (time.Duration, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -140,7 +140,7 @@ func (t *Tower) TimeDiff(key string, other time.Time) (time.Duration, error) {
 
 // 유틸리티 연산
 func (t *Tower) IsZeroTime(key string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -239,7 +239,7 @@ func (t *Tower) SetTimeIfEqual(key string, expected, newValue time.Time) (time.T
 
 // 시간 요소 추출
 func (t *Tower) GetTimeYear(key string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -256,7 +256,7 @@ func (t *Tower) GetTimeYear(key string) (int, error) {
 }
 
 func (t *Tower) GetTimeMonth(key string) (time.Month, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -273,7 +273,7 @@ func (t *Tower) GetTimeMonth(key string) (time.Month, error) {
 }
 
 func (t *Tower) GetTimeDay(key string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -290,7 +290,7 @@ func (t *Tower) GetTimeDay(key string) (int, error) {
 }
 
 func (t *Tower) GetTimeHour(key string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -307,7 +307,7 @@ func (t *Tower) GetTimeHour(key string) (int, error) {
 }
 
 func (t *Tower) GetTimeMinute(key string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -324,7 +324,7 @@ func (t *Tower) GetTimeMinute(key string) (int, error) {
 }
 
 func (t *Tower) GetTimeSecond(key string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -341,7 +341,7 @@ func (t *Tower) GetTimeSecond(key string) (int, error) {
 }
 
 func (t *Tower) GetTimeNanosecond(key string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

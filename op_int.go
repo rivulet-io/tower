@@ -19,7 +19,7 @@ func (t *Tower) SetInt(key string, value int64) error {
 }
 
 func (t *Tower) GetInt(key string) (int64, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -241,7 +241,7 @@ func (t *Tower) SwapInt(key string, newValue int64) (int64, error) {
 
 // 비교 연산
 func (t *Tower) CompareInt(key string, value int64) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

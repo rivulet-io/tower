@@ -23,7 +23,7 @@ func (t *Tower) SetUUID(key string, value *uuid.UUID) error {
 }
 
 func (t *Tower) GetUUID(key string) (*uuid.UUID, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -63,7 +63,7 @@ func (t *Tower) GenerateUUID(key string) (*uuid.UUID, error) {
 
 // 비교 연산
 func (t *Tower) EqualUUID(key string, other *uuid.UUID) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -80,7 +80,7 @@ func (t *Tower) EqualUUID(key string, other *uuid.UUID) (bool, error) {
 }
 
 func (t *Tower) CompareUUID(key string, other *uuid.UUID) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -106,7 +106,7 @@ func (t *Tower) CompareUUID(key string, other *uuid.UUID) (int, error) {
 
 // 검증 연산
 func (t *Tower) IsValidUUID(key string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -123,7 +123,7 @@ func (t *Tower) IsValidUUID(key string) (bool, error) {
 }
 
 func (t *Tower) IsNilUUID(key string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -141,7 +141,7 @@ func (t *Tower) IsNilUUID(key string) (bool, error) {
 
 // 변환 연산
 func (t *Tower) UUIDToString(key string) (string, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -180,7 +180,7 @@ func (t *Tower) StringToUUID(key string, uuidStr string) (*uuid.UUID, error) {
 
 // UUID 정보 연산
 func (t *Tower) UUIDVersion(key string) (uuid.Version, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -197,7 +197,7 @@ func (t *Tower) UUIDVersion(key string) (uuid.Version, error) {
 }
 
 func (t *Tower) UUIDVariant(key string) (uuid.Variant, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

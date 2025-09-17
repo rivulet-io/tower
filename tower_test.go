@@ -210,7 +210,7 @@ func TestTowerConcurrency(t *testing.T) {
 		unlock1()
 
 		// Test read lock
-		unlock2 := tower.rlock(key)
+		unlock2 := tower.lock(key)
 		unlock2()
 	})
 }

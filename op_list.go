@@ -73,7 +73,7 @@ func (t *Tower) DeleteList(key string) error {
 }
 
 func (t *Tower) ListExists(key string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	listKey := key
@@ -380,7 +380,7 @@ func (t *Tower) PopRight(key string) (PrimitiveData, error) {
 
 // 조회 연산
 func (t *Tower) ListLength(key string) (int64, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	listKey := key
@@ -399,7 +399,7 @@ func (t *Tower) ListLength(key string) (int64, error) {
 }
 
 func (t *Tower) ListIndex(key string, index int64) (PrimitiveData, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	listKey := key
@@ -463,7 +463,7 @@ func (t *Tower) ListIndex(key string, index int64) (PrimitiveData, error) {
 }
 
 func (t *Tower) ListRange(key string, start, end int64) ([]PrimitiveData, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	listKey := key

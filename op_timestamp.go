@@ -22,7 +22,7 @@ func (t *Tower) SetTimestamp(key string, value time.Time) error {
 }
 
 func (t *Tower) GetTimestamp(key string) (time.Time, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -69,7 +69,7 @@ func (t *Tower) SubDurationFromTimestamp(key string, duration time.Duration) (ti
 }
 
 func (t *Tower) CompareTimestamp(key string, value time.Time) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

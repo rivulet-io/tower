@@ -55,7 +55,7 @@ func (tw *Tower) TimeSeriesDelete(key string) error {
 
 // TimeSeriesExists checks if a time series exists.
 func (tw *Tower) TimeSeriesExists(key string) (bool, error) {
-	unlock := tw.rlock(key)
+	unlock := tw.lock(key)
 	defer unlock()
 
 	_, err := tw.get(key)
@@ -136,7 +136,7 @@ func (tw *Tower) TimeSeriesAdd(key string, timestamp time.Time, value PrimitiveD
 
 // TimeSeriesGet retrieves a data point from a time series at the specified timestamp.
 func (tw *Tower) TimeSeriesGet(key string, timestamp time.Time) (PrimitiveData, error) {
-	unlock := tw.rlock(key)
+	unlock := tw.lock(key)
 	defer unlock()
 
 	// Check if the time series exists
@@ -225,7 +225,7 @@ func (tw *Tower) TimeSeriesRemove(key string, timestamp time.Time) error {
 
 // TimeSeriesRange retrieves all data points in a time series within the specified time range.
 func (tw *Tower) TimeSeriesRange(key string, startTime, endTime time.Time) (map[time.Time]PrimitiveData, error) {
-	unlock := tw.rlock(key)
+	unlock := tw.lock(key)
 	defer unlock()
 
 	// Check if the time series exists

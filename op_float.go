@@ -22,7 +22,7 @@ func (t *Tower) SetFloat(key string, value float64) error {
 }
 
 func (t *Tower) GetFloat(key string) (float64, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -203,7 +203,7 @@ func (t *Tower) SwapFloat(key string, newValue float64) (float64, error) {
 
 // 비교 연산
 func (t *Tower) CompareFloat(key string, value float64) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

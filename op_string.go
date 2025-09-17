@@ -22,7 +22,7 @@ func (t *Tower) SetString(key string, value string) error {
 }
 
 func (t *Tower) GetString(key string) (string, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -119,7 +119,7 @@ func (t *Tower) ReplaceString(key string, old, new string) (string, error) {
 
 // 검색 연산
 func (t *Tower) ContainsString(key string, substr string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -136,7 +136,7 @@ func (t *Tower) ContainsString(key string, substr string) (bool, error) {
 }
 
 func (t *Tower) StartsWithString(key string, prefix string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -153,7 +153,7 @@ func (t *Tower) StartsWithString(key string, prefix string) (bool, error) {
 }
 
 func (t *Tower) EndsWithString(key string, suffix string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -171,7 +171,7 @@ func (t *Tower) EndsWithString(key string, suffix string) (bool, error) {
 
 // 길이 및 부분 문자열 연산
 func (t *Tower) LengthString(key string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -188,7 +188,7 @@ func (t *Tower) LengthString(key string) (int, error) {
 }
 
 func (t *Tower) SubstringString(key string, start, length int) (string, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -216,7 +216,7 @@ func (t *Tower) SubstringString(key string, start, length int) (string, error) {
 
 // 비교 연산
 func (t *Tower) CompareString(key string, other string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -233,7 +233,7 @@ func (t *Tower) CompareString(key string, other string) (int, error) {
 }
 
 func (t *Tower) EqualString(key string, other string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

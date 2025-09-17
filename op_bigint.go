@@ -25,7 +25,7 @@ func (tw *Tower) SetBigInt(key string, value *big.Int) error {
 
 // GetBigInt retrieves a BigInt value for the given key
 func (tw *Tower) GetBigInt(key string) (*big.Int, error) {
-	unlock := tw.rlock(key)
+	unlock := tw.lock(key)
 	defer unlock()
 
 	df, err := tw.get(key)
@@ -220,7 +220,7 @@ func (tw *Tower) ModBigInt(key string, modulus *big.Int) (*big.Int, error) {
 
 // CmpBigInt compares the BigInt stored at key with another value
 func (tw *Tower) CmpBigInt(key string, other *big.Int) (int, error) {
-	unlock := tw.rlock(key)
+	unlock := tw.lock(key)
 	defer unlock()
 
 	df, err := tw.get(key)

@@ -22,7 +22,7 @@ func (t *Tower) SetDuration(key string, value time.Duration) error {
 }
 
 func (t *Tower) GetDuration(key string) (time.Duration, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -205,7 +205,7 @@ func (t *Tower) SwapDuration(key string, newValue time.Duration) (time.Duration,
 }
 
 func (t *Tower) CompareDuration(key string, value time.Duration) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

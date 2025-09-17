@@ -25,7 +25,7 @@ func (t *Tower) SetShamirShare(key string, shares map[byte][]byte) error {
 
 // GetShamirShare retrieves the Shamir secret shares
 func (t *Tower) GetShamirShare(key string) (map[byte][]byte, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -65,7 +65,7 @@ func (t *Tower) SplitSecret(key string, secret []byte, n, threshold int) (map[by
 
 // CombineShares reconstructs the secret from the stored shares
 func (t *Tower) CombineShares(key string) ([]byte, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -102,7 +102,7 @@ func (t *Tower) CombineSharesFrom(shares map[byte][]byte) ([]byte, error) {
 
 // GetShareCount returns the number of shares stored
 func (t *Tower) GetShareCount(key string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -182,7 +182,7 @@ func (t *Tower) RemoveShare(key string, shareID byte) error {
 
 // HasShare checks if a specific share ID exists
 func (t *Tower) HasShare(key string, shareID byte) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -201,7 +201,7 @@ func (t *Tower) HasShare(key string, shareID byte) (bool, error) {
 
 // GetShare retrieves a specific share by ID
 func (t *Tower) GetShare(key string, shareID byte) ([]byte, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -226,7 +226,7 @@ func (t *Tower) GetShare(key string, shareID byte) ([]byte, error) {
 
 // ListShareIDs returns all share IDs
 func (t *Tower) ListShareIDs(key string) ([]byte, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

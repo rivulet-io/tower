@@ -22,7 +22,7 @@ func (t *Tower) SetBinary(key string, value []byte) error {
 }
 
 func (t *Tower) GetBinary(key string) ([]byte, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -93,7 +93,7 @@ func (t *Tower) PrependBinary(key string, data []byte) ([]byte, error) {
 
 // 길이 및 부분 바이트 연산
 func (t *Tower) LengthBinary(key string) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -110,7 +110,7 @@ func (t *Tower) LengthBinary(key string) (int, error) {
 }
 
 func (t *Tower) SubBinary(key string, start, length int) ([]byte, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -139,7 +139,7 @@ func (t *Tower) SubBinary(key string, start, length int) ([]byte, error) {
 
 // 비교 연산
 func (t *Tower) EqualBinary(key string, other []byte) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -156,7 +156,7 @@ func (t *Tower) EqualBinary(key string, other []byte) (bool, error) {
 }
 
 func (t *Tower) CompareBinary(key string, other []byte) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -286,7 +286,7 @@ func (t *Tower) XorBinary(key string, mask []byte) ([]byte, error) {
 
 // 검색 연산
 func (t *Tower) ContainsBinary(key string, sub []byte) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -303,7 +303,7 @@ func (t *Tower) ContainsBinary(key string, sub []byte) (bool, error) {
 }
 
 func (t *Tower) IndexBinary(key string, sub []byte) (int, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)

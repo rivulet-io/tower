@@ -74,7 +74,7 @@ func (t *Tower) DeleteMap(key string) error {
 }
 
 func (t *Tower) MapExists(key string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	mapKey := key
@@ -171,7 +171,7 @@ func (t *Tower) MapSet(key string, field PrimitiveData, value PrimitiveData) err
 }
 
 func (t *Tower) MapGet(key string, field PrimitiveData) (PrimitiveData, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	mapKey := key
@@ -274,7 +274,7 @@ func (t *Tower) MapDelete(key string, field PrimitiveData) (int64, error) {
 }
 
 func (t *Tower) MapKeys(key string) ([]PrimitiveData, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	mapKey := key
@@ -319,7 +319,7 @@ func (t *Tower) MapKeys(key string) ([]PrimitiveData, error) {
 }
 
 func (t *Tower) MapValues(key string) ([]PrimitiveData, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	mapKey := key
@@ -374,7 +374,7 @@ func (t *Tower) MapValues(key string) ([]PrimitiveData, error) {
 }
 
 func (t *Tower) MapLength(key string) (int64, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	mapKey := key

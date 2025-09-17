@@ -60,14 +60,6 @@ func (t *Tower) lock(key string) (unlock func()) {
 	}
 }
 
-func (t *Tower) rlock(key string) (unlock func()) {
-	locker, _ := t.lockers.LoadOrStore(key, &sync.RWMutex{})
-	locker.RLock()
-	return func() {
-		locker.RUnlock()
-	}
-}
-
 func (t *Tower) set(key string, value *DataFrame) error {
 	if value == nil {
 		return fmt.Errorf("value cannot be nil")
@@ -94,6 +86,10 @@ func (t *Tower) get(key string) (*DataFrame, error) {
 
 	df, err := UnmarshalDataFrame(data)
 	if err != nil {
+		if isReal := IsDataframeExpiredError(err); isReal != nil {
+			_ = t.delete(key) // Clean up expired data
+		}
+
 		return nil, fmt.Errorf("failed to unmarshal dataframe for key %s: %w", key, err)
 	}
 

@@ -73,7 +73,7 @@ func (t *Tower) DeleteSet(key string) error {
 }
 
 func (t *Tower) SetExists(key string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	setKey := key
@@ -215,7 +215,7 @@ func (t *Tower) SetRemove(key string, member PrimitiveData) (int64, error) {
 }
 
 func (t *Tower) SetIsMember(key string, member PrimitiveData) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	setKey := key
@@ -244,7 +244,7 @@ func (t *Tower) SetIsMember(key string, member PrimitiveData) (bool, error) {
 }
 
 func (t *Tower) SetMembers(key string) ([]PrimitiveData, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	setKey := key
@@ -299,7 +299,7 @@ func (t *Tower) SetMembers(key string) ([]PrimitiveData, error) {
 }
 
 func (t *Tower) SetCardinality(key string) (int64, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	setKey := key

@@ -19,7 +19,7 @@ func (t *Tower) SetBool(key string, value bool) error {
 }
 
 func (t *Tower) GetBool(key string) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
@@ -142,7 +142,7 @@ func (t *Tower) NotBool(key string) (bool, error) {
 
 // 비교 연산
 func (t *Tower) EqualBool(key string, other bool) (bool, error) {
-	unlock := t.rlock(key)
+	unlock := t.lock(key)
 	defer unlock()
 
 	df, err := t.get(key)
