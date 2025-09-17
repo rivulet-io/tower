@@ -83,7 +83,7 @@ func UnmarshalDataFrame(data []byte) (*DataFrame, error) {
 	df := &DataFrame{
 		typ:       DataType(data[0]),
 		expiresAt: expirtesAt,
-		payload:   make([]byte, len(data)-1),
+		payload:   make([]byte, len(data)-9),
 	}
 	copy(df.payload, data[9:])
 
