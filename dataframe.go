@@ -702,9 +702,14 @@ type PasswordData struct {
 	Hash      []byte            `json:"hash"`
 	Salt      []byte            `json:"salt"`
 	Algorithm PasswordAlgorithm `json:"algorithm"`
+	Options   *PasswordOptions  `json:"options,omitempty"`
 }
 
 func (df *DataFrame) SetPassword(algo PasswordAlgorithm, hash []byte, salt []byte) error {
+	return df.SetPasswordWithOptions(algo, hash, salt, nil)
+}
+
+func (df *DataFrame) SetPasswordWithOptions(algo PasswordAlgorithm, hash []byte, salt []byte, opts *PasswordOptions) error {
 	if len(hash) == 0 || len(salt) == 0 {
 		return &DataFrameError{
 			Op:   "SetPassword",
@@ -717,6 +722,7 @@ func (df *DataFrame) SetPassword(algo PasswordAlgorithm, hash []byte, salt []byt
 		Algorithm: algo,
 		Hash:      make([]byte, len(hash)),
 		Salt:      make([]byte, len(salt)),
+		Options:   opts,
 	}
 	copy(value.Hash, hash)
 	copy(value.Salt, salt)
@@ -732,15 +738,20 @@ func (df *DataFrame) SetPassword(algo PasswordAlgorithm, hash []byte, salt []byt
 	return nil
 }
 
-func (df *DataFrame) Password() (algo PasswordAlgorithm, hash []byte, salt []byte, err error) {
+func (df *DataFrame) Password() (algo PasswordAlgorithm, hash []byte, salt []byte, opts *PasswordOptions, err error) {
 	if df.typ != TypePassword {
-		return 0, nil, nil, &DataFrameError{Op: "Password", Type: df.typ, Msg: "type mismatch"}
+		return 0, nil, nil, nil, &DataFrameError{Op: "Password", Type: df.typ, Msg: "type mismatch"}
 	}
 
 	value := &PasswordData{}
 	if err := json.Unmarshal(df.payload, value); err != nil {
-		return 0, nil, nil, fmt.Errorf("failed to unmarshal password data: %w", err)
+		return 0, nil, nil, nil, fmt.Errorf("failed to unmarshal password data: %w", err)
 	}
 
-	return value.Algorithm, value.Hash, value.Salt, nil
+	// 옵션이 없으면 알고리즘에 따른 기본값 사용 (하위 호환성)
+	if value.Options == nil {
+		value.Options = DefaultPasswordOptions(value.Algorithm)
+	}
+
+	return value.Algorithm, value.Hash, value.Salt, value.Options, nil
 }

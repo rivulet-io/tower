@@ -26,7 +26,115 @@ const (
 	DefaultPasswordSaltLength = 16
 )
 
-func (t *Tower) UpsertPassword(key string, password []byte, algorithm PasswordAlgorithm, saltLength int) error {
+type PasswordOptions struct {
+	// Bcrypt options
+	BcryptCost int `json:"bcrypt_cost,omitempty,omitzero"`
+
+	// Scrypt options
+	ScryptN      int `json:"scrypt_n,omitempty,omitzero"`
+	ScryptR      int `json:"scrypt_r,omitempty,omitzero"`
+	ScryptP      int `json:"scrypt_p,omitempty,omitzero"`
+	ScryptKeyLen int `json:"scrypt_key_len,omitempty,omitzero"`
+
+	// PBKDF2 options
+	PBKDF2Iterations int `json:"pbkdf2_iterations,omitempty,omitzero"`
+	PBKDF2KeyLen     int `json:"pbkdf2_key_len,omitempty,omitzero"`
+
+	// Argon2 options
+	Argon2Time    uint32 `json:"argon2_time,omitempty,omitzero"`
+	Argon2Memory  uint32 `json:"argon2_memory,omitempty,omitzero"`
+	Argon2Threads uint8  `json:"argon2_threads,omitempty,omitzero"`
+	Argon2KeyLen  uint32 `json:"argon2_key_len,omitempty,omitzero"`
+}
+
+// 각 알고리즘별 기본값 생성자들
+func DefaultBcryptOptions() *PasswordOptions {
+	return &PasswordOptions{
+		BcryptCost: bcrypt.DefaultCost,
+	}
+}
+
+func DefaultScryptOptions() *PasswordOptions {
+	return &PasswordOptions{
+		ScryptN:      16384,
+		ScryptR:      8,
+		ScryptP:      1,
+		ScryptKeyLen: 32,
+	}
+}
+
+func DefaultPBKDF2Options() *PasswordOptions {
+	return &PasswordOptions{
+		PBKDF2Iterations: 10000,
+		PBKDF2KeyLen:     32,
+	}
+}
+
+func DefaultArgon2Options() *PasswordOptions {
+	return &PasswordOptions{
+		Argon2Time:    3,
+		Argon2Memory:  32 * 1024,
+		Argon2Threads: 4,
+		Argon2KeyLen:  32,
+	}
+}
+
+// 알고리즘에 따른 기본 옵션 반환
+func DefaultPasswordOptions(algorithm PasswordAlgorithm) *PasswordOptions {
+	switch algorithm {
+	case PasswordAlgorithmBcrypt:
+		return DefaultBcryptOptions()
+	case PasswordAlgorithmScrypt:
+		return DefaultScryptOptions()
+	case PasswordAlgorithmPBKDF2:
+		return DefaultPBKDF2Options()
+	case PasswordAlgorithmArgon2i, PasswordAlgorithmArgon2id:
+		return DefaultArgon2Options()
+	default:
+		return DefaultArgon2Options()
+	}
+}
+
+// 함수형 옵션 패턴
+type PasswordOption func(*PasswordOptions)
+
+func WithBcryptCost(cost int) PasswordOption {
+	return func(opts *PasswordOptions) {
+		opts.BcryptCost = cost
+	}
+}
+
+func WithScryptParams(N, r, p, keyLen int) PasswordOption {
+	return func(opts *PasswordOptions) {
+		opts.ScryptN = N
+		opts.ScryptR = r
+		opts.ScryptP = p
+		opts.ScryptKeyLen = keyLen
+	}
+}
+
+func WithPBKDF2Params(iterations, keyLen int) PasswordOption {
+	return func(opts *PasswordOptions) {
+		opts.PBKDF2Iterations = iterations
+		opts.PBKDF2KeyLen = keyLen
+	}
+}
+
+func WithArgon2Params(time, memory uint32, threads uint8, keyLen uint32) PasswordOption {
+	return func(opts *PasswordOptions) {
+		opts.Argon2Time = time
+		opts.Argon2Memory = memory
+		opts.Argon2Threads = threads
+		opts.Argon2KeyLen = keyLen
+	}
+}
+
+func (t *Tower) UpsertPassword(key string, password []byte, algorithm PasswordAlgorithm, saltLength int, options ...PasswordOption) error {
+	opts := DefaultPasswordOptions(algorithm)
+	for _, option := range options {
+		option(opts)
+	}
+
 	unlock := t.lock(key)
 	defer unlock()
 
@@ -35,57 +143,13 @@ func (t *Tower) UpsertPassword(key string, password []byte, algorithm PasswordAl
 		return fmt.Errorf("failed to generate salt: %w", err)
 	}
 
-	hashed, err := []byte(nil), error(nil)
-	switch algorithm {
-	case PasswordAlgorithmBcrypt:
-		salted := make([]byte, len(password)+len(salt)*2)
-		copy(salted, salt)
-		copy(salted[len(salt):], password)
-		copy(salted[len(salt)+len(password):], salt)
-		hashed, err = bcrypt.GenerateFromPassword(salted, bcrypt.DefaultCost)
-	case PasswordAlgorithmScrypt:
-		const (
-			N      = 16384
-			r      = 8
-			p      = 1
-			keyLen = 32
-		)
-		salted := make([]byte, len(password)+len(salt)*2)
-		copy(salted, salt)
-		copy(salted[len(salt):], password)
-		copy(salted[len(salt)+len(password):], salt)
-		hashed, err = scrypt.Key(salted, salt, N, r, p, keyLen)
-	case PasswordAlgorithmPBKDF2:
-		const (
-			iterations = 10000
-			keyLen     = 32
-		)
-		hashed, err = pbkdf2.Key(sha256.New, string(password), salt, iterations, keyLen)
-	case PasswordAlgorithmArgon2i:
-		const (
-			time    = 3
-			memory  = 32 * 1024
-			threads = 4
-			keyLen  = 32
-		)
-		hashed = argon2.Key(password, salt, time, memory, threads, keyLen)
-	case PasswordAlgorithmArgon2id:
-		fallthrough
-	default:
-		const (
-			time    = 3
-			memory  = 32 * 1024
-			threads = 4
-			keyLen  = 32
-		)
-		hashed = argon2.IDKey(password, salt, time, memory, threads, keyLen)
-	}
+	hashed, err := t.hashPasswordWithOptions(password, salt, algorithm, opts)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	df := NULLDataFrame()
-	if err := df.SetPassword(algorithm, hashed, salt); err != nil {
+	if err := df.SetPasswordWithOptions(algorithm, hashed, salt, opts); err != nil {
 		return fmt.Errorf("failed to set password data: %w", err)
 	}
 
@@ -94,6 +158,31 @@ func (t *Tower) UpsertPassword(key string, password []byte, algorithm PasswordAl
 	}
 
 	return nil
+}
+
+func (t *Tower) hashPasswordWithOptions(password, salt []byte, algorithm PasswordAlgorithm, opts *PasswordOptions) ([]byte, error) {
+	switch algorithm {
+	case PasswordAlgorithmBcrypt:
+		salted := make([]byte, len(password)+len(salt)*2)
+		copy(salted, salt)
+		copy(salted[len(salt):], password)
+		copy(salted[len(salt)+len(password):], salt)
+		return bcrypt.GenerateFromPassword(salted, opts.BcryptCost)
+	case PasswordAlgorithmScrypt:
+		salted := make([]byte, len(password)+len(salt)*2)
+		copy(salted, salt)
+		copy(salted[len(salt):], password)
+		copy(salted[len(salt)+len(password):], salt)
+		return scrypt.Key(salted, salt, opts.ScryptN, opts.ScryptR, opts.ScryptP, opts.ScryptKeyLen)
+	case PasswordAlgorithmPBKDF2:
+		return pbkdf2.Key(sha256.New, string(password), salt, opts.PBKDF2Iterations, opts.PBKDF2KeyLen)
+	case PasswordAlgorithmArgon2i:
+		return argon2.Key(password, salt, opts.Argon2Time, opts.Argon2Memory, opts.Argon2Threads, opts.Argon2KeyLen), nil
+	case PasswordAlgorithmArgon2id:
+		fallthrough
+	default:
+		return argon2.IDKey(password, salt, opts.Argon2Time, opts.Argon2Memory, opts.Argon2Threads, opts.Argon2KeyLen), nil
+	}
 }
 
 func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
@@ -109,7 +198,7 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 		return false, fmt.Errorf("key %s is not a password type", key)
 	}
 
-	algorithm, hash, salt, err := df.Password()
+	algorithm, hash, salt, opts, err := df.Password()
 	if err != nil {
 		return false, fmt.Errorf("failed to get password data: %w", err)
 	}
@@ -128,17 +217,11 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 			return false, fmt.Errorf("failed to compare bcrypt password: %w", err)
 		}
 	case PasswordAlgorithmScrypt:
-		const (
-			N      = 16384
-			r      = 8
-			p      = 1
-			keyLen = 32
-		)
 		salted := make([]byte, len(password)+len(salt)*2)
 		copy(salted, salt)
 		copy(salted[len(salt):], password)
 		copy(salted[len(salt)+len(password):], salt)
-		computed, err := scrypt.Key(salted, salt, N, r, p, keyLen)
+		computed, err := scrypt.Key(salted, salt, opts.ScryptN, opts.ScryptR, opts.ScryptP, opts.ScryptKeyLen)
 		if err != nil {
 			return false, fmt.Errorf("failed to compute scrypt key: %w", err)
 		}
@@ -146,11 +229,7 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 			return false, nil
 		}
 	case PasswordAlgorithmPBKDF2:
-		const (
-			iterations = 10000
-			keyLen     = 32
-		)
-		computed, err := pbkdf2.Key(sha256.New, string(password), salt, iterations, keyLen)
+		computed, err := pbkdf2.Key(sha256.New, string(password), salt, opts.PBKDF2Iterations, opts.PBKDF2KeyLen)
 		if err != nil {
 			return false, fmt.Errorf("failed to compute pbkdf2 key: %w", err)
 		}
@@ -158,24 +237,12 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 			return false, nil
 		}
 	case PasswordAlgorithmArgon2i:
-		const (
-			time    = 3
-			memory  = 32 * 1024
-			threads = 4
-			keyLen  = 32
-		)
-		computed := argon2.Key(password, salt, time, memory, threads, keyLen)
+		computed := argon2.Key(password, salt, opts.Argon2Time, opts.Argon2Memory, opts.Argon2Threads, opts.Argon2KeyLen)
 		if !bytes.Equal(computed, hash) {
 			return false, nil
 		}
 	case PasswordAlgorithmArgon2id:
-		const (
-			time    = 3
-			memory  = 32 * 1024
-			threads = 4
-			keyLen  = 32
-		)
-		computed := argon2.IDKey(password, salt, time, memory, threads, keyLen)
+		computed := argon2.IDKey(password, salt, opts.Argon2Time, opts.Argon2Memory, opts.Argon2Threads, opts.Argon2KeyLen)
 		if !bytes.Equal(computed, hash) {
 			return false, nil
 		}
