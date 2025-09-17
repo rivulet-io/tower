@@ -2,6 +2,7 @@ package tower
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -18,10 +19,10 @@ const ttlPrecision = 5 * 60 * 1000 // 1 minutes in milliseconds
 var currentTime = atomic.Pointer[time.Time]{}
 
 func InitTimer() {
-	ticker := time.NewTicker(1 * time.Second)
 	now := time.Now()
 	currentTime.Store(&now)
 	go func() {
+		ticker := time.NewTicker(1 * time.Second)
 		for range ticker.C {
 			now := time.Now()
 			currentTime.Store(&now)
@@ -126,4 +127,36 @@ func (t *Tower) RemoveTTL(key string) error {
 	}
 
 	return nil
+}
+
+func (t *Tower) TruncateExpired() error {
+	now := Now()
+	members, err := t.extractCandidatesForExpiration(now)
+	if err != nil {
+		return fmt.Errorf("failed to extract expiration candidates: %w", err)
+	}
+
+	for _, member := range members {
+		func() {
+			unlock := t.lock(member)
+			defer unlock()
+			df, err := t.get(member)
+			if err == nil && !df.IsExpired(now) {
+				_ = t.smartDelete(member, df.typ)
+			}
+		}()
+	}
+
+	return nil
+}
+
+func (t *Tower) StartTTLTimer() {
+	go func() {
+		ticker := time.NewTicker(ttlPrecision)
+		for range ticker.C {
+			if err := t.TruncateExpired(); err != nil {
+				log.Printf("error truncating expired keys: %v", err)
+			}
+		}
+	}()
 }
