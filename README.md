@@ -8,6 +8,7 @@ A high-performance, thread-safe key-value database built on top of [CockroachDB'
 - **🔒 Thread-Safe**: Concurrent operations with fine-grained per-key locking
 - **📊 Rich Data Types**: Native support for strings, integers, floats, booleans, timestamps, durations, UUIDs, binary data, BigInts, and Decimals
 - **🗂️ Advanced Data Structures**: Built-in Lists, Maps, Sets, Time Series, and Bloom Filters with atomic operations
+- **🔐 Secure Password Storage**: Multiple hashing algorithms (Argon2id, Bcrypt, Scrypt, PBKDF2) with configurable parameters
 - **⏰ TTL Support**: Automatic expiration of keys with configurable time-to-live
 - **💾 Flexible Storage**: In-memory for testing/caching or persistent disk storage
 - **🎯 Type-Specific Operations**: Comprehensive atomic operations for each data type
@@ -103,6 +104,26 @@ func main() {
     
     fmt.Printf("Decimal Price: %d (scale: %d) = %.2f\n", priceCoeff, priceScale, float64(priceCoeff)/100)
     
+    // Password operations (secure user authentication)
+    userPassword := []byte("mySecurePassword123!")
+    
+    // Store password with Argon2id (recommended)
+    if err := db.UpsertPassword("user:john", userPassword, tower.PasswordAlgorithmArgon2id, tower.DefaultPasswordSaltLength); err != nil {
+        panic(err)
+    }
+    
+    // Verify password
+    isValid, err := db.VerifyPassword("user:john", userPassword)
+    if err != nil {
+        panic(err)
+    }
+    
+    if isValid {
+        fmt.Println("Password verified successfully!")
+    } else {
+        fmt.Println("Invalid password")
+    }
+    
     // TTL operations (automatic key expiration)
     expireAt := time.Now().Add(1 * time.Hour)
     if err := db.SetTTL("temporary_data", expireAt); err != nil {
@@ -168,6 +189,9 @@ Tower supports the following primitive data types with comprehensive atomic oper
 | **Decimal** | `int64,int32` | `SetDecimal`, `GetDecimal`, `AddDecimal`, `SubDecimal` | Fixed-point arithmetic |
 | | | `MulDecimal`, `DivDecimal`, `CmpDecimal` | Decimal operations |
 | | | `SetDecimalFromFloat`, `GetDecimalAsFloat` | Float conversion |
+| **Password** | `[]byte` | `UpsertPassword`, `VerifyPassword` | Secure password hashing |
+| | | Bcrypt, Scrypt, PBKDF2, Argon2i, Argon2id | Multiple algorithms |
+| | | Configurable options, Salt generation | Security options |
 
 ## 🗂️ Data Structures
 
@@ -453,6 +477,115 @@ newBalance, _, _ := db.AddDecimal("principal", interest, 2)
 - 📊 **Financial Analysis**: Portfolio valuations, risk calculations
 - 🛒 **Retail**: Inventory costing, discount calculations
 - 💰 **Cryptocurrency**: Precise token amounts, exchange rates
+
+## 🔐 Password Operations
+
+Tower provides secure password hashing and verification using industry-standard algorithms. All password operations use salt-based hashing with configurable parameters:
+
+```go
+// Basic password operations
+password := []byte("mySecretPassword123!")
+
+// Store password with default options
+err := db.UpsertPassword("user:123", password, tower.PasswordAlgorithmArgon2id, tower.DefaultPasswordSaltLength)
+
+// Verify password
+isValid, err := db.VerifyPassword("user:123", password)
+if err != nil {
+    // Handle error
+} else if isValid {
+    fmt.Println("Password is correct!")
+} else {
+    fmt.Println("Invalid password")
+}
+
+// Update password (overwrites existing)
+newPassword := []byte("newSecurePassword456!")
+err = db.UpsertPassword("user:123", newPassword, tower.PasswordAlgorithmArgon2id, tower.DefaultPasswordSaltLength)
+```
+
+### Supported Algorithms
+
+Tower supports multiple cryptographic hashing algorithms:
+
+```go
+// Argon2id (recommended - most secure, modern)
+err := db.UpsertPassword("user1", password, tower.PasswordAlgorithmArgon2id, 16)
+
+// Argon2i (secure, more resistant to side-channel attacks)  
+err = db.UpsertPassword("user2", password, tower.PasswordAlgorithmArgon2i, 16)
+
+// Bcrypt (widely supported, good security)
+err = db.UpsertPassword("user3", password, tower.PasswordAlgorithmBcrypt, 16)
+
+// Scrypt (secure, memory-hard)
+err = db.UpsertPassword("user4", password, tower.PasswordAlgorithmScrypt, 16)
+
+// PBKDF2-SHA256 (compatible, but less secure than others)
+err = db.UpsertPassword("user5", password, tower.PasswordAlgorithmPBKDF2, 16)
+```
+
+### Custom Security Parameters
+
+Use functional options to customize hashing parameters:
+
+```go
+// High-security Argon2id for sensitive applications
+err := db.UpsertPassword("admin", password, tower.PasswordAlgorithmArgon2id, 32,
+    tower.WithArgon2Params(
+        5,        // time (iterations)
+        64*1024,  // memory (64 MB)
+        8,        // threads
+        32,       // key length
+    ))
+
+// Custom Bcrypt cost
+err = db.UpsertPassword("user", password, tower.PasswordAlgorithmBcrypt, 16,
+    tower.WithBcryptCost(14)) // Higher cost = more secure but slower
+
+// Custom Scrypt parameters
+err = db.UpsertPassword("user", password, tower.PasswordAlgorithmScrypt, 16,
+    tower.WithScryptParams(
+        32768, // N (CPU/memory cost)
+        8,     // r (block size)
+        1,     // p (parallelization)
+        32,    // key length
+    ))
+
+// Custom PBKDF2 parameters
+err = db.UpsertPassword("user", password, tower.PasswordAlgorithmPBKDF2, 16,
+    tower.WithPBKDF2Params(
+        20000, // iterations
+        32,    // key length
+    ))
+```
+
+### Default Parameters
+
+Each algorithm has secure default parameters:
+
+| Algorithm | Default Parameters | Security Level |
+|-----------|-------------------|----------------|
+| **Argon2id** | time=3, memory=32MB, threads=4, keyLen=32 | ⭐⭐⭐⭐⭐ Highest |
+| **Argon2i** | time=3, memory=32MB, threads=4, keyLen=32 | ⭐⭐⭐⭐⭐ Highest |
+| **Bcrypt** | cost=12 | ⭐⭐⭐⭐ High |
+| **Scrypt** | N=16384, r=8, p=1, keyLen=32 | ⭐⭐⭐⭐ High |
+| **PBKDF2** | iterations=10000, keyLen=32 | ⭐⭐⭐ Good |
+
+**Key Features:**
+- ✅ **Multiple Algorithms**: Choose the best algorithm for your needs
+- ✅ **Automatic Salt Generation**: Cryptographically secure random salts
+- ✅ **Configurable Parameters**: Customize security vs. performance trade-offs
+- ✅ **Stored Options**: Hashing parameters stored with password for verification
+- ✅ **Thread-Safe**: All operations are atomic and concurrent-safe
+- ✅ **Memory Safe**: Secure handling of sensitive password data
+
+**Use Cases:**
+- 👤 **User Authentication**: Web applications, mobile apps
+- 🔒 **Access Control**: API keys, service authentication
+- 🏢 **Enterprise Security**: Employee password management
+- 🔐 **Secure Storage**: Configuration passwords, secrets
+- 📱 **Multi-Factor**: Password component of MFA systems
 
 ## ⚙️ Configuration
 
