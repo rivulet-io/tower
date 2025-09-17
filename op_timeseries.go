@@ -38,11 +38,15 @@ func (tw *Tower) TimeSeriesCreate(key string) error {
 	return nil
 }
 
-// TimeSeriesDelete deletes an entire time series and all its data points.
-func (tw *Tower) TimeSeriesDelete(key string) error {
+// DeleteTimeSeries deletes an entire time series and all its data points.
+func (tw *Tower) DeleteTimeSeries(key string) error {
 	unlock := tw.lock(key)
 	defer unlock()
 
+	return tw.deleteTimeSeries(key)
+}
+
+func (tw *Tower) deleteTimeSeries(key string) error {
 	// Check if the time series exists
 	if _, err := tw.get(key); err != nil {
 		return fmt.Errorf("time series %s does not exist", key)

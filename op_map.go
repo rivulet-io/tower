@@ -41,6 +41,10 @@ func (t *Tower) DeleteMap(key string) error {
 	unlock := t.lock(key)
 	defer unlock()
 
+	return t.deleteMap(key)
+}
+
+func (t *Tower) deleteMap(key string) error {
 	mapKey := key
 
 	// Map 메타데이터 가져오기

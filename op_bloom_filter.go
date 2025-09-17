@@ -194,6 +194,10 @@ func (t *Tower) DeleteBloomFilter(key string) error {
 	unlock := t.lock(key)
 	defer unlock()
 
+	return t.deleteBloomFilter(key)
+}
+
+func (t *Tower) deleteBloomFilter(key string) error {
 	// 메타데이터 가져오기
 	df, err := t.get(key)
 	if err != nil {

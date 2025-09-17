@@ -40,6 +40,10 @@ func (t *Tower) DeleteSet(key string) error {
 	unlock := t.lock(key)
 	defer unlock()
 
+	return t.deleteSet(key)
+}
+
+func (t *Tower) deleteSet(key string) error {
 	setKey := key
 
 	// Set 메타데이터 가져오기

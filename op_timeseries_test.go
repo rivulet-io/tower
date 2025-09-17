@@ -134,7 +134,7 @@ func TestTimeSeriesOperations(t *testing.T) {
 		}
 	})
 
-	// Test TimeSeriesDelete
+	// Test DeleteTimeSeries
 	t.Run("delete", func(t *testing.T) {
 		key := "test-timeseries-delete"
 		err := tower.TimeSeriesCreate(key)
@@ -142,9 +142,9 @@ func TestTimeSeriesOperations(t *testing.T) {
 			t.Fatalf("Failed to create time series: %v", err)
 		}
 
-		err = tower.TimeSeriesDelete(key)
+		err = tower.DeleteTimeSeries(key)
 		if err != nil {
-			t.Errorf("TimeSeriesDelete failed: %v", err)
+			t.Errorf("DeleteTimeSeries failed: %v", err)
 		}
 
 		exists, err := tower.TimeSeriesExists(key)

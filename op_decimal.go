@@ -25,10 +25,14 @@ func (tw *Tower) SetDecimal(key string, coefficient *big.Int, scale int32) error
 }
 
 // GetDecimal retrieves a decimal value for the given key
-func (tw *Tower) GetDecimal(key string) (coefficient *big.Int, scale int32, err error) {
+func (tw *Tower) GetDecimal(key string) (*big.Int, int32, error) {
 	unlock := tw.lock(key)
 	defer unlock()
 
+	return tw.getDecimal(key)
+}
+
+func (tw *Tower) getDecimal(key string) (coefficient *big.Int, scale int32, err error) {
 	df, err := tw.get(key)
 	if err != nil {
 		return nil, 0, err
@@ -77,7 +81,7 @@ func (tw *Tower) GetDecimalAsFloat(key string) (float64, error) {
 	unlock := tw.lock(key)
 	defer unlock()
 
-	coefficient, scale, err := tw.GetDecimal(key)
+	coefficient, scale, err := tw.getDecimal(key)
 	if err != nil {
 		return 0, err
 	}

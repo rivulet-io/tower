@@ -42,10 +42,12 @@ func (t *Tower) DeleteList(key string) error {
 	unlock := t.lock(key)
 	defer unlock()
 
-	listKey := key
+	return t.deleteList(key)
+}
 
+func (t *Tower) deleteList(key string) error {
 	// 리스트 메타데이터 가져오기
-	df, err := t.get(listKey)
+	df, err := t.get(key)
 	if err != nil {
 		return fmt.Errorf("list %s does not exist: %w", key, err)
 	}
@@ -65,7 +67,7 @@ func (t *Tower) DeleteList(key string) error {
 	}
 
 	// 메타데이터 삭제
-	if err := t.delete(listKey); err != nil {
+	if err := t.delete(key); err != nil {
 		return fmt.Errorf("failed to delete list metadata: %w", err)
 	}
 
