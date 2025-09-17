@@ -15,9 +15,9 @@ type ListData struct {
 
 func (ld *ListData) Marshal() ([]byte, error) {
 	buf := make([]byte, 8+8+8+len(ld.Prefix))
-	binary.LittleEndian.PutUint64(buf[0:8], uint64(ld.HeadIndex))
-	binary.LittleEndian.PutUint64(buf[8:16], uint64(ld.TailIndex))
-	binary.LittleEndian.PutUint64(buf[16:24], uint64(ld.Length))
+	binary.BigEndian.PutUint64(buf[0:8], uint64(ld.HeadIndex))
+	binary.BigEndian.PutUint64(buf[8:16], uint64(ld.TailIndex))
+	binary.BigEndian.PutUint64(buf[16:24], uint64(ld.Length))
 	copy(buf[24:], []byte(ld.Prefix))
 	return buf, nil
 }
@@ -27,9 +27,9 @@ func UnmarshalDataFrameListData(data []byte) (*ListData, error) {
 		return nil, &DataFrameError{Op: "UnmarshalDataFrameListData", Type: TypeList, Msg: "data too short"}
 	}
 	ld := &ListData{}
-	ld.HeadIndex = int64(binary.LittleEndian.Uint64(data[0:8]))
-	ld.TailIndex = int64(binary.LittleEndian.Uint64(data[8:16]))
-	ld.Length = int64(binary.LittleEndian.Uint64(data[16:24]))
+	ld.HeadIndex = int64(binary.BigEndian.Uint64(data[0:8]))
+	ld.TailIndex = int64(binary.BigEndian.Uint64(data[8:16]))
+	ld.Length = int64(binary.BigEndian.Uint64(data[16:24]))
 	ld.Prefix = string(data[24:])
 	return ld, nil
 }
@@ -83,7 +83,7 @@ func MakeListItemKey(prefix string, index int64) []byte {
 	buf[len(prefix)] = ':'
 	copy(buf[len(prefix)+1:], []byte(ListTypeMarker))
 	buf[len(prefix)+1+len(ListTypeMarker)] = ':'
-	binary.LittleEndian.PutUint64(buf[len(prefix)+1+len(ListTypeMarker)+1:], uint64(index))
+	binary.BigEndian.PutUint64(buf[len(prefix)+1+len(ListTypeMarker)+1:], uint64(index))
 	return buf
 }
 
@@ -94,7 +94,7 @@ type SetData struct {
 
 func (sd *SetData) Marshal() ([]byte, error) {
 	buf := make([]byte, 8+len(sd.Prefix))
-	binary.LittleEndian.PutUint64(buf[0:8], sd.Count)
+	binary.BigEndian.PutUint64(buf[0:8], sd.Count)
 	copy(buf[8:], []byte(sd.Prefix))
 	return buf, nil
 }
@@ -104,7 +104,7 @@ func UnmarshalDataFrameSetData(data []byte) (*SetData, error) {
 		return nil, &DataFrameError{Op: "UnmarshalDataFrameSetData", Type: TypeSet, Msg: "data too short"}
 	}
 	sd := &SetData{}
-	sd.Count = binary.LittleEndian.Uint64(data[0:8])
+	sd.Count = binary.BigEndian.Uint64(data[0:8])
 	sd.Prefix = string(data[8:])
 	return sd, nil
 }
@@ -169,7 +169,7 @@ type MapData struct {
 
 func (md *MapData) Marshal() ([]byte, error) {
 	buf := make([]byte, 8+len(md.Prefix))
-	binary.LittleEndian.PutUint64(buf[0:8], md.Count)
+	binary.BigEndian.PutUint64(buf[0:8], md.Count)
 	copy(buf[8:], []byte(md.Prefix))
 	return buf, nil
 }
@@ -180,7 +180,7 @@ func UnmarshalDataFrameMapData(data []byte) (*MapData, error) {
 	}
 
 	md := &MapData{}
-	md.Count = binary.LittleEndian.Uint64(data[0:8])
+	md.Count = binary.BigEndian.Uint64(data[0:8])
 	md.Prefix = string(data[8:])
 	return md, nil
 }
@@ -306,7 +306,7 @@ func MakeTimeseriesDataPointKey(prefix string, timestamp time.Time) []byte {
 	buf[len(prefix)] = ':'
 	copy(buf[len(prefix)+1:], []byte(TimeseriesTypeMarker))
 	buf[len(prefix)+1+len(TimeseriesTypeMarker)] = ':'
-	binary.LittleEndian.PutUint64(buf[len(prefix)+1+len(TimeseriesTypeMarker)+1:], uint64(timestamp.UTC().UnixNano()))
+	binary.BigEndian.PutUint64(buf[len(prefix)+1+len(TimeseriesTypeMarker)+1:], uint64(timestamp.UTC().UnixNano()))
 	return buf
 }
 
@@ -319,10 +319,10 @@ type BloomFilterData struct {
 
 func (bfd *BloomFilterData) Marshal() ([]byte, error) {
 	buf := make([]byte, 4+len(bfd.Salt)+1+8+len(bfd.Prefix))
-	binary.LittleEndian.PutUint32(buf[0:4], uint32(bfd.Slots))
+	binary.BigEndian.PutUint32(buf[0:4], uint32(bfd.Slots))
 	copy(buf[4:], []byte(bfd.Salt))
 	buf[4+len(bfd.Salt)] = ':'
-	binary.LittleEndian.PutUint64(buf[4+len(bfd.Salt)+1:], bfd.Count)
+	binary.BigEndian.PutUint64(buf[4+len(bfd.Salt)+1:], bfd.Count)
 	copy(buf[4+len(bfd.Salt)+1+8:], []byte(bfd.Prefix))
 	return buf, nil
 }
@@ -332,12 +332,12 @@ func UnmarshalDataFrameBloomFilterData(data []byte) (*BloomFilterData, error) {
 		return nil, &DataFrameError{Op: "UnmarshalDataFrameBloomFilterData", Type: TypeBloomFilter, Msg: "data too short"}
 	}
 	bfd := &BloomFilterData{}
-	bfd.Slots = int(binary.LittleEndian.Uint32(data[0:4]))
+	bfd.Slots = int(binary.BigEndian.Uint32(data[0:4]))
 	bfd.Salt = string(data[4 : 4+len("bloom_salt_2025")])
 	if data[4+len("bloom_salt_2025")] != ':' {
 		return nil, &DataFrameError{Op: "UnmarshalDataFrameBloomFilterData", Type: TypeBloomFilter, Msg: "invalid separator"}
 	}
-	bfd.Count = binary.LittleEndian.Uint64(data[4+len("bloom_salt_2025")+1 : 4+len("bloom_salt_2025")+1+8])
+	bfd.Count = binary.BigEndian.Uint64(data[4+len("bloom_salt_2025")+1 : 4+len("bloom_salt_2025")+1+8])
 	bfd.Prefix = string(data[4+len("bloom_salt_2025")+1+8:])
 	return bfd, nil
 }

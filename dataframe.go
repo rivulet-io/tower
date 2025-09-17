@@ -90,7 +90,7 @@ func (df *DataFrame) Type() DataType {
 
 func (df *DataFrame) SetInt(v int64) error {
 	buf := [8]byte{}
-	binary.LittleEndian.PutUint64(buf[:], uint64(v))
+	binary.BigEndian.PutUint64(buf[:], uint64(v))
 	df.typ = TypeInt
 	df.payload = buf[:]
 	return nil
@@ -103,13 +103,13 @@ func (df *DataFrame) Int() (int64, error) {
 	if len(df.payload) != 8 {
 		return 0, &DataFrameError{Op: "Int", Type: df.typ, Msg: "invalid payload length"}
 	}
-	v := int64(binary.LittleEndian.Uint64(df.payload))
+	v := int64(binary.BigEndian.Uint64(df.payload))
 	return v, nil
 }
 
 func (df *DataFrame) SetFloat(v float64) error {
 	buf := [8]byte{}
-	binary.LittleEndian.PutUint64(buf[:], math.Float64bits(v))
+	binary.BigEndian.PutUint64(buf[:], math.Float64bits(v))
 	df.typ = TypeFloat
 	df.payload = buf[:]
 	return nil
@@ -122,7 +122,7 @@ func (df *DataFrame) Float() (float64, error) {
 	if len(df.payload) != 8 {
 		return 0, &DataFrameError{Op: "Float", Type: df.typ, Msg: "invalid payload length"}
 	}
-	bits := binary.LittleEndian.Uint64(df.payload)
+	bits := binary.BigEndian.Uint64(df.payload)
 	return math.Float64frombits(bits), nil
 }
 
@@ -130,7 +130,7 @@ func (df *DataFrame) SetString(v string) error {
 	data := []byte(v)
 	length := uint32(len(data))
 	buf := make([]byte, 4+len(data))
-	binary.LittleEndian.PutUint32(buf[:4], length)
+	binary.BigEndian.PutUint32(buf[:4], length)
 	copy(buf[4:], data)
 	df.typ = TypeString
 	df.payload = buf
@@ -144,7 +144,7 @@ func (df *DataFrame) String() (string, error) {
 	if len(df.payload) < 4 {
 		return "", &DataFrameError{Op: "String", Type: df.typ, Msg: "payload too short"}
 	}
-	length := binary.LittleEndian.Uint32(df.payload[:4])
+	length := binary.BigEndian.Uint32(df.payload[:4])
 	if len(df.payload) != int(4+length) {
 		return "", &DataFrameError{Op: "String", Type: df.typ, Msg: "invalid payload length"}
 	}
@@ -173,7 +173,7 @@ func (df *DataFrame) Bool() (bool, error) {
 
 func (df *DataFrame) SetTimestamp(v time.Time) error {
 	buf := [8]byte{}
-	binary.LittleEndian.PutUint64(buf[:], uint64(v.UnixNano()))
+	binary.BigEndian.PutUint64(buf[:], uint64(v.UnixNano()))
 	df.typ = TypeTimestamp
 	df.payload = buf[:]
 	return nil
@@ -186,13 +186,13 @@ func (df *DataFrame) Timestamp() (time.Time, error) {
 	if len(df.payload) != 8 {
 		return time.Time{}, &DataFrameError{Op: "Timestamp", Type: df.typ, Msg: "invalid payload length"}
 	}
-	nano := int64(binary.LittleEndian.Uint64(df.payload))
+	nano := int64(binary.BigEndian.Uint64(df.payload))
 	return time.Unix(0, nano), nil
 }
 
 func (df *DataFrame) SetDuration(v time.Duration) error {
 	buf := [8]byte{}
-	binary.LittleEndian.PutUint64(buf[:], uint64(v.Nanoseconds()))
+	binary.BigEndian.PutUint64(buf[:], uint64(v.Nanoseconds()))
 	df.typ = TypeDuration
 	df.payload = buf[:]
 	return nil
@@ -205,7 +205,7 @@ func (df *DataFrame) Duration() (time.Duration, error) {
 	if len(df.payload) != 8 {
 		return 0, &DataFrameError{Op: "Duration", Type: df.typ, Msg: "invalid payload length"}
 	}
-	nano := int64(binary.LittleEndian.Uint64(df.payload))
+	nano := int64(binary.BigEndian.Uint64(df.payload))
 	return time.Duration(nano), nil
 }
 
@@ -358,7 +358,7 @@ func (dd *DecimalData) Marshal() ([]byte, error) {
 
 	coeffBytes := dd.Coefficient.Bytes()
 	scaleBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(scaleBytes, uint32(dd.Scale))
+	binary.BigEndian.PutUint32(scaleBytes, uint32(dd.Scale))
 
 	// Format: sign(1) + coeff_length(4) + coeff_bytes + scale(4)
 	buf := make([]byte, 1+4+len(coeffBytes)+4)
@@ -371,7 +371,7 @@ func (dd *DecimalData) Marshal() ([]byte, error) {
 	}
 
 	// Store coefficient length
-	binary.LittleEndian.PutUint32(buf[1:5], uint32(len(coeffBytes)))
+	binary.BigEndian.PutUint32(buf[1:5], uint32(len(coeffBytes)))
 
 	// Store coefficient bytes
 	copy(buf[5:5+len(coeffBytes)], coeffBytes)
@@ -393,7 +393,7 @@ func UnmarshalDataFrameDecimalData(data []byte) (*DecimalData, error) {
 	sign := data[0]
 
 	// Read coefficient length
-	coeffLen := binary.LittleEndian.Uint32(data[1:5])
+	coeffLen := binary.BigEndian.Uint32(data[1:5])
 	if len(data) < int(5+coeffLen+4) {
 		return nil, &DataFrameError{Op: "UnmarshalDataFrameDecimalData", Type: TypeDecimal, Msg: "invalid data length"}
 	}
@@ -409,7 +409,7 @@ func UnmarshalDataFrameDecimalData(data []byte) (*DecimalData, error) {
 
 	// Read scale
 	scaleStart := 5 + coeffLen
-	dd.Scale = int32(binary.LittleEndian.Uint32(data[scaleStart : scaleStart+4]))
+	dd.Scale = int32(binary.BigEndian.Uint32(data[scaleStart : scaleStart+4]))
 
 	return dd, nil
 }
@@ -468,7 +468,7 @@ type ShamirShareData struct {
 
 func (ssd *ShamirShareData) Marshal() ([]byte, error) {
 	if ssd.Shares == nil {
-		return nil, fmt.Errorf("Shamir shares cannot be nil")
+		return nil, fmt.Errorf("shamir shares cannot be nil")
 	}
 
 	// Calculate total size needed
@@ -482,7 +482,7 @@ func (ssd *ShamirShareData) Marshal() ([]byte, error) {
 	offset := 0
 
 	// Store number of shares
-	binary.LittleEndian.PutUint32(buf[offset:offset+4], uint32(len(ssd.Shares)))
+	binary.BigEndian.PutUint32(buf[offset:offset+4], uint32(len(ssd.Shares)))
 	offset += 4
 
 	// Store each share
@@ -492,7 +492,7 @@ func (ssd *ShamirShareData) Marshal() ([]byte, error) {
 		offset++
 
 		// Store share length
-		binary.LittleEndian.PutUint32(buf[offset:offset+4], uint32(len(share)))
+		binary.BigEndian.PutUint32(buf[offset:offset+4], uint32(len(share)))
 		offset += 4
 
 		// Store share bytes
@@ -512,7 +512,7 @@ func UnmarshalDataFrameShamirShareData(data []byte) (*ShamirShareData, error) {
 	offset := 0
 
 	// Read number of shares
-	numShares := binary.LittleEndian.Uint32(data[offset:offset+4])
+	numShares := binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
 
 	// Read each share
@@ -529,7 +529,7 @@ func UnmarshalDataFrameShamirShareData(data []byte) (*ShamirShareData, error) {
 		if offset+4 > len(data) {
 			return nil, &DataFrameError{Op: "UnmarshalDataFrameShamirShareData", Type: TypeShamirShare, Msg: "invalid data length"}
 		}
-		shareLength := binary.LittleEndian.Uint32(data[offset:offset+4])
+		shareLength := binary.BigEndian.Uint32(data[offset : offset+4])
 		offset += 4
 
 		// Read share bytes

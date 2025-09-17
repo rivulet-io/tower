@@ -63,7 +63,7 @@ func (t *Tower) BloomFilterAdd(key, item string) error {
 	// 슬롯 값을 바이트로 변환
 	slotBytes := make([]byte, bfd.Slots*4)
 	for i, slot := range slots {
-		binary.LittleEndian.PutUint32(slotBytes[i*4:], uint32(slot))
+		binary.BigEndian.PutUint32(slotBytes[i*4:], uint32(slot))
 	}
 
 	// 항목 저장
@@ -127,7 +127,7 @@ func (t *Tower) BloomFilterContains(key, item string) (bool, error) {
 
 	// 슬롯 비교
 	for i := 0; i < bfd.Slots; i++ {
-		storedSlot := int(binary.LittleEndian.Uint32(slotBytes[i*4:]))
+		storedSlot := int(binary.BigEndian.Uint32(slotBytes[i*4:]))
 		if storedSlot != slots[i] {
 			return false, nil
 		}

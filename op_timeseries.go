@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"time"
+
 	"github.com/cockroachdb/pebble"
 )
 
@@ -253,7 +254,7 @@ func (tw *Tower) TimeSeriesRange(key string, startTime, endTime time.Time) (map[
 		keyBytes := iter.Key()
 		prefixLen := len(keyPrefix)
 		if len(keyBytes) >= prefixLen+8 {
-			timestampNanos := int64(binary.LittleEndian.Uint64(keyBytes[prefixLen:]))
+			timestampNanos := int64(binary.BigEndian.Uint64(keyBytes[prefixLen:]))
 			timestamp := time.Unix(0, timestampNanos).UTC()
 
 			// Check if timestamp is within range
