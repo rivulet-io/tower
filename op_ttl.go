@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -59,7 +60,8 @@ func (t *Tower) extractCandidatesForExpiration(criteria time.Time) ([]string, er
 
 	members, err := t.ListRange(key, 0, -1) // get all members
 	if err != nil {
-		return nil, fmt.Errorf("failed to get members from TTL list %s: %w", key, err)
+		// If the list does not exist, return empty list
+		return []string{}, nil
 	}
 
 	result := make([]string, 0, len(members))
@@ -76,6 +78,11 @@ func (t *Tower) extractCandidatesForExpiration(criteria time.Time) ([]string, er
 func (t *Tower) addCandidatesForExpiration(key string, expireAt time.Time) error {
 	v := t.ceilTTLTimestamp(expireAt)
 	k := t.makeTTLKey(v)
+
+	// Ensure the TTL list exists
+	if err := t.CreateList(k); err != nil && !strings.Contains(err.Error(), "already exists") {
+		return fmt.Errorf("failed to create TTL list %s: %w", k, err)
+	}
 
 	if _, err := t.PushRight(k, PrimitiveString(key)); err != nil {
 		return fmt.Errorf("failed to add key %s to TTL list %s: %w", key, k, err)
