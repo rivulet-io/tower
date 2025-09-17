@@ -14,7 +14,7 @@ func (t *Tower) makeTTLKey(timestamp int64) string {
 	return ttlBaseKey + ":" + strconv.FormatInt(timestamp, 10)
 }
 
-const ttlPrecision = 5 * 60 * 1000 // 1 minutes in milliseconds
+const ttlPrecision = 1 * 60 * 1000 // 1 minutes in milliseconds
 
 var currentTime = atomic.Pointer[time.Time]{}
 
@@ -142,7 +142,9 @@ func (t *Tower) TruncateExpired() error {
 			defer unlock()
 			df, err := t.get(member)
 			if err == nil && !df.IsExpired(now) {
-				_ = t.smartDelete(member, df.typ)
+				if err := t.smartDelete(member, df.typ); err != nil {
+					log.Printf("failed to delete expired key %s: %v", member, err)
+				}
 			}
 		}()
 	}
