@@ -269,7 +269,7 @@ for timestamp, value := range dataPoints {
 err = db.TimeSeriesRemove("sensor-data", now)                                   // Remove specific point
 
 // Cleanup
-err = db.TimeSeriesDelete("sensor-data")                                        // Delete entire time series
+err = db.DeleteTimeSeries("sensor-data")                                        // Delete entire time series
 ```
 
 ### Bloom Filters
