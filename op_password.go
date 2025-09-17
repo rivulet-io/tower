@@ -143,7 +143,7 @@ func (t *Tower) UpsertPassword(key string, password []byte, algorithm PasswordAl
 		return fmt.Errorf("failed to generate salt: %w", err)
 	}
 
-	hashed, err := t.hashPasswordWithOptions(password, salt, algorithm, opts)
+	hashed, err := t.computePasswordHash(password, salt, algorithm, opts)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
@@ -160,7 +160,8 @@ func (t *Tower) UpsertPassword(key string, password []byte, algorithm PasswordAl
 	return nil
 }
 
-func (t *Tower) hashPasswordWithOptions(password, salt []byte, algorithm PasswordAlgorithm, opts *PasswordOptions) ([]byte, error) {
+// 통합된 패스워드 해시 계산 함수
+func (t *Tower) computePasswordHash(password, salt []byte, algorithm PasswordAlgorithm, opts *PasswordOptions) ([]byte, error) {
 	switch algorithm {
 	case PasswordAlgorithmBcrypt:
 		salted := make([]byte, len(password)+len(salt)*2)
@@ -205,6 +206,7 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 
 	switch algorithm {
 	case PasswordAlgorithmBcrypt:
+		// Bcrypt는 특별 처리 (내부적으로 이미 해시된 값과 비교)
 		salted := make([]byte, len(password)+len(salt)*2)
 		copy(salted, salt)
 		copy(salted[len(salt):], password)
@@ -216,39 +218,13 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 			}
 			return false, fmt.Errorf("failed to compare bcrypt password: %w", err)
 		}
-	case PasswordAlgorithmScrypt:
-		salted := make([]byte, len(password)+len(salt)*2)
-		copy(salted, salt)
-		copy(salted[len(salt):], password)
-		copy(salted[len(salt)+len(password):], salt)
-		computed, err := scrypt.Key(salted, salt, opts.ScryptN, opts.ScryptR, opts.ScryptP, opts.ScryptKeyLen)
-		if err != nil {
-			return false, fmt.Errorf("failed to compute scrypt key: %w", err)
-		}
-		if !bytes.Equal(computed, hash) {
-			return false, nil
-		}
-	case PasswordAlgorithmPBKDF2:
-		computed, err := pbkdf2.Key(sha256.New, string(password), salt, opts.PBKDF2Iterations, opts.PBKDF2KeyLen)
-		if err != nil {
-			return false, fmt.Errorf("failed to compute pbkdf2 key: %w", err)
-		}
-		if !bytes.Equal(computed, hash) {
-			return false, nil
-		}
-	case PasswordAlgorithmArgon2i:
-		computed := argon2.Key(password, salt, opts.Argon2Time, opts.Argon2Memory, opts.Argon2Threads, opts.Argon2KeyLen)
-		if !bytes.Equal(computed, hash) {
-			return false, nil
-		}
-	case PasswordAlgorithmArgon2id:
-		computed := argon2.IDKey(password, salt, opts.Argon2Time, opts.Argon2Memory, opts.Argon2Threads, opts.Argon2KeyLen)
-		if !bytes.Equal(computed, hash) {
-			return false, nil
-		}
+		return true, nil
 	default:
-		return false, fmt.Errorf("unknown password algorithm: %d", algorithm)
+		// 다른 알고리즘들은 통합 헬퍼 함수 사용
+		computed, err := t.computePasswordHash(password, salt, algorithm, opts)
+		if err != nil {
+			return false, fmt.Errorf("failed to compute password hash: %w", err)
+		}
+		return bytes.Equal(computed, hash), nil
 	}
-
-	return true, nil
 }
