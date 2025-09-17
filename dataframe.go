@@ -75,12 +75,18 @@ func UnmarshalDataFrame(data []byte) (*DataFrame, error) {
 		return nil, fmt.Errorf("data too short to unmarshal DataFrame")
 	}
 
+	expirtesAt := time.UnixMilli(int64(binary.BigEndian.Uint64(data[1:9])))
+	if !expirtesAt.IsZero() && time.Now().After(expirtesAt) {
+		return nil, NewDataframeExpiredError("unknown", expirtesAt)
+	}
+
 	df := &DataFrame{
 		typ:       DataType(data[0]),
-		expiresAt: time.UnixMilli(int64(binary.BigEndian.Uint64(data[1:9]))),
+		expiresAt: expirtesAt,
 		payload:   make([]byte, len(data)-1),
 	}
 	copy(df.payload, data[9:])
+
 	return df, nil
 }
 
