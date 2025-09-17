@@ -143,7 +143,7 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 			return false, fmt.Errorf("failed to compute scrypt key: %w", err)
 		}
 		if !bytes.Equal(computed, hash) {
-			return true, nil
+			return false, nil
 		}
 	case PasswordAlgorithmPBKDF2:
 		const (
@@ -155,7 +155,7 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 			return false, fmt.Errorf("failed to compute pbkdf2 key: %w", err)
 		}
 		if !bytes.Equal(computed, hash) {
-			return true, nil
+			return false, nil
 		}
 	case PasswordAlgorithmArgon2i:
 		const (
@@ -166,7 +166,7 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 		)
 		computed := argon2.Key(password, salt, time, memory, threads, keyLen)
 		if !bytes.Equal(computed, hash) {
-			return true, nil
+			return false, nil
 		}
 	case PasswordAlgorithmArgon2id:
 		const (
@@ -177,7 +177,7 @@ func (t *Tower) VerifyPassword(key string, password []byte) (bool, error) {
 		)
 		computed := argon2.IDKey(password, salt, time, memory, threads, keyLen)
 		if !bytes.Equal(computed, hash) {
-			return true, nil
+			return false, nil
 		}
 	default:
 		return false, fmt.Errorf("unknown password algorithm: %d", algorithm)
