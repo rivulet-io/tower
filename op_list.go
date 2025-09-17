@@ -508,7 +508,7 @@ func (t *Tower) ListRange(key string, start, end int64) ([]PrimitiveData, error)
 	// HeadIndex가 underflow/overflow 되었어도 상관없음
 	// 0부터 Length-1까지의 상대적 인덱스에 HeadIndex를 더해서 실제 키 계산
 	result := make([]PrimitiveData, 0, actualEnd-actualStart+1)
-	for i := actualStart; i <= actualEnd; i++ {
+	for i := actualStart; i != actualEnd+1; i++ {
 		// 상대적 인덱스 i에 HeadIndex를 더해서 실제 저장된 인덱스 계산
 		actualIndex := listData.HeadIndex + i
 
