@@ -4,10 +4,14 @@ go 1.25.0
 
 require (
 	github.com/RoaringBitmap/roaring/v2 v2.10.0
+	github.com/RyuaNerin/go-krypto v1.3.0
 	github.com/cockroachdb/pebble v1.1.5
 	github.com/corvus-ch/shamir v1.0.1
+	github.com/dgryski/go-camellia v0.0.0-20191119043421-69a8a13fb23d
 	github.com/google/uuid v1.6.0
+	github.com/linckode/circl v1.3.71
 	golang.org/x/crypto v0.42.0
+	lukechampine.com/blake3 v1.4.1
 )
 
 require (
@@ -25,6 +29,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.16.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
