@@ -3,7 +3,6 @@ package mesh
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -11,6 +10,9 @@ import (
 )
 
 type PersistentConfig struct {
+	// Name is the name of the stream.
+	Name string
+
 	// Description is an optional description of the stream.
 	Description string
 
@@ -81,14 +83,7 @@ func (c *conn) CreateOrUpdateStream(cfg *PersistentConfig) error {
 	}
 
 	// Use first subject as stream name, but sanitize it properly
-	streamName := cfg.Subjects[0]
-	// Remove wildcards and convert to valid stream name
-	streamName = strings.ReplaceAll(streamName, "*", "")
-	streamName = strings.ReplaceAll(streamName, ">", "")
-	streamName = strings.ReplaceAll(streamName, ".", "_")
-	if streamName == "" || streamName == "_" {
-		streamName = "default_stream"
-	}
+	streamName := cfg.Name
 
 	sc := &nats.StreamConfig{
 		Name:              streamName,
