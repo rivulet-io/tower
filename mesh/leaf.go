@@ -98,27 +98,27 @@ func (opt *LeafOptions) toNATSConfig() *server.Options {
 	}
 
 	// Add JetStream configuration if enabled
-	if opt.jetstreamEnabled {
-		config.JetStream = true
-		config.StoreDir = opt.storeDir
-		config.JetStreamDomain = defaultClusterName
+	// if opt.jetstreamEnabled {
+	// 	config.JetStream = true
+	// 	config.StoreDir = opt.storeDir
+	// 	config.JetStreamDomain = defaultClusterName
 
-		if opt.jetstreamMaxMemory.Bytes() > 0 {
-			config.JetStreamMaxMemory = int64(opt.jetstreamMaxMemory.Bytes())
-		}
-		if opt.jetstreamMaxStore.Bytes() > 0 {
-			config.JetStreamMaxStore = int64(opt.jetstreamMaxStore.Bytes())
-		}
-		if opt.jetstreamMaxBufferedMsgs > 0 {
-			config.StreamMaxBufferedMsgs = opt.jetstreamMaxBufferedMsgs
-		}
-		if opt.jetstreamMaxBufferedSize.Bytes() > 0 {
-			config.StreamMaxBufferedSize = int64(opt.jetstreamMaxBufferedSize.Bytes())
-		}
-		if opt.jetstreamSyncInterval > 0 {
-			config.SyncInterval = opt.jetstreamSyncInterval
-		}
-	}
+	// 	if opt.jetstreamMaxMemory.Bytes() > 0 {
+	// 		config.JetStreamMaxMemory = int64(opt.jetstreamMaxMemory.Bytes())
+	// 	}
+	// 	if opt.jetstreamMaxStore.Bytes() > 0 {
+	// 		config.JetStreamMaxStore = int64(opt.jetstreamMaxStore.Bytes())
+	// 	}
+	// 	if opt.jetstreamMaxBufferedMsgs > 0 {
+	// 		config.StreamMaxBufferedMsgs = opt.jetstreamMaxBufferedMsgs
+	// 	}
+	// 	if opt.jetstreamMaxBufferedSize.Bytes() > 0 {
+	// 		config.StreamMaxBufferedSize = int64(opt.jetstreamMaxBufferedSize.Bytes())
+	// 	}
+	// 	if opt.jetstreamSyncInterval > 0 {
+	// 		config.SyncInterval = opt.jetstreamSyncInterval
+	// 	}
+	// }
 
 	return config
 }
