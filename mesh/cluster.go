@@ -45,6 +45,75 @@ func (opt *ClusterOptions) WithMaxPayload(maxPayload size.Size) *ClusterOptions 
 	return opt
 }
 
+func (opt *ClusterOptions) WithStoreDir(storeDir string) *ClusterOptions {
+	opt.storeDir = storeDir
+	return opt
+}
+
+func (opt *ClusterOptions) WithClusterName(clusterName string) *ClusterOptions {
+	opt.clusterName = clusterName
+	return opt
+}
+
+func (opt *ClusterOptions) WithClusterListen(host string, port int) *ClusterOptions {
+	opt.clusterListenHost = host
+	opt.clusterListenPort = port
+	return opt
+}
+
+func (opt *ClusterOptions) WithClusterAuth(username, password string) *ClusterOptions {
+	opt.clusterUsername = username
+	opt.clusterPassword = password
+	return opt
+}
+
+func (opt *ClusterOptions) WithJetStreamMaxMemory(maxMemory size.Size) *ClusterOptions {
+	opt.jetstreamMaxMemory = maxMemory
+	return opt
+}
+
+func (opt *ClusterOptions) WithJetStreamMaxStore(maxStore size.Size) *ClusterOptions {
+	opt.jetstreamMaxStore = maxStore
+	return opt
+}
+
+func (opt *ClusterOptions) WithJetStreamBuffered(maxMsgs int, maxSize size.Size) *ClusterOptions {
+	opt.jetstreamMaxBufferedMsgs = maxMsgs
+	opt.jetstreamMaxBufferedSize = maxSize
+	return opt
+}
+
+func (opt *ClusterOptions) WithJetStreamSyncInterval(interval time.Duration) *ClusterOptions {
+	opt.jetstreamSyncInterval = interval
+	return opt
+}
+
+func (opt *ClusterOptions) WithGateway(name, host string, port int, remotes *RemoteGateways) *ClusterOptions {
+	opt.gatewayName = name
+	opt.gatewayListenHost = host
+	opt.gatewayListenPort = port
+	opt.gatewayRemotes = remotes
+	return opt
+}
+
+func (opt *ClusterOptions) WithLeafNode(host string, port int, username, password string) *ClusterOptions {
+	opt.leafListenHost = host
+	opt.leafListenPort = port
+	opt.leafUsername = username
+	opt.leafPassword = password
+	return opt
+}
+
+func (opt *ClusterOptions) WithRoutes(routes []string) *ClusterOptions {
+	opt.routes = routes
+	return opt
+}
+
+func (opt *ClusterOptions) WithHTTPPort(port int) *ClusterOptions {
+	opt.httpPort = port
+	return opt
+}
+
 func DefaultClusterOptions() *ClusterOptions {
 	return &ClusterOptions{
 		serverName:               "nats-1",
