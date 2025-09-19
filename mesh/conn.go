@@ -2,11 +2,47 @@ package mesh
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 )
+
+var _ server.Logger = (*DebugLogger)(nil)
+
+type DebugLogger struct {
+}
+
+// Debugf implements server.Logger.
+func (d *DebugLogger) Debugf(format string, v ...any) {
+	log.Printf("[DEBUG] "+format, v...)
+}
+
+// Errorf implements server.Logger.
+func (d *DebugLogger) Errorf(format string, v ...any) {
+	log.Printf("[ERROR] "+format, v...)
+}
+
+// Fatalf implements server.Logger.
+func (d *DebugLogger) Fatalf(format string, v ...any) {
+	log.Printf("[FATAL] "+format, v...)
+}
+
+// Noticef implements server.Logger.
+func (d *DebugLogger) Noticef(format string, v ...any) {
+	log.Printf("[NOTICE] "+format, v...)
+}
+
+// Tracef implements server.Logger.
+func (d *DebugLogger) Tracef(format string, v ...any) {
+	log.Printf("[TRACE] "+format, v...)
+}
+
+// Warnf implements server.Logger.
+func (d *DebugLogger) Warnf(format string, v ...any) {
+	log.Printf("[WARN] "+format, v...)
+}
 
 type conn struct {
 	server *server.Server
@@ -20,9 +56,11 @@ func newConn(opt *server.Options) (*conn, error) {
 		return nil, fmt.Errorf("failed to create nats server: %w", err)
 	}
 
-	go srv.Start()
+	// srv.SetLoggerV2(&DebugLogger{}, false, false, true)
 
-	if !srv.ReadyForConnections(10 * time.Second) {
+	srv.Start()
+
+	if !srv.ReadyForConnections(15 * time.Second) {
 		return nil, fmt.Errorf("nats server not ready for connections")
 	}
 
