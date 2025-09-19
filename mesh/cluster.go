@@ -114,33 +114,6 @@ func (opt *ClusterOptions) WithHTTPPort(port int) *ClusterOptions {
 	return opt
 }
 
-func DefaultClusterOptions() *ClusterOptions {
-	return &ClusterOptions{
-		serverName:               "nats-1",
-		maxPayload:               size.NewSizeFromMegabytes(64),
-		storeDir:                 "/data/nats/jetstream/node-1",
-		clusterName:              "PROD_CLUSTER",
-		clusterListenHost:        "0.0.0.0",
-		clusterListenPort:        6222,
-		clusterUsername:          "clusterUser",
-		clusterPassword:          "clusterPass",
-		jetstreamMaxMemory:       size.NewSizeFromGigabytes(4),
-		jetstreamMaxStore:        size.NewSizeFromGigabytes(10),
-		jetstreamMaxBufferedMsgs: 1000,
-		jetstreamMaxBufferedSize: size.NewSizeFromMegabytes(64),
-		jetstreamSyncInterval:    5 * time.Second,
-		leafListenHost:           "0.0.0.0",
-		leafListenPort:           7422,
-		leafUsername:             "leafUser",
-		leafPassword:             "leafPass",
-		routes: []string{
-			"nats-route://nats-2:6222",
-			"nats-route://nats-3:6222",
-		},
-		httpPort: 8222,
-	}
-}
-
 func (opt *ClusterOptions) toNATSConfig() server.Options {
 	return server.Options{
 		DontListen: true,
