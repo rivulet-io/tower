@@ -105,7 +105,7 @@ func TestJetStreamPublishPersistent(t *testing.T) {
 		// Create stream first
 		config := &PersistentConfig{
 			Name:     "events_",
-			Subjects: []string{"events.user.created", "events.user.updated", "events.user.deleted"},
+			Subjects: []string{"events.>"},
 			MaxMsgs:  100,
 			Replicas: 3, // Use 3 replicas for cluster
 		}
@@ -116,10 +116,10 @@ func TestJetStreamPublishPersistent(t *testing.T) {
 		}
 
 		// Wait for stream to be ready and fully replicated across cluster
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 
 		// Verify stream is accessible
-		streamName := "events.user.created"
+		streamName := "events_"
 		info, err := cluster1.nc.GetStreamInfo(streamName)
 		if err != nil {
 			t.Fatalf("stream not accessible after creation: %v", err)
@@ -177,11 +177,13 @@ func TestJetStreamPublishPersistent(t *testing.T) {
 			t.Fatalf("failed to get stream info: %v", err)
 		}
 
-		if info.State.Msgs != uint64(len(messages)) {
-			t.Errorf("expected %d messages in stream, got %d", len(messages), info.State.Msgs)
+		// Total messages = initial test message + 3 additional messages = 4
+		expectedTotal := uint64(len(messages) + 1)
+		if info.State.Msgs != expectedTotal {
+			t.Errorf("expected %d messages in stream, got %d", expectedTotal, info.State.Msgs)
 		}
 
-		t.Logf("Successfully published %d persistent messages", len(messages))
+		t.Logf("Successfully published %d persistent messages (including initial test message)", info.State.Msgs)
 	})
 
 	t.Run("publish with options", func(t *testing.T) {
