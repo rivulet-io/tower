@@ -11,6 +11,7 @@ import (
 type conn struct {
 	server *server.Server
 	conn   *nats.Conn
+	js     nats.JetStreamContext
 }
 
 func newConn(opt *server.Options) (*conn, error) {
@@ -30,9 +31,15 @@ func newConn(opt *server.Options) (*conn, error) {
 		return nil, fmt.Errorf("failed to connect to nats server: %w", err)
 	}
 
+	js, err := nc.JetStream()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get jetstream context: %w", err)
+	}
+
 	return &conn{
 		server: srv,
 		conn:   nc,
+		js:     js,
 	}, nil
 }
 
