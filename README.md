@@ -1,49 +1,53 @@
 # Tower 🗼
 
-A high-performance, thread-safe key-value database built on top of [CockroachDB's Pebble](https://github.com/cockroachdb/pebble), designed for Go applications requiring rich data operations and concurrent access patterns.
+A high-performance, distributed key-value database for Go, built on [CockroachDB's Pebble](https://github.com/cockroachdb/pebble). Tower can operate as a powerful standalone engine or be deployed as a scalable, distributed cluster using an integrated NATS-based mesh network.
 
 ## ✨ Features
 
-- **🚀 High Performance**: Built on CockroachDB's Pebble LSM-tree storage engine
-- **🔒 Thread-Safe**: Concurrent operations with fine-grained per-key locking
-- **📊 Rich Data Types**: Native support for strings, integers, floats, booleans, timestamps, durations, UUIDs, binary data, BigInts, and Decimals
-- **🗂️ Advanced Data Structures**: Built-in Lists, Maps, Sets, Time Series, and Bloom Filters with atomic operations
-- **🔐 Secure Password Storage**: Multiple hashing algorithms (Argon2id, Bcrypt, Scrypt, PBKDF2) with configurable parameters
-- **⏰ TTL Support**: Automatic expiration of keys with configurable time-to-live
-- **💾 Flexible Storage**: In-memory for testing/caching or persistent disk storage
-- **🎯 Type-Specific Operations**: Comprehensive atomic operations for each data type
-- **⚡ Memory Efficient**: Configurable cache sizes and memory table management
-- **🔄 ACID Operations**: Atomic operations with consistent data integrity
+- **🚀 High Performance**: Built on CockroachDB's Pebble LSM-tree storage engine.
+- **🌐 Distributed Clustering**: Scalable and resilient clustering powered by NATS for high availability and load distribution (`mesh` package).
+- **🔒 Thread-Safe**: Concurrent operations with fine-grained per-key locking.
+- **📊 Rich Data Types**: Native support for strings, integers, floats, booleans, timestamps, durations, UUIDs, binary data, BigInts, and Decimals.
+- **🗂️ Advanced Data Structures**: Built-in Lists, Maps, Sets, Time Series, and Bloom Filters with atomic operations.
+- **🔐 Secure Password Storage**: Multiple hashing algorithms (Argon2id, Bcrypt, Scrypt, PBKDF2) with configurable parameters.
+- **⏰ TTL Support**: Automatic expiration of keys with configurable time-to-live.
+- **💾 Flexible Storage**: In-memory for testing/caching or persistent disk storage.
+- **🎯 Type-Specific Operations**: Comprehensive atomic operations for each data type provided by the `op.Operator`.
 
 ## 🚀 Quick Start
+
+### Standalone Engine (`op.Operator`)
+
+Use the `op.Operator` for a high-performance, single-node database directly in your Go application.
 
 ```go
 package main
 
 import (
     "fmt"
-    "math/big"
-    "time"
-    "github.com/rivulet-io/tower"
+    "log"
+
+    "github.com/rivulet-io/tower/op"
+    "github.com/rivulet-io/tower/util/size"
 )
 
 func main() {
-    // Create a new Tower instance with in-memory storage
-    opts := &tower.Options{
-        FS:           tower.InMemory(),
-        BytesPerSync: tower.NewSizeFromKilobytes(1),
-        CacheSize:    tower.NewSizeFromMegabytes(10),
-        MemTableSize: tower.NewSizeFromMegabytes(5),
+    // Create a new Operator instance with in-memory storage
+    opts := &op.Options{
+        FS:           op.InMemory(),
+        BytesPerSync: size.NewSizeFromKilobytes(1),
+        CacheSize:    size.NewSizeFromMegabytes(10),
+        MemTableSize: size.NewSizeFromMegabytes(5),
     }
     
-    db, err := tower.NewTower(opts)
+    db, err := op.NewOperator(opts)
     if err != nil {
-        panic(err)
+        log.Fatalf("Failed to create operator: %v", err)
     }
     defer db.Close()
     
     // Store and retrieve a string
-    if err := db.SetString("greeting", "Hello, World!"); err != nil {
+    if err := db.SetString("greeting", "Hello, Operator!"); err != nil {
         panic(err)
     }
     
@@ -52,88 +56,67 @@ func main() {
         panic(err)
     }
     
-    fmt.Println(value) // Output: Hello, World!
-    
-    // Atomic string operations
-    newValue, err := db.AppendString("greeting", " 🚀")
-    if err != nil {
-        panic(err)
-    }
-    
-    fmt.Println(newValue) // Output: Hello, World! 🚀
+    fmt.Println(value) // Output: Hello, Operator!
+}
+```
 
-    // Time Series operations
-    if err := db.TimeSeriesCreate("metrics"); err != nil {
-        panic(err)
-    }
+### Distributed Cluster (`mesh` package)
 
-    now := time.Now()
-    if err := db.TimeSeriesAdd("metrics", now, tower.PrimitiveInt(100)); err != nil {
-        panic(err)
-    }
+Create a distributed network of Tower nodes using the `mesh` package, which leverages NATS for clustering, routing, and high availability.
 
-    dataPoint, err := db.TimeSeriesGet("metrics", now)
-    if err != nil {
-        panic(err)
-    }
+**Starting a Cluster Node:**
+```go
+// main_cluster.go
+package main
 
-    fmt.Printf("Time Series Value: %v\n", dataPoint) // Output: Time Series Value: 100
-    
-    // BigInt operations (for cryptography, scientific computing)
-    bigNum := new(big.Int).SetString("123456789012345678901234567890", 10)
-    if err := db.SetBigInt("big_number", bigNum); err != nil {
-        panic(err)
-    }
-    
-    result, err := db.AddBigInt("big_number", big.NewInt(1000000))
-    if err != nil {
-        panic(err)
-    }
-    
-    fmt.Printf("BigInt Result: %s\n", result.String())
-    
-    // Decimal operations (for financial calculations)
-    if err := db.SetDecimalFromFloat("price", 19.99, 2); err != nil {
-        panic(err)
-    }
-    
-    priceCoeff, priceScale, err := db.GetDecimal("price")
-    if err != nil {
-        panic(err)
-    }
-    
-    fmt.Printf("Decimal Price: %d (scale: %d) = %.2f\n", priceCoeff, priceScale, float64(priceCoeff)/100)
-    
-    // Password operations (secure user authentication)
-    userPassword := []byte("mySecurePassword123!")
-    
-    // Store password with Argon2id (recommended)
-    if err := db.UpsertPassword("user:john", userPassword, tower.PasswordAlgorithmArgon2id, tower.DefaultPasswordSaltLength); err != nil {
-        panic(err)
-    }
-    
-    // Verify password
-    isValid, err := db.VerifyPassword("user:john", userPassword)
-    if err != nil {
-        panic(err)
-    }
-    
-    if isValid {
-        fmt.Println("Password verified successfully!")
-    } else {
-        fmt.Println("Invalid password")
-    }
-    
-    // TTL operations (automatic key expiration)
-    expireAt := time.Now().Add(1 * time.Hour)
-    if err := db.SetTTL("temporary_data", expireAt); err != nil {
-        panic(err)
-    }
-    
-    // Start background cleanup timer
-    db.StartTTLTimer()
-    
-    fmt.Println("TTL set for temporary_data - will expire in 1 hour")
+import (
+	"log"
+
+	"github.com/rivulet-io/tower/mesh"
+)
+
+func main() {
+	opts := mesh.NewClusterOptions("tower-node-1").
+		WithListen("127.0.0.1", 4222).
+		WithClusterName("tower-cluster").
+		WithClusterListen("127.0.0.1", 6222)
+
+	// This starts the server and blocks.
+	// You would typically run this in its own process.
+	if err := mesh.StartCluster(opts); err != nil {
+		log.Fatalf("Failed to start cluster: %v", err)
+	}
+}
+```
+
+**Connecting as a Leaf Node:**
+```go
+// main_leaf.go
+package main
+
+import (
+	"log"
+	"time"
+
+	"github.com/rivulet-io/tower/mesh"
+)
+
+func main() {
+	opts := mesh.NewLeafOptions("leaf-1").
+		WithListen("127.0.0.1", 5222).
+		WithLeafRemotes([][]string{{"nats://127.0.0.1:6222"}}...)
+
+	leaf, err := mesh.NewLeaf(opts)
+	if err != nil {
+		log.Fatalf("Failed to create leaf: %v", err)
+	}
+	
+	// The 'leaf' instance can now be used to interact with the cluster.
+	// (Further implementation for client operations needed on top of the mesh.Conn)
+	log.Println("Leaf node connected to cluster.")
+	
+	// Keep the application running.
+	select {}
 }
 ```
 
@@ -145,23 +128,19 @@ go get github.com/rivulet-io/tower
 
 ## 🏗️ Architecture
 
-Tower is built with several key components:
+Tower's architecture is split into two primary packages:
 
-### Core Components
+- **`op` (Operator)**: The core database engine. It manages the underlying Pebble storage, provides all data-specific operations (e.g., `SetString`, `AddInt`), and ensures thread-safety through fine-grained locking. This package can be used on its own for a standalone key-value store.
 
-- **Tower**: Main database interface with concurrent access control
-- **DataFrame**: Type-safe data container supporting multiple primitive types
-- **ConcurrentMap**: Thread-safe generic map implementation
-- **Size**: Memory size utilities with unit conversions
+- **`mesh` (Mesh Network)**: Provides the functionality to run Tower in a distributed cluster. It uses NATS to connect multiple Tower nodes.
+    - **`Cluster`**: A full-fledged member of a NATS cluster, participating in routing and data distribution.
+    - **`Leaf`**: A lightweight node that connects to a `Cluster` to extend the network without participating in complex routing.
 
-### Storage Backends
-
-- **In-Memory**: Fast, volatile storage for testing and caching
-- **On-Disk**: Persistent storage with configurable sync and cache options
+This modular design allows you to start with a simple, embedded database and scale up to a distributed system as your needs grow.
 
 ## 📋 Data Types
 
-Tower supports the following primitive data types with comprehensive atomic operations:
+The `op.Operator` supports the following primitive data types with comprehensive atomic operations:
 
 | Type | Go Type | Key Operations | Return Values |
 |------|---------|----------------|---------------|
@@ -195,25 +174,28 @@ Tower supports the following primitive data types with comprehensive atomic oper
 
 ## 🗂️ Data Structures
 
+All data structure operations are provided by `op.Operator` and are fully thread-safe.
+
 ### Lists
 Ordered collections supporting deque operations with atomic list management:
 
 ```go
+// All examples assume 'db' is an initialized *op.Operator
 // Create and manage lists
 err := db.CreateList("mylist")
 exists, _ := db.ListExists("mylist")
 length, _ := db.ListLength("mylist")
 
 // Push/Pop operations (returns new length or popped item)
-newLength, _ := db.PushRight("mylist", "item1")    // Add to end
-newLength, _ = db.PushLeft("mylist", "item0")      // Add to beginning
+newLength, _ := db.PushRight("mylist", op.PrimitiveString("item1"))    // Add to end
+newLength, _ = db.PushLeft("mylist", op.PrimitiveString("item0"))      // Add to beginning
 leftItem, _ := db.PopLeft("mylist")                // Remove from beginning  
 rightItem, _ := db.PopRight("mylist")              // Remove from end
 
 // Index-based access and modification
 item, _ := db.ListIndex("mylist", 0)                // Get by index
 items, _ := db.ListRange("mylist", 0, -1)          // Get range (0 to end)
-err = db.ListSet("mylist", 1, "modified")          // Set by index
+err = db.ListSet("mylist", 1, op.PrimitiveString("modified"))          // Set by index
 err = db.ListTrim("mylist", 0, 10)                 // Keep only indices 0-10
 
 // Cleanup
@@ -230,17 +212,17 @@ exists, _ := db.MapExists("mymap")
 length, _ := db.MapLength("mymap")
 
 // Set fields with different types
-err = db.MapSet("mymap", "name", "John")           // String key, string value
-err = db.MapSet("mymap", "age", int64(30))         // String key, int value
-err = db.MapSet("mymap", 42, "answer")             // Int key, string value
+err = db.MapSet("mymap", op.PrimitiveString("name"), op.PrimitiveString("John"))           // String key, string value
+err = db.MapSet("mymap", op.PrimitiveString("age"), op.PrimitiveInt(30))         // String key, int value
+err = db.MapSet("mymap", op.PrimitiveInt(42), op.PrimitiveString("answer"))             // Int key, string value
 
 // Get operations
-name, _ := db.MapGet("mymap", "name")              // Get single field
+name, _ := db.MapGet("mymap", op.PrimitiveString("name"))              // Get single field
 keys, _ := db.MapKeys("mymap")                     // Get all keys
 values, _ := db.MapValues("mymap")                 // Get all values
 
 // Management operations
-deletedCount, _ := db.MapDelete("mymap", "age")    // Delete field
+deletedCount, _ := db.MapDelete("mymap", op.PrimitiveString("age"))    // Delete field
 err = db.ClearMap("mymap")                         // Clear all fields
 err = db.DeleteMap("mymap")                        // Delete entire map
 ```
@@ -272,14 +254,17 @@ err = db.DeleteSet("myset")                        // Delete entire set
 Time-stamped data storage with efficient range queries and atomic operations:
 
 ```go
+import "time"
+import "github.com/rivulet-io/tower/op"
+
 // Create and manage time series
 err := db.TimeSeriesCreate("sensor-data")
 exists, _ := db.TimeSeriesExists("sensor-data")
 
 // Add data points with timestamps
 now := time.Now()
-err = db.TimeSeriesAdd("sensor-data", now, tower.PrimitiveFloat(23.5))           // Temperature reading
-err = db.TimeSeriesAdd("sensor-data", now.Add(time.Minute), tower.PrimitiveInt(85)) // Humidity
+err = db.TimeSeriesAdd("sensor-data", now, op.PrimitiveFloat(23.5))           // Temperature reading
+err = db.TimeSeriesAdd("sensor-data", now.Add(time.Minute), op.PrimitiveInt(85)) // Humidity
 
 // Retrieve data points
 temperature, _ := db.TimeSeriesGet("sensor-data", now)                          // Get specific point
@@ -354,18 +339,17 @@ err := db.SetTTL("session_key", expireAt)
 err = db.RemoveTTL("permanent_key")
 
 // Start automatic cleanup (runs in background)
-db.StartTTLTimer()
+// Note: TTL timer management is not part of the core Operator and needs to be implemented at the application level.
+// db.StartTTLTimer() 
 
 // Manual cleanup of expired keys
-err = db.TruncateExpired()
+// err = db.TruncateExpired()
 ```
 
 **Key Features:**
 - ✅ **Automatic Expiration**: Keys are automatically deleted when TTL expires
-- ✅ **Background Cleanup**: Optional background timer for periodic cleanup
 - ✅ **Manual Control**: Remove TTL or manually trigger cleanup
 - ✅ **Thread-Safe**: All operations are atomic and concurrent-safe
-- ✅ **Precision**: Configurable precision (default 1 minute)
 
 **Use Cases:**
 - **Session Management**: Expire user sessions automatically
@@ -378,6 +362,8 @@ err = db.TruncateExpired()
 Tower provides comprehensive support for arbitrary-precision integers using Go's `math/big.Int`, perfect for cryptography, scientific computing, and applications requiring numbers larger than `int64`:
 
 ```go
+import "math/big"
+
 // Basic operations with large numbers
 bigNum := new(big.Int).SetString("1234567890123456789012345678901234567890", 10)
 err := db.SetBigInt("large_number", bigNum)
@@ -397,19 +383,6 @@ result, _ = db.AbsBigInt("large_number")                    // Absolute value
 // Comparison operations
 cmp, _ := db.CmpBigInt("large_number", big.NewInt(1000))   // Returns -1, 0, or 1
 fmt.Printf("Comparison result: %d\n", cmp)
-
-// Practical examples
-// Cryptography: Large prime numbers
-prime := new(big.Int).SetString("170141183460469231731687303715884105727", 10)
-err = db.SetBigInt("prime", prime)
-
-// Scientific computing: Large calculations
-mass := new(big.Int).SetString("5972000000000000000000000", 10) // Earth's mass in kg
-err = db.SetBigInt("earth_mass", mass)
-
-// Financial: Large monetary values in smallest units
-totalValue := new(big.Int).SetString("1000000000000000000", 10) // 1 quadrillion in cents
-err = db.SetBigInt("total_value", totalValue)
 ```
 
 **Key Features:**
@@ -438,29 +411,18 @@ fmt.Printf("Price: %s (scale: %d)\n", coeff.String(), scale)
 resultCoeff, resultScale, _ := db.AddDecimal("price", big.NewInt(550), 2)
 fmt.Printf("New price: %s (scale: %d)\n", resultCoeff.String(), resultScale)
 
-// Multiply by 1.10 (10% increase) = 27.539
+// Multiply by 1.10 (10% increase) = 21.989
 resultCoeff, resultScale, _ = db.MulDecimal("price", big.NewInt(110), 2)
 fmt.Printf("10%% increase: %s (scale: %d)\n", resultCoeff.String(), resultScale)
 
-// Divide by 2.0 = 13.7695
-resultCoeff, resultScale, _ = db.DivDecimal("price", big.NewInt(200), 2, 4)
+// Divide by 2.0 = 9.995
+resultCoeff, resultScale, _ = db.DivDecimal("price", big.NewInt(20), 1, 4) // divide by 2.0 with 4 decimal places precision
 fmt.Printf("Half price: %s (scale: %d)\n", resultCoeff.String(), resultScale)
 
 // Float conversion with Banker's rounding
 err = db.SetDecimalFromFloat("rate", 0.123456789, 8)      // 8 decimal places
 floatValue, _ := db.GetDecimalAsFloat("rate")
 fmt.Printf("Rate as float: %.8f\n", floatValue)
-
-// Financial calculations
-// Calculate compound interest: P * (1 + r/n)^(nt)
-principal := big.NewInt(100000)  // $1000.00
-rate := big.NewInt(5)            // 5.00% annual interest
-err = db.SetDecimal("principal", principal, 2)
-err = db.SetDecimal("rate", rate, 2)
-
-// Add interest
-interest := big.NewInt(50)       // $0.50 interest
-newBalance, _, _ := db.AddDecimal("principal", interest, 2)
 ```
 
 **Key Features:**
@@ -483,11 +445,13 @@ newBalance, _, _ := db.AddDecimal("principal", interest, 2)
 Tower provides secure password hashing and verification using industry-standard algorithms. All password operations use salt-based hashing with configurable parameters:
 
 ```go
+import "github.com/rivulet-io/tower/op"
+
 // Basic password operations
 password := []byte("mySecretPassword123!")
 
 // Store password with default options
-err := db.UpsertPassword("user:123", password, tower.PasswordAlgorithmArgon2id, tower.DefaultPasswordSaltLength)
+err := db.UpsertPassword("user:123", password, op.PasswordAlgorithmArgon2id, op.DefaultPasswordSaltLength)
 
 // Verify password
 isValid, err := db.VerifyPassword("user:123", password)
@@ -501,7 +465,7 @@ if err != nil {
 
 // Update password (overwrites existing)
 newPassword := []byte("newSecurePassword456!")
-err = db.UpsertPassword("user:123", newPassword, tower.PasswordAlgorithmArgon2id, tower.DefaultPasswordSaltLength)
+err = db.UpsertPassword("user:123", newPassword, op.PasswordAlgorithmArgon2id, op.DefaultPasswordSaltLength)
 ```
 
 ### Supported Algorithms
@@ -510,19 +474,19 @@ Tower supports multiple cryptographic hashing algorithms:
 
 ```go
 // Argon2id (recommended - most secure, modern)
-err := db.UpsertPassword("user1", password, tower.PasswordAlgorithmArgon2id, 16)
+err := db.UpsertPassword("user1", password, op.PasswordAlgorithmArgon2id, 16)
 
 // Argon2i (secure, more resistant to side-channel attacks)  
-err = db.UpsertPassword("user2", password, tower.PasswordAlgorithmArgon2i, 16)
+err = db.UpsertPassword("user2", password, op.PasswordAlgorithmArgon2i, 16)
 
 // Bcrypt (widely supported, good security)
-err = db.UpsertPassword("user3", password, tower.PasswordAlgorithmBcrypt, 16)
+err = db.UpsertPassword("user3", password, op.PasswordAlgorithmBcrypt, 16)
 
 // Scrypt (secure, memory-hard)
-err = db.UpsertPassword("user4", password, tower.PasswordAlgorithmScrypt, 16)
+err = db.UpsertPassword("user4", password, op.PasswordAlgorithmScrypt, 16)
 
 // PBKDF2-SHA256 (compatible, but less secure than others)
-err = db.UpsertPassword("user5", password, tower.PasswordAlgorithmPBKDF2, 16)
+err = db.UpsertPassword("user5", password, op.PasswordAlgorithmPBKDF2, 16)
 ```
 
 ### Custom Security Parameters
@@ -531,8 +495,8 @@ Use functional options to customize hashing parameters:
 
 ```go
 // High-security Argon2id for sensitive applications
-err := db.UpsertPassword("admin", password, tower.PasswordAlgorithmArgon2id, 32,
-    tower.WithArgon2Params(
+err := db.UpsertPassword("admin", password, op.PasswordAlgorithmArgon2id, 32,
+    op.WithArgon2Params(
         5,        // time (iterations)
         64*1024,  // memory (64 MB)
         8,        // threads
@@ -540,12 +504,12 @@ err := db.UpsertPassword("admin", password, tower.PasswordAlgorithmArgon2id, 32,
     ))
 
 // Custom Bcrypt cost
-err = db.UpsertPassword("user", password, tower.PasswordAlgorithmBcrypt, 16,
-    tower.WithBcryptCost(14)) // Higher cost = more secure but slower
+err = db.UpsertPassword("user", password, op.PasswordAlgorithmBcrypt, 16,
+    op.WithBcryptCost(14)) // Higher cost = more secure but slower
 
 // Custom Scrypt parameters
-err = db.UpsertPassword("user", password, tower.PasswordAlgorithmScrypt, 16,
-    tower.WithScryptParams(
+err = db.UpsertPassword("user", password, op.PasswordAlgorithmScrypt, 16,
+    op.WithScryptParams(
         32768, // N (CPU/memory cost)
         8,     // r (block size)
         1,     // p (parallelization)
@@ -553,8 +517,8 @@ err = db.UpsertPassword("user", password, tower.PasswordAlgorithmScrypt, 16,
     ))
 
 // Custom PBKDF2 parameters
-err = db.UpsertPassword("user", password, tower.PasswordAlgorithmPBKDF2, 16,
-    tower.WithPBKDF2Params(
+err = db.UpsertPassword("user", password, op.PasswordAlgorithmPBKDF2, 16,
+    op.WithPBKDF2Params(
         20000, // iterations
         32,    // key length
     ))
@@ -597,7 +561,7 @@ sensitiveData := []byte("Secret API key or confidential information")
 encryptionKey := []byte("your-encryption-key-here")
 
 // Store encrypted data with AES-256-GCM
-payload, err := db.UpsertSafeBox("api_key", sensitiveData, encryptionKey, tower.EncryptionAlgorithmAES256GCM)
+payload, err := db.UpsertSafeBox("api_key", sensitiveData, encryptionKey, op.EncryptionAlgorithmAES256GCM)
 if err != nil {
     // Handle error
 }
@@ -622,31 +586,31 @@ Tower supports a comprehensive set of modern encryption algorithms:
 
 ```go
 // AES variants with GCM mode
-err := db.UpsertSafeBox("data1", data, key, tower.EncryptionAlgorithmAES128GCM)   // AES-128-GCM
-err = db.UpsertSafeBox("data2", data, key, tower.EncryptionAlgorithmAES192GCM)    // AES-192-GCM  
-err = db.UpsertSafeBox("data3", data, key, tower.EncryptionAlgorithmAES256GCM)    // AES-256-GCM (recommended)
+db.UpsertSafeBox("data1", data, key, op.EncryptionAlgorithmAES128GCM)   // AES-128-GCM
+db.UpsertSafeBox("data2", data, key, op.EncryptionAlgorithmAES192GCM)    // AES-192-GCM  
+db.UpsertSafeBox("data3", data, key, op.EncryptionAlgorithmAES256GCM)    // AES-256-GCM (recommended)
 
 // ChaCha20-Poly1305 variants (excellent for mobile/ARM)
-err = db.UpsertSafeBox("data4", data, key, tower.EncryptionAlgorithmChaCha20Poly1305)   // ChaCha20-Poly1305
-err = db.UpsertSafeBox("data5", data, key, tower.EncryptionAlgorithmXChaCha20Poly1305)  // XChaCha20-Poly1305
+db.UpsertSafeBox("data4", data, key, op.EncryptionAlgorithmChaCha20Poly1305)   // ChaCha20-Poly1305
+db.UpsertSafeBox("data5", data, key, op.EncryptionAlgorithmXChaCha20Poly1305)  // XChaCha20-Poly1305
 
 // ASCON variants (lightweight, IoT-optimized)
-err = db.UpsertSafeBox("data6", data, key, tower.EncryptionAlgorithmAscon128)     // ASCON-128
-err = db.UpsertSafeBox("data7", data, key, tower.EncryptionAlgorithmAscon128a)    // ASCON-128a
-err = db.UpsertSafeBox("data8", data, key, tower.EncryptionAlgorithmAscon80pq)    // ASCON-80pq (post-quantum)
+db.UpsertSafeBox("data6", data, key, op.EncryptionAlgorithmAscon128)     // ASCON-128
+db.UpsertSafeBox("data7", data, key, op.EncryptionAlgorithmAscon128a)    // ASCON-128a
+db.UpsertSafeBox("data8", data, key, op.EncryptionAlgorithmAscon80pq)    // ASCON-80pq (post-quantum)
 
 // Camellia variants (ISO standard, government-approved)
-err = db.UpsertSafeBox("data9", data, key, tower.EncryptionAlgorithmCamellia128GCM)  // Camellia-128-GCM
-err = db.UpsertSafeBox("data10", data, key, tower.EncryptionAlgorithmCamellia192GCM) // Camellia-192-GCM
-err = db.UpsertSafeBox("data11", data, key, tower.EncryptionAlgorithmCamellia256GCM) // Camellia-256-GCM
+db.UpsertSafeBox("data9", data, key, op.EncryptionAlgorithmCamellia128GCM)  // Camellia-128-GCM
+db.UpsertSafeBox("data10", data, key, op.EncryptionAlgorithmCamellia192GCM) // Camellia-192-GCM
+db.UpsertSafeBox("data11", data, key, op.EncryptionAlgorithmCamellia256GCM) // Camellia-256-GCM
 
 // ARIA variants (Korean standard, government-approved)
-err = db.UpsertSafeBox("data12", data, key, tower.EncryptionAlgorithmARIA128GCM)  // ARIA-128-GCM
-err = db.UpsertSafeBox("data13", data, key, tower.EncryptionAlgorithmARIA192GCM)  // ARIA-192-GCM
-err = db.UpsertSafeBox("data14", data, key, tower.EncryptionAlgorithmARIA256GCM)  // ARIA-256-GCM
+db.UpsertSafeBox("data12", data, key, op.EncryptionAlgorithmARIA128GCM)  // ARIA-128-GCM
+db.UpsertSafeBox("data13", data, key, op.EncryptionAlgorithmARIA192GCM)  // ARIA-192-GCM
+db.UpsertSafeBox("data14", data, key, op.EncryptionAlgorithmARIA256GCM)  // ARIA-256-GCM
 
 // No encryption (for testing or when encryption is handled externally)
-err = db.UpsertSafeBox("data15", data, key, tower.EncryptionAlgorithmNone)
+db.UpsertSafeBox("data15", data, key, op.EncryptionAlgorithmNone)
 ```
 
 ### Algorithm Recommendations
@@ -671,50 +635,14 @@ shortKey := []byte("password")           // Any length key works
 longKey := []byte("very-long-password-with-lots-of-entropy-here")
 
 // Both will work - Tower handles key derivation internally
-err := db.UpsertSafeBox("data1", data, shortKey, tower.EncryptionAlgorithmAES256GCM)
-err = db.UpsertSafeBox("data2", data, longKey, tower.EncryptionAlgorithmChaCha20Poly1305)
+db.UpsertSafeBox("data1", data, shortKey, op.EncryptionAlgorithmAES256GCM)
+db.UpsertSafeBox("data2", data, longKey, op.EncryptionAlgorithmChaCha20Poly1305)
 
 // For maximum security, use high-entropy keys
 import "crypto/rand"
 secureKey := make([]byte, 32)
 rand.Read(secureKey)
-err = db.UpsertSafeBox("secure_data", sensitiveData, secureKey, tower.EncryptionAlgorithmAES256GCM)
-```
-
-### Advanced Usage
-
-```go
-// Store different types of sensitive data
-type SecretConfig struct {
-    APIKey      string `json:"api_key"`
-    DatabaseURL string `json:"database_url"`
-    JWTSecret   string `json:"jwt_secret"`
-}
-
-config := SecretConfig{
-    APIKey:      "sk-1234567890abcdef",
-    DatabaseURL: "postgres://user:pass@localhost/db",
-    JWTSecret:   "super-secret-jwt-key",
-}
-
-// Serialize and encrypt configuration
-configData, _ := json.Marshal(config)
-masterKey := []byte("master-encryption-key")
-
-_, err := db.UpsertSafeBox("app_config", configData, masterKey, tower.EncryptionAlgorithmAES256GCM)
-
-// Later, retrieve and decrypt
-decryptedConfig, err := db.ExtractSafeBox("app_config", masterKey)
-if err != nil {
-    log.Fatal("Failed to decrypt config:", err)
-}
-
-var loadedConfig SecretConfig
-json.Unmarshal(decryptedConfig, &loadedConfig)
-
-// Rotation: Update with new encryption
-newKey := []byte("new-master-key")
-_, err = db.UpsertSafeBox("app_config", configData, newKey, tower.EncryptionAlgorithmXChaCha20Poly1305)
+db.UpsertSafeBox("secure_data", sensitiveData, secureKey, op.EncryptionAlgorithmAES256GCM)
 ```
 
 **Key Features:**
@@ -739,140 +667,59 @@ _, err = db.UpsertSafeBox("app_config", configData, newKey, tower.EncryptionAlgo
 
 ### Storage Options
 
+All storage options are configured via `op.Options`.
+
 ```go
+import (
+    "github.com/rivulet-io/tower/op"
+    "github.com/rivulet-io/tower/util/size"
+)
+
 // In-memory storage (for testing/caching)
-opts := &tower.Options{
-    FS:           tower.InMemory(),
-    BytesPerSync: tower.NewSizeFromKilobytes(1),
-    CacheSize:    tower.NewSizeFromMegabytes(10),
-    MemTableSize: tower.NewSizeFromMegabytes(5),
+opts := &op.Options{
+    FS:           op.InMemory(),
+    BytesPerSync: size.NewSizeFromKilobytes(1),
+    CacheSize:    size.NewSizeFromMegabytes(10),
+    MemTableSize: size.NewSizeFromMegabytes(5),
 }
 
 // Persistent disk storage
-opts := &tower.Options{
+opts := &op.Options{
     Path:         "/path/to/database",        // Optional: custom path
-    FS:           tower.OnDisk(),
-    BytesPerSync: tower.NewSizeFromKilobytes(64),
-    CacheSize:    tower.NewSizeFromGigabytes(1),
-    MemTableSize: tower.NewSizeFromMegabytes(64),
+    FS:           op.OnDisk(),
+    BytesPerSync: size.NewSizeFromKilobytes(64),
+    CacheSize:    size.NewSizeFromGigabytes(1),
+    MemTableSize: size.NewSizeFromMegabytes(64),
 }
 ```
 
 ### Size Utilities
 
-Tower provides size constructors and conversion methods:
+Tower provides size constructors and conversion methods via the `util/size` package:
 
 ```go
+import "github.com/rivulet-io/tower/util/size"
+
 // Size constructors
-size := tower.NewSizeFromBytes(1024)       // 1024 bytes
-size = tower.NewSizeFromKilobytes(1)       // 1 KB  
-size = tower.NewSizeFromMegabytes(10)      // 10 MB
-size = tower.NewSizeFromGigabytes(1)       // 1 GB
-size = tower.NewSizeFromTerabytes(1)       // 1 TB
+s := size.NewSizeFromBytes(1024)       // 1024 bytes
+s = size.NewSizeFromKilobytes(1)       // 1 KB  
+s = size.NewSizeFromMegabytes(10)      // 10 MB
+s = size.NewSizeFromGigabytes(1)       // 1 GB
+s = size.NewSizeFromTerabytes(1)       // 1 TB
 
 // Size conversions
-bytes := size.Bytes()                      // Get as int64 bytes
-kb := size.Kilobytes()                     // Get as float64 KB
-mb := size.Megabytes()                     // Get as float64 MB
-gb := size.Gigabytes()                     // Get as float64 GB
+bytes := s.Bytes()                      // Get as int64 bytes
+kb := s.Kilobytes()                     // Get as float64 KB
+mb := s.Megabytes()                     // Get as float64 MB
+gb := s.Gigabytes()                     // Get as float64 GB
 
 // String representation with automatic unit selection
-fmt.Println(size.String())                 // "1.00 GB"
-```
-
-## 🔧 Advanced Operations
-
-### String Operations
-All string operations are atomic and return the modified string:
-
-```go
-// Basic operations
-err := db.SetString("text", "Hello")
-result, _ := db.GetString("text")                    // "Hello"
-
-// Modification operations (return new value)
-result, _ = db.AppendString("text", " World")        // "Hello World"  
-result, _ = db.PrependString("text", "Say ")         // "Say Hello World"
-result, _ = db.ReplaceString("text", "World", "Go")  // "Say Hello Go"
-result, _ = db.UpperString("text")                   // "SAY HELLO GO"
-result, _ = db.LowerString("text")                   // "say hello go"
-
-// Query operations
-length, _ := db.LengthString("text")                 // 12
-contains, _ := db.ContainsString("text", "hello")    // true
-startsWith, _ := db.StartsWithString("text", "say")  // true
-endsWith, _ := db.EndsWithString("text", "go")       // true
-substring, _ := db.SubstringString("text", 0, 3)     // "say"
-
-// Comparison operations  
-equal, _ := db.EqualString("text", "say hello go")   // true
-cmp, _ := db.CompareString("text", "other")          // <0, 0, or >0
-```
-
-### Integer Operations
-Comprehensive arithmetic, bitwise, and conditional operations:
-
-```go
-// Basic operations
-err := db.SetInt("counter", 10)
-value, _ := db.GetInt("counter")                     // 10
-
-// Arithmetic operations (return new value)
-result, _ := db.AddInt("counter", 5)                 // 15
-result, _ = db.SubInt("counter", 3)                  // 12
-result, _ = db.MulInt("counter", 2)                  // 24
-result, _ = db.DivInt("counter", 3)                  // 8
-result, _ = db.ModInt("counter", 5)                  // 3
-result, _ = db.IncInt("counter")                     // 4
-result, _ = db.DecInt("counter")                     // 3
-
-// Mathematical operations
-result, _ = db.NegInt("counter")                     // -3
-result, _ = db.AbsInt("counter")                     // 3
-old, _ := db.SwapInt("counter", 100)                 // Returns old value (3), sets to 100
-
-// Conditional operations
-result, _ = db.SetIntIfGreater("counter", 50)        // 100 (no change, 100 > 50)
-result, _ = db.SetIntIfLess("counter", 200)          // 200 (changed, 100 < 200) 
-result, _ = db.ClampInt("counter", 50, 150)          // 150 (clamped to max)
-
-// Bitwise operations
-result, _ = db.AndInt("counter", 0xFF)               // Bitwise AND
-result, _ = db.OrInt("counter", 0x0F)                // Bitwise OR
-result, _ = db.XorInt("counter", 0xF0)               // Bitwise XOR
-result, _ = db.NotInt("counter")                     // Bitwise NOT
-result, _ = db.ShiftLeftInt("counter", 2)            // Left shift by 2
-result, _ = db.ShiftRightInt("counter", 1)           // Right shift by 1
-
-// Comparison
-cmp, _ := db.CompareInt("counter", 25)               // -1, 0, or 1
-```
-
-### Boolean Operations
-Logical operations with atomic guarantees:
-
-```go
-// Basic operations
-err := db.SetBool("flag1", true)
-err = db.SetBool("flag2", false)
-
-// Logical operations between stored values
-result, _ := db.AndBool("result", "flag1", "flag2")  // false (true AND false)
-result, _ = db.OrBool("result", "flag1", "flag2")    // true (true OR false)  
-result, _ = db.XorBool("result", "flag1", "flag2")   // true (true XOR false)
-
-// Single value operations
-result, _ = db.NotBool("flag1")                      // false (NOT true)
-result, _ = db.ToggleBool("flag2")                   // true (toggle false)
-
-// Conditional operations
-equal, _ := db.EqualBool("flag1", true)              // true
-result, _ = db.SetBoolIfEqual("flag1", true, false)  // false (was true, now false)
+fmt.Println(s.String())                 // "1.00 GB"
 ```
 
 ## 🧪 Testing
 
-Tower includes comprehensive test coverage with over 200 test cases covering all operations:
+Tower includes comprehensive test coverage for all operations in the `op` package:
 
 ```bash
 # Run all tests
@@ -881,18 +728,11 @@ go test ./...
 # Run specific operation tests  
 go test -v -run "TestString"        # String operations
 go test -v -run "TestInt"           # Integer operations  
-go test -v -run "TestBool"          # Boolean operations
 go test -v -run "TestList"          # List data structure
 go test -v -run "TestMap"           # Map data structure
-go test -v -run "TestSet"           # Set data structure
 
 # Run with coverage
 go test -v -cover ./...
-
-# Run specific test patterns
-go test -v -run "TestListPushPop"   # List push/pop operations
-go test -v -run "TestMapConcurrent" # Map concurrency tests
-go test -v -run "TestSetDuplicate"  # Set duplicate handling
 ```
 
 All tests use in-memory storage for fast execution and are designed to validate:
@@ -903,17 +743,19 @@ All tests use in-memory storage for fast execution and are designed to validate:
 
 ## 🚦 Concurrency
 
-Tower is architected for high-concurrency scenarios with several key design principles:
+The `op.Operator` is architected for high-concurrency scenarios:
 
 ### Locking Strategy
-- **Per-key locking**: Each key has its own RWMutex, minimizing contention
-- **Fine-grained locks**: Operations only lock specific keys, not the entire database
-- **Read-write separation**: Read operations use read locks, allowing concurrent reads
+- **Per-key locking**: Each key has its own RWMutex, minimizing contention.
+- **Fine-grained locks**: Operations only lock specific keys, not the entire database.
+- **Read-write separation**: Read operations use read locks, allowing concurrent reads.
 
 ### Thread Safety
 ```go
-// All operations are thread-safe
-func concurrentExample(db *tower.Tower) {
+import "sync"
+
+// All operations on op.Operator are thread-safe
+func concurrentExample(db *op.Operator) {
     var wg sync.WaitGroup
     
     // Concurrent writes to different keys - no contention
@@ -921,7 +763,9 @@ func concurrentExample(db *tower.Tower) {
         wg.Add(1)
         go func(id int) {
             defer wg.Done()
-            db.SetInt(fmt.Sprintf("key_%d", id), int64(id))
+
+            key := fmt.Sprintf("key_%d", id)
+            db.SetInt(key, int64(id))
         }(i)
     }
     
@@ -930,7 +774,8 @@ func concurrentExample(db *tower.Tower) {
         wg.Add(1)
         go func(id int) {
             defer wg.Done()
-            db.GetInt(fmt.Sprintf("key_%d", id))
+            key := fmt.Sprintf("key_%d", id)
+            db.GetInt(key)
         }(i)
     }
     
@@ -938,46 +783,29 @@ func concurrentExample(db *tower.Tower) {
 }
 ```
 
-### Performance Characteristics
-- **Lock contention**: Minimal - only when accessing the same key
-- **Read throughput**: High - multiple readers can access the same key
-- **Write throughput**: Excellent - writes to different keys are fully parallel
-
 ## 📊 Performance
 
 Tower is optimized for high-performance workloads with multiple optimization strategies:
 
 ### Storage Engine
-- **Pebble LSM-tree**: Optimized for high write throughput and range queries
-- **Write amplification**: Minimized through efficient compaction strategies  
-- **Read amplification**: Reduced via bloom filters and efficient caching
+- **Pebble LSM-tree**: Optimized for high write throughput and range queries.
+- **Write amplification**: Minimized through efficient compaction strategies.
+- **Read amplification**: Reduced via bloom filters and efficient caching.
 
 ### Memory Management
-- **Configurable cache**: Tune cache size based on working set and available memory
-- **Memory tables**: Adjustable MemTable size for write buffering
-- **Compression**: Built-in compression reduces storage footprint
-
-### I/O Optimization
-- **Async writes**: Non-blocking write operations with configurable sync intervals
-- **Batching**: Internal operation batching for improved throughput
-- **Memory-mapped reads**: Efficient read access patterns
+- **Configurable cache**: Tune cache size based on working set and available memory.
+- **Memory tables**: Adjustable MemTable size for write buffering.
+- **Compression**: Built-in compression reduces storage footprint.
 
 ```go
 // Performance-tuned configuration for high-throughput workloads
-opts := &tower.Options{
-    FS:           tower.OnDisk(),
-    BytesPerSync: tower.NewSizeFromMegabytes(1),     // Larger sync intervals
-    CacheSize:    tower.NewSizeFromGigabytes(2),     // Large cache for hot data
-    MemTableSize: tower.NewSizeFromMegabytes(128),   // Large write buffer
+opts := &op.Options{
+    FS:           op.OnDisk(),
+    BytesPerSync: size.NewSizeFromMegabytes(1),     // Larger sync intervals
+    CacheSize:    size.NewSizeFromGigabytes(2),     // Large cache for hot data
+    MemTableSize: size.NewSizeFromMegabytes(128),   // Large write buffer
 }
 ```
-
-### Benchmarks
-Typical performance characteristics on modern hardware:
-- **Write throughput**: 50,000+ ops/sec for mixed workloads
-- **Read throughput**: 100,000+ ops/sec for cached data
-- **Latency**: Sub-millisecond for in-memory operations
-- **Concurrent operations**: Scales linearly with CPU cores for different keys
 
 ## 🛠️ Contributing
 
@@ -992,12 +820,40 @@ go test ./...  # Ensure all tests pass
 ```
 
 ### Contribution Guidelines
-- **Code Style**: Follow `gofmt` and `golint` standards
-- **Testing**: All new features must include comprehensive tests
-- **Documentation**: Update README and add code comments for public APIs
-- **Commits**: Use conventional commit format for clear history
+- **Code Style**: Follow `gofmt` and `golint` standards.
+- **Testing**: All new features must include comprehensive tests.
+- **Documentation**: Update README and add code comments for public APIs.
+- **Commits**: Use conventional commit format for clear history.
 
-### Pull Request Process
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔗 Dependencies
+
+Tower builds on excellent open-source foundations:
+
+- **[CockroachDB Pebble](https://github.com/cockroachdb/pebble)** - High-performance LSM-tree storage engine.
+- **[NATS.io](https://github.com/nats-io/nats-server)** - High-performance messaging system for clustering.
+- **[Google UUID](https://github.com/google/uuid)** - UUID generation and parsing library.
+
+## 🆘 Support
+
+### Documentation
+- **API Reference**: Generated Go docs with `go doc github.com/rivulet-io/tower/op`
+- **Examples**: See the code snippets in this README for usage patterns.
+
+### Community
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/rivulet-io/tower/issues)
+- **✨ Feature Requests**: [GitHub Discussions](https://github.com/rivulet-io/tower/discussions)  
+- **❓ Questions**: Use GitHub Discussions for questions and help.
+
+### Enterprise Support
+For production deployments and enterprise requirements, contact: [support@rivulet.io](mailto:support@rivulet.io)
+
+---
+
+Built with ❤️ by the Rivulet team
 1. Fork the repository and create a feature branch
 2. Write tests for new functionality
 3. Ensure all tests pass: `go test ./...`
