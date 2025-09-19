@@ -587,6 +587,154 @@ Each algorithm has secure default parameters:
 - 🔐 **Secure Storage**: Configuration passwords, secrets
 - 📱 **Multi-Factor**: Password component of MFA systems
 
+## 🔒 SafeBox Operations
+
+Tower provides secure encrypted data storage through its SafeBox feature. SafeBox allows you to store sensitive data encrypted with multiple industry-standard algorithms, ensuring data confidentiality at rest:
+
+```go
+// Basic SafeBox operations
+sensitiveData := []byte("Secret API key or confidential information")
+encryptionKey := []byte("your-encryption-key-here")
+
+// Store encrypted data with AES-256-GCM
+payload, err := db.UpsertSafeBox("api_key", sensitiveData, encryptionKey, tower.EncryptionAlgorithmAES256GCM)
+if err != nil {
+    // Handle error
+}
+
+// Retrieve encrypted data (returns algorithm, encrypted data, and nonce)
+algorithm, encryptedData, nonce, err := db.GetSafeBox("api_key")
+if err != nil {
+    // Handle error
+}
+
+// Extract and decrypt data in one operation
+decryptedData, err := db.ExtractSafeBox("api_key", encryptionKey)
+if err != nil {
+    // Handle error - wrong key or corrupted data
+}
+fmt.Printf("Decrypted: %s\n", string(decryptedData))
+```
+
+### Supported Encryption Algorithms
+
+Tower supports a comprehensive set of modern encryption algorithms:
+
+```go
+// AES variants with GCM mode
+err := db.UpsertSafeBox("data1", data, key, tower.EncryptionAlgorithmAES128GCM)   // AES-128-GCM
+err = db.UpsertSafeBox("data2", data, key, tower.EncryptionAlgorithmAES192GCM)    // AES-192-GCM  
+err = db.UpsertSafeBox("data3", data, key, tower.EncryptionAlgorithmAES256GCM)    // AES-256-GCM (recommended)
+
+// ChaCha20-Poly1305 variants (excellent for mobile/ARM)
+err = db.UpsertSafeBox("data4", data, key, tower.EncryptionAlgorithmChaCha20Poly1305)   // ChaCha20-Poly1305
+err = db.UpsertSafeBox("data5", data, key, tower.EncryptionAlgorithmXChaCha20Poly1305)  // XChaCha20-Poly1305
+
+// ASCON variants (lightweight, IoT-optimized)
+err = db.UpsertSafeBox("data6", data, key, tower.EncryptionAlgorithmAscon128)     // ASCON-128
+err = db.UpsertSafeBox("data7", data, key, tower.EncryptionAlgorithmAscon128a)    // ASCON-128a
+err = db.UpsertSafeBox("data8", data, key, tower.EncryptionAlgorithmAscon80pq)    // ASCON-80pq (post-quantum)
+
+// Camellia variants (ISO standard, government-approved)
+err = db.UpsertSafeBox("data9", data, key, tower.EncryptionAlgorithmCamellia128GCM)  // Camellia-128-GCM
+err = db.UpsertSafeBox("data10", data, key, tower.EncryptionAlgorithmCamellia192GCM) // Camellia-192-GCM
+err = db.UpsertSafeBox("data11", data, key, tower.EncryptionAlgorithmCamellia256GCM) // Camellia-256-GCM
+
+// ARIA variants (Korean standard, government-approved)
+err = db.UpsertSafeBox("data12", data, key, tower.EncryptionAlgorithmARIA128GCM)  // ARIA-128-GCM
+err = db.UpsertSafeBox("data13", data, key, tower.EncryptionAlgorithmARIA192GCM)  // ARIA-192-GCM
+err = db.UpsertSafeBox("data14", data, key, tower.EncryptionAlgorithmARIA256GCM)  // ARIA-256-GCM
+
+// No encryption (for testing or when encryption is handled externally)
+err = db.UpsertSafeBox("data15", data, key, tower.EncryptionAlgorithmNone)
+```
+
+### Algorithm Recommendations
+
+| Algorithm | Use Case | Security Level | Performance |
+|-----------|----------|----------------|-------------|
+| **AES-256-GCM** | General purpose, high security | ⭐⭐⭐⭐⭐ Highest | ⭐⭐⭐⭐ Fast |
+| **ChaCha20-Poly1305** | Mobile, ARM processors | ⭐⭐⭐⭐⭐ Highest | ⭐⭐⭐⭐⭐ Fastest |
+| **XChaCha20-Poly1305** | Large nonces, long-lived data | ⭐⭐⭐⭐⭐ Highest | ⭐⭐⭐⭐⭐ Fastest |
+| **ASCON-128** | IoT, constrained environments | ⭐⭐⭐⭐ High | ⭐⭐⭐⭐⭐ Very Fast |
+| **ASCON-80pq** | Post-quantum security | ⭐⭐⭐⭐ High | ⭐⭐⭐⭐ Fast |
+| **Camellia-256-GCM** | Government, compliance | ⭐⭐⭐⭐⭐ Highest | ⭐⭐⭐ Good |
+| **ARIA-256-GCM** | Korean compliance | ⭐⭐⭐⭐⭐ Highest | ⭐⭐⭐ Good |
+
+### Key Management
+
+SafeBox uses BLAKE3 for key derivation, ensuring strong key material regardless of input quality:
+
+```go
+// Keys are automatically hashed to the correct length for each algorithm
+shortKey := []byte("password")           // Any length key works
+longKey := []byte("very-long-password-with-lots-of-entropy-here")
+
+// Both will work - Tower handles key derivation internally
+err := db.UpsertSafeBox("data1", data, shortKey, tower.EncryptionAlgorithmAES256GCM)
+err = db.UpsertSafeBox("data2", data, longKey, tower.EncryptionAlgorithmChaCha20Poly1305)
+
+// For maximum security, use high-entropy keys
+import "crypto/rand"
+secureKey := make([]byte, 32)
+rand.Read(secureKey)
+err = db.UpsertSafeBox("secure_data", sensitiveData, secureKey, tower.EncryptionAlgorithmAES256GCM)
+```
+
+### Advanced Usage
+
+```go
+// Store different types of sensitive data
+type SecretConfig struct {
+    APIKey      string `json:"api_key"`
+    DatabaseURL string `json:"database_url"`
+    JWTSecret   string `json:"jwt_secret"`
+}
+
+config := SecretConfig{
+    APIKey:      "sk-1234567890abcdef",
+    DatabaseURL: "postgres://user:pass@localhost/db",
+    JWTSecret:   "super-secret-jwt-key",
+}
+
+// Serialize and encrypt configuration
+configData, _ := json.Marshal(config)
+masterKey := []byte("master-encryption-key")
+
+_, err := db.UpsertSafeBox("app_config", configData, masterKey, tower.EncryptionAlgorithmAES256GCM)
+
+// Later, retrieve and decrypt
+decryptedConfig, err := db.ExtractSafeBox("app_config", masterKey)
+if err != nil {
+    log.Fatal("Failed to decrypt config:", err)
+}
+
+var loadedConfig SecretConfig
+json.Unmarshal(decryptedConfig, &loadedConfig)
+
+// Rotation: Update with new encryption
+newKey := []byte("new-master-key")
+_, err = db.UpsertSafeBox("app_config", configData, newKey, tower.EncryptionAlgorithmXChaCha20Poly1305)
+```
+
+**Key Features:**
+- ✅ **Multiple Algorithms**: 15 encryption algorithms including AES, ChaCha20, ASCON, Camellia, ARIA
+- ✅ **Automatic Key Derivation**: BLAKE3-based key stretching for any input key length
+- ✅ **Secure Nonces**: Cryptographically secure random nonce generation per operation
+- ✅ **Algorithm Agility**: Easy to change encryption algorithms without data migration
+- ✅ **Authenticated Encryption**: All algorithms provide built-in integrity protection
+- ✅ **Thread-Safe**: All operations are atomic and concurrent-safe
+- ✅ **Zero-Copy**: Efficient handling of large encrypted payloads
+
+**Use Cases:**
+- 🔐 **API Keys**: Secure storage of third-party service credentials
+- 🏛️ **Compliance**: Government and industry-standard encryption algorithms
+- 📱 **Mobile Apps**: Secure user data storage with ChaCha20-Poly1305
+- 🌐 **IoT Devices**: Lightweight encryption with ASCON algorithms
+- 💼 **Enterprise**: Configuration secrets, database credentials
+- 🔄 **Key Rotation**: Seamless encryption algorithm upgrades
+- 🛡️ **Data Protection**: GDPR/HIPAA compliant encrypted storage
+
 ## ⚙️ Configuration
 
 ### Storage Options
