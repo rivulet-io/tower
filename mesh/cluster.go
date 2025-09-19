@@ -8,6 +8,8 @@ import (
 	"github.com/rivulet-io/tower/util/size"
 )
 
+const defaultClusterName = "rivulet-cluster"
+
 type ClusterOptions struct {
 	serverName               string
 	listenHost               string
@@ -162,6 +164,7 @@ func (opt *ClusterOptions) toNATSConfig() server.Options {
 		Routes:                strsToURLs(opt.routes),
 		JetStreamMaxMemory:    int64(opt.jetstreamMaxMemory.Bytes()),
 		JetStreamMaxStore:     int64(opt.jetstreamMaxStore.Bytes()),
+		JetStreamDomain:       defaultClusterName,
 		StreamMaxBufferedMsgs: opt.jetstreamMaxBufferedMsgs,
 		StreamMaxBufferedSize: int64(opt.jetstreamMaxBufferedSize.Bytes()),
 		SyncInterval:          opt.jetstreamSyncInterval,
