@@ -17,7 +17,7 @@ type KeyValueStoreConfig struct {
 	Replicas     int
 }
 
-func (c *conn) CreateOrUpdateKeyValueStore(cluster string, config KeyValueStoreConfig) error {
+func (c *conn) CreateKeyValueStore(cluster string, config KeyValueStoreConfig) error {
 	storeConfig := &nats.KeyValueConfig{
 		Bucket:       config.Bucket,
 		Description:  config.Description,
@@ -32,9 +32,18 @@ func (c *conn) CreateOrUpdateKeyValueStore(cluster string, config KeyValueStoreC
 		History:     1,
 		Compression: true,
 	}
-	_, err := c.js.CreateKeyValue(storeConfig)
+
+	// Check if bucket already exists
+	_, err := c.js.KeyValue(config.Bucket)
+	if err == nil {
+		// Bucket already exists - KV stores cannot be updated once created
+		return fmt.Errorf("key-value store %q already exists and cannot be updated", config.Bucket)
+	}
+
+	// Try to create new bucket
+	_, err = c.js.CreateKeyValue(storeConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create or update key-value store: %w", err)
+		return fmt.Errorf("failed to create key-value store %q: %w", config.Bucket, err)
 	}
 
 	return nil
@@ -114,4 +123,51 @@ func (c *conn) DeleteKeyValueStore(bucket string) error {
 	}
 
 	return nil
+}
+
+func (c *conn) KeyValueStoreExists(bucket string) bool {
+	_, err := c.js.KeyValue(bucket)
+	return err == nil
+}
+
+func (c *conn) ListKeysInKeyValueStore(bucket string) ([]string, error) {
+	kv, err := c.js.KeyValue(bucket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access key-value store %q: %w", bucket, err)
+	}
+
+	keys, err := kv.Keys()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list keys in bucket %q: %w", bucket, err)
+	}
+
+	return keys, nil
+}
+
+func (c *conn) WatchKeyValueStore(bucket, key string) (nats.KeyWatcher, error) {
+	kv, err := c.js.KeyValue(bucket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access key-value store %q: %w", bucket, err)
+	}
+
+	watcher, err := kv.Watch(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create watcher for key %q in bucket %q: %w", key, bucket, err)
+	}
+
+	return watcher, nil
+}
+
+func (c *conn) WatchAllKeysInKeyValueStore(bucket string) (nats.KeyWatcher, error) {
+	kv, err := c.js.KeyValue(bucket)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access key-value store %q: %w", bucket, err)
+	}
+
+	watcher, err := kv.WatchAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create watcher for all keys in bucket %q: %w", bucket, err)
+	}
+
+	return watcher, nil
 }
