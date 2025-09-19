@@ -18,8 +18,8 @@ type EncryptionAlgorithm uint16
 const (
 	EncryptionAlgorithmNone EncryptionAlgorithm = iota
 	EncryptionAlgorithmAES128GCM
+	EncryptionAlgorithmAES192GCM
 	EncryptionAlgorithmAES256GCM
-	EncryptionAlgorithmAES512GCM
 	EncryptionAlgorithmChaCha20Poly1305
 	EncryptionAlgorithmXChaCha20Poly1305
 	EncryptionAlgorithmAscon128
@@ -59,8 +59,8 @@ func getAEAD(algorithm EncryptionAlgorithm, key []byte) (cipher.AEAD, error) {
 			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
 		return aead, nil
-	case EncryptionAlgorithmAES256GCM:
-		hashedKey, err := hashedKey(32)
+	case EncryptionAlgorithmAES192GCM:
+		hashedKey, err := hashedKey(24)
 		if err != nil {
 			return nil, err
 		}
@@ -73,8 +73,8 @@ func getAEAD(algorithm EncryptionAlgorithm, key []byte) (cipher.AEAD, error) {
 			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
 		return aead, nil
-	case EncryptionAlgorithmAES512GCM:
-		hashedKey, err := hashedKey(64)
+	case EncryptionAlgorithmAES256GCM:
+		hashedKey, err := hashedKey(32)
 		if err != nil {
 			return nil, err
 		}
