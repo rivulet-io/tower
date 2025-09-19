@@ -33,7 +33,7 @@ const (
 	EncryptionAlgorithmARIA256GCM
 )
 
-func getAEAD(algorithm EncryptionAlgorithm, key []byte) (cipher.AEAD, []byte, error) {
+func getAEAD(algorithm EncryptionAlgorithm, key []byte) (cipher.AEAD, error) {
 	hashedKey := func(length int) ([]byte, error) {
 		hasher := blake3.New(length, nil)
 		_, err := hasher.Write(key)
@@ -43,252 +43,197 @@ func getAEAD(algorithm EncryptionAlgorithm, key []byte) (cipher.AEAD, []byte, er
 
 		return hasher.Sum(nil), nil
 	}
-	getNonce := func(length int) ([]byte, error) {
-		nonce := make([]byte, length)
-		_, err := rand.Read(nonce)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate nonce: %w", err)
-		}
-
-		return nonce, nil
-	}
 
 	switch algorithm {
 	case EncryptionAlgorithmAES128GCM:
 		hashedKey, err := hashedKey(16)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		block, err := aes.NewCipher(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create AES cipher: %w", err)
+			return nil, fmt.Errorf("failed to create AES cipher: %w", err)
 		}
 		aead, err := cipher.NewGCM(block)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmAES256GCM:
 		hashedKey, err := hashedKey(32)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		block, err := aes.NewCipher(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create AES cipher: %w", err)
+			return nil, fmt.Errorf("failed to create AES cipher: %w", err)
 		}
 		aead, err := cipher.NewGCM(block)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmAES512GCM:
 		hashedKey, err := hashedKey(64)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		block, err := aes.NewCipher(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create AES cipher: %w", err)
+			return nil, fmt.Errorf("failed to create AES cipher: %w", err)
 		}
 		aead, err := cipher.NewGCM(block)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmChaCha20Poly1305:
 		hashedKey, err := hashedKey(32)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		aead, err := chacha20poly1305.New(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create ChaCha20-Poly1305: %w", err)
+			return nil, fmt.Errorf("failed to create ChaCha20-Poly1305: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmXChaCha20Poly1305:
 		hashedKey, err := hashedKey(32)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		aead, err := chacha20poly1305.NewX(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create XChaCha20-Poly1305: %w", err)
+			return nil, fmt.Errorf("failed to create XChaCha20-Poly1305: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmAscon128:
 		hashedKey, err := hashedKey(ascon.Ascon128.KeySize())
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		aead, err := ascon.New(hashedKey, ascon.Ascon128)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create Ascon128 cipher: %w", err)
+			return nil, fmt.Errorf("failed to create Ascon128 cipher: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmAscon128a:
 		hashedKey, err := hashedKey(ascon.Ascon128a.KeySize())
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		aead, err := ascon.New(hashedKey, ascon.Ascon128a)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create Ascon128a cipher: %w", err)
+			return nil, fmt.Errorf("failed to create Ascon128a cipher: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmAscon80pq:
 		hashedKey, err := hashedKey(ascon.Ascon80pq.KeySize())
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		aead, err := ascon.New(hashedKey, ascon.Ascon80pq)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create Ascon80pq cipher: %w", err)
+			return nil, fmt.Errorf("failed to create Ascon80pq cipher: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmCamellia128GCM:
 		hashedKey, err := hashedKey(16)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		block, err := camellia.New(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create Camellia cipher: %w", err)
+			return nil, fmt.Errorf("failed to create Camellia cipher: %w", err)
 		}
 		aead, err := cipher.NewGCM(block)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmCamellia192GCM:
 		hashedKey, err := hashedKey(24)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		block, err := camellia.New(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create Camellia cipher: %w", err)
+			return nil, fmt.Errorf("failed to create Camellia cipher: %w", err)
 		}
 		aead, err := cipher.NewGCM(block)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmCamellia256GCM:
 		hashedKey, err := hashedKey(32)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		block, err := camellia.New(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create Camellia cipher: %w", err)
+			return nil, fmt.Errorf("failed to create Camellia cipher: %w", err)
 		}
 		aead, err := cipher.NewGCM(block)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmARIA128GCM:
 		hashedKey, err := hashedKey(16)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		block, err := aria.NewCipher(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create ARIA cipher: %w", err)
+			return nil, fmt.Errorf("failed to create ARIA cipher: %w", err)
 		}
 		aead, err := cipher.NewGCM(block)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmARIA192GCM:
 		hashedKey, err := hashedKey(24)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		block, err := aria.NewCipher(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create ARIA cipher: %w", err)
+			return nil, fmt.Errorf("failed to create ARIA cipher: %w", err)
 		}
 		aead, err := cipher.NewGCM(block)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	case EncryptionAlgorithmARIA256GCM:
 		hashedKey, err := hashedKey(32)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		block, err := aria.NewCipher(hashedKey)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create ARIA cipher: %w", err)
+			return nil, fmt.Errorf("failed to create ARIA cipher: %w", err)
 		}
 		aead, err := cipher.NewGCM(block)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to create GCM: %w", err)
+			return nil, fmt.Errorf("failed to create GCM: %w", err)
 		}
-		nonce, err := getNonce(aead.NonceSize())
-		if err != nil {
-			return nil, nil, err
-		}
-		return aead, nonce, nil
+		return aead, nil
 	default:
-		return nil, nil, fmt.Errorf("unsupported encryption algorithm: %d", algorithm)
+		return nil, fmt.Errorf("unsupported encryption algorithm: %d", algorithm)
 	}
+}
+
+func getNonce(length int) ([]byte, error) {
+	nonce := make([]byte, length)
+	_, err := rand.Read(nonce)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate nonce: %w", err)
+	}
+
+	return nonce, nil
 }
 
 func encryptData(plainText, key []byte, algorithm EncryptionAlgorithm) ([]byte, []byte, error) {
@@ -300,7 +245,11 @@ func encryptData(plainText, key []byte, algorithm EncryptionAlgorithm) ([]byte, 
 		encryptedData = plainText
 	default:
 		var aead cipher.AEAD
-		aead, nonce, err = getAEAD(algorithm, key)
+		aead, err = getAEAD(algorithm, key)
+		if err != nil {
+			return nil, nil, err
+		}
+		nonce, err = getNonce(aead.NonceSize())
 		if err != nil {
 			return nil, nil, err
 		}
@@ -349,4 +298,36 @@ func (t *Tower) GetSafeBox(key string) (EncryptionAlgorithm, []byte, []byte, err
 	}
 
 	return algorithm, encryptedData, nonce, nil
+}
+
+func decryptData(encryptedData, nonce, key []byte, algorithm EncryptionAlgorithm) ([]byte, error) {
+	if algorithm == EncryptionAlgorithmNone {
+		return encryptedData, nil
+	}
+
+	aead, err := getAEAD(algorithm, key)
+	if err != nil {
+		return nil, err
+	}
+
+	plainText, err := aead.Open(nil, nonce, encryptedData, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt data: %w", err)
+	}
+
+	return plainText, nil
+}
+
+func (t *Tower) ExtractSafeBox(key string, encKey []byte) ([]byte, error) {
+	algorithm, encryptedData, nonce, err := t.GetSafeBox(key)
+	if err != nil {
+		return nil, err
+	}
+
+	plainText, err := decryptData(encryptedData, nonce, encKey, algorithm)
+	if err != nil {
+		return nil, err
+	}
+
+	return plainText, nil
 }
