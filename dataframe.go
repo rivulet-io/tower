@@ -764,11 +764,20 @@ type SafeBoxData struct {
 }
 
 func (df *DataFrame) SetSafeBox(algorithm EncryptionAlgorithm, encryptedData []byte, nonce []byte) error {
-	if len(encryptedData) == 0 || len(nonce) == 0 {
+	if len(encryptedData) == 0 {
 		return &DataFrameError{
 			Op:   "SetSafeBox",
 			Type: TypeSafeBox,
-			Msg:  "encrypted data and nonce cannot be empty",
+			Msg:  "encrypted data cannot be empty",
+		}
+	}
+
+	// For EncryptionAlgorithmNone, nonce can be empty
+	if algorithm != EncryptionAlgorithmNone && len(nonce) == 0 {
+		return &DataFrameError{
+			Op:   "SetSafeBox",
+			Type: TypeSafeBox,
+			Msg:  "nonce cannot be empty for encrypted algorithms",
 		}
 	}
 
