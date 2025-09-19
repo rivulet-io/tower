@@ -39,6 +39,10 @@ func (rg *RemoteGateways) Remove(name string) *RemoteGateways {
 }
 
 func (rg *RemoteGateways) toNATSConfig() []*server.RemoteGatewayOpts {
+	if rg == nil {
+		return nil
+	}
+
 	remotes := make([]*server.RemoteGatewayOpts, 0, len(*rg))
 	for _, r := range *rg {
 		urls := strsToURLs(r.URLs)
