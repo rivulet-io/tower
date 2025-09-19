@@ -10,6 +10,8 @@ import (
 
 type ClusterOptions struct {
 	serverName               string
+	listenHost               string
+	listenPort               int
 	maxPayload               size.Size
 	storeDir                 string
 	clusterName              string
@@ -42,6 +44,12 @@ func NewClusterOptions(name string) *ClusterOptions {
 		clusterPingInterval: 10 * time.Second, // 기본값 설정
 		clusterNoAdvertise:  false,            // 기본값 설정
 	}
+}
+
+func (opt *ClusterOptions) WithListen(host string, port int) *ClusterOptions {
+	opt.listenHost = host
+	opt.listenPort = port
+	return opt
 }
 
 func (opt *ClusterOptions) WithMaxPayload(maxPayload size.Size) *ClusterOptions {
@@ -131,6 +139,8 @@ func (opt *ClusterOptions) WithHTTPPort(port int) *ClusterOptions {
 func (opt *ClusterOptions) toNATSConfig() server.Options {
 	return server.Options{
 		ServerName: opt.serverName,
+		Host:       opt.listenHost,
+		Port:       opt.listenPort,
 		MaxPayload: int32(opt.maxPayload.Bytes()),
 		JetStream:  true,
 		StoreDir:   opt.storeDir,
