@@ -80,10 +80,14 @@ func (c *conn) CreateOrUpdateStream(cfg *PersistentConfig) error {
 		return fmt.Errorf("subjects cannot be empty")
 	}
 
-	// Use first subject as stream name (remove wildcards)
+	// Use first subject as stream name, but sanitize it properly
 	streamName := cfg.Subjects[0]
-	if idx := strings.Index(streamName, "."); idx > 0 {
-		streamName = streamName[:idx]
+	// Remove wildcards and convert to valid stream name
+	streamName = strings.ReplaceAll(streamName, "*", "")
+	streamName = strings.ReplaceAll(streamName, ">", "")
+	streamName = strings.ReplaceAll(streamName, ".", "_")
+	if streamName == "" || streamName == "_" {
+		streamName = "default_stream"
 	}
 
 	sc := &nats.StreamConfig{
@@ -194,8 +198,10 @@ func (c *conn) PullPersistentViaDurable(subscriberID string, subject string, opt
 						errHandler(fmt.Errorf("failed to respond to message on subject %q: %w", msg.Subject, err))
 					}
 				}
-				time.Sleep(option.Interval)
+				// Reset error count on successful fetch
+				errCount = 0
 			}
+			time.Sleep(option.Interval)
 		}
 	}()
 	return func() {
@@ -280,6 +286,8 @@ func (c *conn) PullPersistentViaEphemeral(subject string, option PullOptions, ha
 						errHandler(fmt.Errorf("failed to respond to message on subject %q: %w", msg.Subject, err))
 					}
 				}
+				// Reset error count on successful fetch
+				errCount = 0
 			}
 			time.Sleep(option.Interval)
 		}
@@ -300,4 +308,29 @@ func (c *conn) PublishPersistent(subject string, msg []byte) error {
 	}
 
 	return nil
+}
+
+func (c *conn) PublishPersistentWithOptions(subject string, msg []byte, opts ...nats.PubOpt) (*nats.PubAck, error) {
+	ack, err := c.js.Publish(subject, msg, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to publish to subject %q: %w", subject, err)
+	}
+
+	return ack, nil
+}
+
+func (c *conn) DeleteStream(streamName string) error {
+	err := c.js.DeleteStream(streamName)
+	if err != nil {
+		return fmt.Errorf("failed to delete stream %q: %w", streamName, err)
+	}
+	return nil
+}
+
+func (c *conn) GetStreamInfo(streamName string) (*nats.StreamInfo, error) {
+	info, err := c.js.StreamInfo(streamName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get stream info for %q: %w", streamName, err)
+	}
+	return info, nil
 }
