@@ -87,6 +87,29 @@ func waitForClusterReady(t *testing.T, cluster *Cluster, timeout time.Duration) 
 	}
 }
 
+// Helper function to wait for JetStream to be ready in cluster
+func waitForJetStreamReady(t *testing.T, cluster *Cluster, timeout time.Duration) {
+	t.Helper()
+
+	start := time.Now()
+	for {
+		if time.Since(start) > timeout {
+			t.Fatalf("JetStream not ready within timeout %v", timeout)
+		}
+
+		if cluster.nc.js != nil {
+			// Try a simple JetStream operation to check if it's ready
+			_, err := cluster.nc.js.AccountInfo()
+			if err == nil {
+				return
+			}
+			t.Logf("JetStream not ready yet, error: %v", err)
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
 // SetupThreeNodeCluster creates and returns three interconnected cluster nodes
 func SetupThreeNodeCluster(t *testing.T) (*Cluster, *Cluster, *Cluster) {
 	t.Helper()
@@ -128,6 +151,19 @@ func SetupThreeNodeCluster(t *testing.T) (*Cluster, *Cluster, *Cluster) {
 		cluster2.Close()
 		t.Fatalf("failed to create cluster node 3: %v", err)
 	}
+
+	// Wait for all clusters to be ready
+	waitForClusterReady(t, cluster1, 10*time.Second)
+	waitForClusterReady(t, cluster2, 10*time.Second)
+	waitForClusterReady(t, cluster3, 10*time.Second)
+
+	// Wait for JetStream to be ready on all nodes
+	waitForJetStreamReady(t, cluster1, 15*time.Second)
+	waitForJetStreamReady(t, cluster2, 15*time.Second)
+	waitForJetStreamReady(t, cluster3, 15*time.Second)
+
+	// Additional sleep to ensure cluster formation is complete
+	time.Sleep(2 * time.Second)
 
 	return cluster1, cluster2, cluster3
 }
