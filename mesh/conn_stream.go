@@ -131,7 +131,8 @@ func (c *conn) CreateOrUpdateStream(cfg *PersistentConfig) error {
 	return nil
 }
 
-func (c *conn) SubscribeStreamViaDurable(subscriberID string, subject string, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error)) (cancel func(), err error) {
+func (c *conn) SubscribeStreamViaDurable(subscriberID string, subject string, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error), opt ...nats.SubOpt) (cancel func(), err error) {
+	opt = append(opt, nats.ManualAck(), nats.Durable(subscriberID))
 	sub, err := c.js.Subscribe(subject, func(msg *nats.Msg) {
 		response, ok, ack := handler(msg.Subject, msg.Data)
 		if ack {
@@ -145,7 +146,7 @@ func (c *conn) SubscribeStreamViaDurable(subscriberID string, subject string, ha
 		if err := msg.Respond(response); err != nil {
 			errHandler(fmt.Errorf("failed to respond to message on subject %q: %w", msg.Subject, err))
 		}
-	}, nats.Durable(subscriberID), nats.ManualAck())
+	}, opt...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to subscribe to subject %q: %w", subject, err)
 	}
@@ -157,8 +158,9 @@ func (c *conn) SubscribeStreamViaDurable(subscriberID string, subject string, ha
 	}, nil
 }
 
-func (c *conn) PullPersistentViaDurable(subscriberID string, subject string, option PullOptions, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error)) (cancel func(), err error) {
-	sub, err := c.js.PullSubscribe(subject, subscriberID, nats.ManualAck())
+func (c *conn) PullPersistentViaDurable(subscriberID string, subject string, option PullOptions, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error), opt ...nats.SubOpt) (cancel func(), err error) {
+	opt = append(opt, nats.ManualAck())
+	sub, err := c.js.PullSubscribe(subject, subscriberID, opt...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to subscribe to subject %q: %w", subject, err)
 	}
@@ -219,7 +221,7 @@ func (c *conn) PullPersistentViaDurable(subscriberID string, subject string, opt
 	}, nil
 }
 
-func (c *conn) SubscribePersistentViaEphemeral(subject string, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error)) (cancel func(), err error) {
+func (c *conn) SubscribePersistentViaEphemeral(subject string, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error), opt ...nats.SubOpt) (cancel func(), err error) {
 	sub, err := c.js.Subscribe(subject, func(msg *nats.Msg) {
 		response, ok, ack := handler(msg.Subject, msg.Data)
 		if ack {
@@ -233,7 +235,7 @@ func (c *conn) SubscribePersistentViaEphemeral(subject string, handler func(subj
 		if err := msg.Respond(response); err != nil {
 			errHandler(fmt.Errorf("failed to respond to message on subject %q: %w", msg.Subject, err))
 		}
-	})
+	}, opt...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to subscribe to subject %q: %w", subject, err)
 	}
@@ -245,8 +247,9 @@ func (c *conn) SubscribePersistentViaEphemeral(subject string, handler func(subj
 	}, nil
 }
 
-func (c *conn) PullPersistentViaEphemeral(subject string, option PullOptions, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error)) (cancel func(), err error) {
-	sub, err := c.js.PullSubscribe(subject, "", nats.ManualAck())
+func (c *conn) PullPersistentViaEphemeral(subject string, option PullOptions, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error), opt ...nats.SubOpt) (cancel func(), err error) {
+	opt = append(opt, nats.ManualAck())
+	sub, err := c.js.PullSubscribe(subject, "", opt...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to subscribe to subject %q: %w", subject, err)
 	}
@@ -308,8 +311,8 @@ func (c *conn) PullPersistentViaEphemeral(subject string, option PullOptions, ha
 	}, nil
 }
 
-func (c *conn) PublishPersistent(subject string, msg []byte) error {
-	_, err := c.js.Publish(subject, msg)
+func (c *conn) PublishPersistent(subject string, msg []byte, opts ...nats.PubOpt) error {
+	_, err := c.js.Publish(subject, msg, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to publish to subject %q: %w", subject, err)
 	}
