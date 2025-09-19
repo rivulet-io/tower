@@ -243,6 +243,7 @@ func encryptData(plainText, key []byte, algorithm EncryptionAlgorithm) ([]byte, 
 	switch algorithm {
 	case EncryptionAlgorithmNone:
 		encryptedData = plainText
+		nonce = []byte{} // Empty nonce for no encryption
 	default:
 		var aead cipher.AEAD
 		aead, err = getAEAD(algorithm, key)
