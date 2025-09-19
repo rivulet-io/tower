@@ -8,6 +8,8 @@ import (
 
 type LeafOptions struct {
 	serverName  string
+	host        string
+	port        int
 	username    string
 	password    string
 	leafRemotes [][]string
@@ -17,6 +19,12 @@ func NewLeafOptions(name string) *LeafOptions {
 	return &LeafOptions{
 		serverName: name,
 	}
+}
+
+func (opt *LeafOptions) WithListen(host string, port int) *LeafOptions {
+	opt.host = host
+	opt.port = port
+	return opt
 }
 
 func (opt *LeafOptions) WithLeafAuth(username, password string) *LeafOptions {
@@ -40,6 +48,8 @@ func (opt *LeafOptions) toNATSConfig() *server.Options {
 
 	return &server.Options{
 		ServerName: opt.serverName,
+		Host:       opt.host,
+		Port:       opt.port,
 		LeafNode: server.LeafNodeOpts{
 			Username: opt.username,
 			Password: opt.password,
