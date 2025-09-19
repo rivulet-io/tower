@@ -31,6 +31,7 @@ const (
 	TypeRoaringBitmap
 	TypeRoaringBitmap64
 	TypePassword
+	TypeSafeBox
 	TypeJSON
 	TypeList
 	TypeMap
@@ -754,4 +755,59 @@ func (df *DataFrame) Password() (algo PasswordAlgorithm, hash []byte, salt []byt
 	}
 
 	return value.Algorithm, value.Hash, value.Salt, value.Options, nil
+}
+
+type SafeBoxData struct {
+	EncryptedData []byte              `json:"encrypted_data"`
+	Nonce         []byte              `json:"nonce"`
+	Algorithm     EncryptionAlgorithm `json:"algorithm"`
+}
+
+func (df *DataFrame) SetSafeBox(algorithm EncryptionAlgorithm, encryptedData []byte, nonce []byte) error {
+	if len(encryptedData) == 0 || len(nonce) == 0 {
+		return &DataFrameError{
+			Op:   "SetSafeBox",
+			Type: TypeSafeBox,
+			Msg:  "encrypted data and nonce cannot be empty",
+		}
+	}
+
+	buffer := make([]byte, 8+4+len(encryptedData)+4+len(nonce))
+	binary.BigEndian.PutUint64(buffer[0:8], uint64(algorithm))
+	binary.BigEndian.PutUint32(buffer[8:12], uint32(len(encryptedData)))
+	copy(buffer[12:12+len(encryptedData)], encryptedData)
+	binary.BigEndian.PutUint32(buffer[12+len(encryptedData):16+len(encryptedData)], uint32(len(nonce)))
+	copy(buffer[16+len(encryptedData):], nonce)
+
+	df.typ = TypeSafeBox
+	df.payload = buffer
+
+	return nil
+}
+
+func (df *DataFrame) SafeBox() (algorithm EncryptionAlgorithm, encryptedData []byte, nonce []byte, err error) {
+	if df.typ != TypeSafeBox {
+		return 0, nil, nil, &DataFrameError{Op: "SafeBox", Type: df.typ, Msg: "type mismatch"}
+	}
+
+	if len(df.payload) < 16 {
+		return 0, nil, nil, &DataFrameError{Op: "SafeBox", Type: df.typ, Msg: "payload too short"}
+	}
+
+	value := SafeBoxData{}
+	value.Algorithm = EncryptionAlgorithm(binary.BigEndian.Uint64(df.payload[0:8]))
+	encDataLen := binary.BigEndian.Uint32(df.payload[8:12])
+	if len(df.payload) < int(12+encDataLen+4) {
+		return 0, nil, nil, &DataFrameError{Op: "SafeBox", Type: df.typ, Msg: "invalid encrypted data length"}
+	}
+	value.EncryptedData = make([]byte, encDataLen)
+	copy(value.EncryptedData, df.payload[12:12+encDataLen])
+	nonceLen := binary.BigEndian.Uint32(df.payload[12+encDataLen : 16+encDataLen])
+	if len(df.payload) < int(16+encDataLen+nonceLen) {
+		return 0, nil, nil, &DataFrameError{Op: "SafeBox", Type: df.typ, Msg: "invalid nonce length"}
+	}
+	value.Nonce = make([]byte, nonceLen)
+	copy(value.Nonce, df.payload[16+encDataLen:16+encDataLen+nonceLen])
+
+	return value.Algorithm, value.EncryptedData, value.Nonce, nil
 }
