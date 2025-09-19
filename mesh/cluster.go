@@ -17,6 +17,8 @@ type ClusterOptions struct {
 	clusterListenPort        int
 	clusterUsername          string
 	clusterPassword          string
+	clusterPingInterval      time.Duration
+	clusterNoAdvertise       bool
 	jetstreamMaxMemory       size.Size
 	jetstreamMaxStore        size.Size
 	jetstreamMaxBufferedMsgs int
@@ -36,7 +38,9 @@ type ClusterOptions struct {
 
 func NewClusterOptions(name string) *ClusterOptions {
 	return &ClusterOptions{
-		serverName: name,
+		serverName:          name,
+		clusterPingInterval: 10 * time.Second, // 기본값 설정
+		clusterNoAdvertise:  false,            // 기본값 설정
 	}
 }
 
@@ -64,6 +68,16 @@ func (opt *ClusterOptions) WithClusterListen(host string, port int) *ClusterOpti
 func (opt *ClusterOptions) WithClusterAuth(username, password string) *ClusterOptions {
 	opt.clusterUsername = username
 	opt.clusterPassword = password
+	return opt
+}
+
+func (opt *ClusterOptions) WithClusterPingInterval(interval time.Duration) *ClusterOptions {
+	opt.clusterPingInterval = interval
+	return opt
+}
+
+func (opt *ClusterOptions) WithClusterNoAdvertise(noAdvertise bool) *ClusterOptions {
+	opt.clusterNoAdvertise = noAdvertise
 	return opt
 }
 
@@ -132,8 +146,8 @@ func (opt *ClusterOptions) toNATSConfig() server.Options {
 			Port:         opt.clusterListenPort,
 			Username:     opt.clusterUsername,
 			Password:     opt.clusterPassword,
-			NoAdvertise:  false,
-			PingInterval: 10 * time.Second,
+			NoAdvertise:  opt.clusterNoAdvertise,
+			PingInterval: opt.clusterPingInterval,
 		},
 		Routes:                strsToURLs(opt.routes),
 		JetStreamMaxMemory:    int64(opt.jetstreamMaxMemory.Bytes()),
