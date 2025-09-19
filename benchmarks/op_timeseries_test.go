@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rivulet-io/tower"
+	"github.com/rivulet-io/tower/op"
 )
 
 func BenchmarkTimeSeriesCreate(b *testing.B) {
@@ -54,11 +54,11 @@ func BenchmarkTimeSeriesAdd(b *testing.B) {
 	}
 
 	baseTime := time.Now().UTC()
-	values := []tower.PrimitiveData{
-		tower.PrimitiveInt(42),
-		tower.PrimitiveFloat(3.14),
-		tower.PrimitiveString("test"),
-		tower.PrimitiveBool(true),
+	values := []op.PrimitiveData{
+		op.PrimitiveInt(42),
+		op.PrimitiveFloat(3.14),
+		op.PrimitiveString("test"),
+		op.PrimitiveBool(true),
 	}
 
 	b.ResetTimer()
@@ -88,7 +88,7 @@ func BenchmarkTimeSeriesGet(b *testing.B) {
 	for i := 0; i < 1000; i++ {
 		timestamp := baseTime.Add(time.Duration(i) * time.Minute)
 		timestamps[i] = timestamp
-		err := twr.TimeSeriesAdd(key, timestamp, tower.PrimitiveInt(int64(i)))
+		err := twr.TimeSeriesAdd(key, timestamp, op.PrimitiveInt(int64(i)))
 		if err != nil {
 			b.Fatalf("Failed to add data point: %v", err)
 		}
@@ -119,7 +119,7 @@ func BenchmarkTimeSeriesIntOperations(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		timestamp := baseTime.Add(time.Duration(i) * time.Nanosecond)
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		err := twr.TimeSeriesAdd(key, timestamp, value)
 		if err != nil {
 			b.Fatalf("Failed to add int data point: %v", err)
@@ -142,7 +142,7 @@ func BenchmarkTimeSeriesFloatOperations(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		timestamp := baseTime.Add(time.Duration(i) * time.Nanosecond)
-		value := tower.PrimitiveFloat(float64(i) * 3.14)
+		value := op.PrimitiveFloat(float64(i) * 3.14)
 		err := twr.TimeSeriesAdd(key, timestamp, value)
 		if err != nil {
 			b.Fatalf("Failed to add float data point: %v", err)
@@ -165,7 +165,7 @@ func BenchmarkTimeSeriesStringOperations(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		timestamp := baseTime.Add(time.Duration(i) * time.Nanosecond)
-		value := tower.PrimitiveString(fmt.Sprintf("value-%d", i))
+		value := op.PrimitiveString(fmt.Sprintf("value-%d", i))
 		err := twr.TimeSeriesAdd(key, timestamp, value)
 		if err != nil {
 			b.Fatalf("Failed to add string data point: %v", err)
@@ -188,7 +188,7 @@ func BenchmarkTimeSeriesBoolOperations(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		timestamp := baseTime.Add(time.Duration(i) * time.Nanosecond)
-		value := tower.PrimitiveBool(i%2 == 0)
+		value := op.PrimitiveBool(i%2 == 0)
 		err := twr.TimeSeriesAdd(key, timestamp, value)
 		if err != nil {
 			b.Fatalf("Failed to add bool data point: %v", err)

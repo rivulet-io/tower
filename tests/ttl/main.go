@@ -6,17 +6,18 @@ import (
 	"os"
 	"time"
 
-	"github.com/rivulet-io/tower"
+	"github.com/rivulet-io/tower/op"
+	"github.com/rivulet-io/tower/util/size"
 )
 
 func main() {
-	// Create an in-memory Tower instance
-	t, err := tower.NewTower(&tower.Options{
+	// Create an in-memory Operator instance
+	t, err := op.NewOperator(&op.Options{
 		Path:         "data",
-		FS:           tower.InMemory(),
-		CacheSize:    tower.NewSizeFromMegabytes(64),
-		MemTableSize: tower.NewSizeFromMegabytes(16),
-		BytesPerSync: tower.NewSizeFromKilobytes(512),
+		FS:           op.InMemory(),
+		CacheSize:    size.NewSizeFromMegabytes(64),
+		MemTableSize: size.NewSizeFromMegabytes(16),
+		BytesPerSync: size.NewSizeFromKilobytes(512),
 	})
 	if err != nil {
 		log.Fatalf("Failed to create tower: %v", err)
@@ -24,7 +25,7 @@ func main() {
 	defer t.Close()
 
 	// Initialize the timer for Now() function
-	tower.InitTimer()
+	op.InitTimer()
 
 	// Set some keys with TTL
 	keys := []string{"key1", "key2", "key3", "key4", "key5"}

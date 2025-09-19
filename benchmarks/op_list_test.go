@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rivulet-io/tower"
+	"github.com/rivulet-io/tower/op"
 )
 
 // Benchmark basic list operations
@@ -54,7 +54,7 @@ func BenchmarkPushLeft(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		if _, err := twr.PushLeft(key, value); err != nil {
 			b.Fatalf("PushLeft failed: %v", err)
 		}
@@ -72,7 +72,7 @@ func BenchmarkPushRight(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("PushRight failed: %v", err)
 		}
@@ -90,7 +90,7 @@ func BenchmarkPopLeft(b *testing.B) {
 
 	// Pre-populate list
 	for i := 0; i < b.N; i++ {
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("Setup PushRight failed: %v", err)
 		}
@@ -115,7 +115,7 @@ func BenchmarkPopRight(b *testing.B) {
 
 	// Pre-populate list
 	for i := 0; i < b.N; i++ {
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("Setup PushRight failed: %v", err)
 		}
@@ -141,7 +141,7 @@ func BenchmarkListLength(b *testing.B) {
 
 	// Pre-populate list
 	for i := 0; i < 100; i++ {
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("Setup PushRight failed: %v", err)
 		}
@@ -166,7 +166,7 @@ func BenchmarkListIndex(b *testing.B) {
 
 	// Pre-populate list
 	for i := 0; i < 100; i++ {
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("Setup PushRight failed: %v", err)
 		}
@@ -192,7 +192,7 @@ func BenchmarkListSet(b *testing.B) {
 
 	// Pre-populate list
 	for i := 0; i < 100; i++ {
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("Setup PushRight failed: %v", err)
 		}
@@ -201,7 +201,7 @@ func BenchmarkListSet(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		index := int64(i % 100)
-		value := tower.PrimitiveInt(int64(i * 10))
+		value := op.PrimitiveInt(int64(i * 10))
 		if err := twr.ListSet(key, index, value); err != nil {
 			b.Fatalf("ListSet failed: %v", err)
 		}
@@ -219,7 +219,7 @@ func BenchmarkListRange(b *testing.B) {
 
 	// Pre-populate list
 	for i := 0; i < 100; i++ {
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("Setup PushRight failed: %v", err)
 		}
@@ -249,7 +249,7 @@ func BenchmarkListTrim(b *testing.B) {
 		}
 
 		for j := 0; j < 100; j++ {
-			value := tower.PrimitiveInt(int64(j))
+			value := op.PrimitiveInt(int64(j))
 			if _, err := twr.PushRight(key, value); err != nil {
 				b.Fatalf("Setup PushRight failed: %v", err)
 			}
@@ -279,7 +279,7 @@ func BenchmarkListWithStrings(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		value := tower.PrimitiveString(fmt.Sprintf("string_%d", i))
+		value := op.PrimitiveString(fmt.Sprintf("string_%d", i))
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("PushRight with string failed: %v", err)
 		}
@@ -297,7 +297,7 @@ func BenchmarkListWithFloats(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		value := tower.PrimitiveFloat(float64(i) + 0.5)
+		value := op.PrimitiveFloat(float64(i) + 0.5)
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("PushRight with float failed: %v", err)
 		}
@@ -315,7 +315,7 @@ func BenchmarkListWithBools(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		value := tower.PrimitiveBool(i%2 == 0)
+		value := op.PrimitiveBool(i%2 == 0)
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("PushRight with bool failed: %v", err)
 		}
@@ -340,7 +340,7 @@ func BenchmarkConcurrentPushRight(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			key := fmt.Sprintf("list:concurrent:push:%d", i%numLists)
-			value := tower.PrimitiveInt(int64(i))
+			value := op.PrimitiveInt(int64(i))
 			if _, err := twr.PushRight(key, value); err != nil {
 				b.Fatalf("ConcurrentPushRight failed: %v", err)
 			}
@@ -367,7 +367,7 @@ func BenchmarkConcurrentPopLeft(b *testing.B) {
 		}
 
 		for j := 0; j < itemsPerList*2; j++ { // Extra items to avoid empty list errors
-			value := tower.PrimitiveInt(int64(j))
+			value := op.PrimitiveInt(int64(j))
 			if _, err := twr.PushRight(key, value); err != nil {
 				b.Fatalf("Setup PushRight failed: %v", err)
 			}
@@ -404,7 +404,7 @@ func BenchmarkListAsQueue(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Queue operations: PushRight (enqueue), PopLeft (dequeue)
 		if i%2 == 0 {
-			value := tower.PrimitiveInt(int64(i))
+			value := op.PrimitiveInt(int64(i))
 			if _, err := twr.PushRight(key, value); err != nil {
 				b.Fatalf("Queue PushRight failed: %v", err)
 			}
@@ -432,7 +432,7 @@ func BenchmarkListAsStack(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Stack operations: PushRight (push), PopRight (pop)
 		if i%2 == 0 {
-			value := tower.PrimitiveInt(int64(i))
+			value := op.PrimitiveInt(int64(i))
 			if _, err := twr.PushRight(key, value); err != nil {
 				b.Fatalf("Stack PushRight failed: %v", err)
 			}
@@ -471,7 +471,7 @@ func benchmarkListOperationsBySize(b *testing.B, size string, listSize int) {
 
 	// Pre-populate list
 	for i := 0; i < listSize; i++ {
-		value := tower.PrimitiveInt(int64(i))
+		value := op.PrimitiveInt(int64(i))
 		if _, err := twr.PushRight(key, value); err != nil {
 			b.Fatalf("Setup PushRight failed: %v", err)
 		}
@@ -490,7 +490,7 @@ func benchmarkListOperationsBySize(b *testing.B, size string, listSize int) {
 				b.Fatalf("ListIndex failed: %v", err)
 			}
 		case 2:
-			value := tower.PrimitiveInt(int64(i))
+			value := op.PrimitiveInt(int64(i))
 			if _, err := twr.PushRight(key, value); err != nil {
 				b.Fatalf("PushRight failed: %v", err)
 			}

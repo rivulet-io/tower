@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rivulet-io/tower"
+	"github.com/rivulet-io/tower/op"
 )
 
 // Benchmark basic set operations
@@ -54,7 +54,7 @@ func BenchmarkSetAdd(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("SetAdd failed: %v", err)
 		}
@@ -72,7 +72,7 @@ func BenchmarkSetRemove(b *testing.B) {
 
 	// Pre-populate set
 	for i := 0; i < b.N; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("Setup SetAdd failed: %v", err)
 		}
@@ -80,7 +80,7 @@ func BenchmarkSetRemove(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("member_%d", i))
 		if _, err := twr.SetRemove(key, member); err != nil {
 			b.Fatalf("SetRemove failed: %v", err)
 		}
@@ -97,7 +97,7 @@ func BenchmarkSetAddDuplicates(b *testing.B) {
 	}
 
 	// Add initial member
-	member := tower.PrimitiveString("duplicate_member")
+	member := op.PrimitiveString("duplicate_member")
 	if _, err := twr.SetAdd(key, member); err != nil {
 		b.Fatalf("Setup SetAdd failed: %v", err)
 	}
@@ -122,7 +122,7 @@ func BenchmarkSetRemoveNonExistent(b *testing.B) {
 
 	// Add some members but try to remove different ones
 	for i := 0; i < 10; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("existing_member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("existing_member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("Setup SetAdd failed: %v", err)
 		}
@@ -130,7 +130,7 @@ func BenchmarkSetRemoveNonExistent(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		removeMember := tower.PrimitiveString(fmt.Sprintf("nonexistent_member_%d", i))
+		removeMember := op.PrimitiveString(fmt.Sprintf("nonexistent_member_%d", i))
 		if _, err := twr.SetRemove(key, removeMember); err != nil {
 			b.Fatalf("SetRemove nonexistent failed: %v", err)
 		}
@@ -149,7 +149,7 @@ func BenchmarkSetIsMember(b *testing.B) {
 
 	// Pre-populate set
 	for i := 0; i < 100; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("Setup SetAdd failed: %v", err)
 		}
@@ -157,7 +157,7 @@ func BenchmarkSetIsMember(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("member_%d", i%100))
+		member := op.PrimitiveString(fmt.Sprintf("member_%d", i%100))
 		if _, err := twr.SetIsMember(key, member); err != nil {
 			b.Fatalf("SetIsMember failed: %v", err)
 		}
@@ -175,7 +175,7 @@ func BenchmarkSetIsMemberNonExistent(b *testing.B) {
 
 	// Pre-populate set with some members
 	for i := 0; i < 100; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("existing_member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("existing_member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("Setup SetAdd failed: %v", err)
 		}
@@ -183,7 +183,7 @@ func BenchmarkSetIsMemberNonExistent(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("nonexistent_member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("nonexistent_member_%d", i))
 		if _, err := twr.SetIsMember(key, member); err != nil {
 			b.Fatalf("SetIsMember nonexistent failed: %v", err)
 		}
@@ -201,7 +201,7 @@ func BenchmarkSetCardinality(b *testing.B) {
 
 	// Pre-populate set
 	for i := 0; i < 100; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("Setup SetAdd failed: %v", err)
 		}
@@ -226,7 +226,7 @@ func BenchmarkSetMembers(b *testing.B) {
 
 	// Pre-populate set
 	for i := 0; i < 100; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("Setup SetAdd failed: %v", err)
 		}
@@ -252,7 +252,7 @@ func BenchmarkSetWithStrings(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("string_member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("string_member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("SetAdd with string failed: %v", err)
 		}
@@ -270,7 +270,7 @@ func BenchmarkSetWithInts(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("int_member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("int_member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("SetAdd with int failed: %v", err)
 		}
@@ -288,7 +288,7 @@ func BenchmarkSetWithFloats(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("float_member_%.1f", float64(i)+0.5))
+		member := op.PrimitiveString(fmt.Sprintf("float_member_%.1f", float64(i)+0.5))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("SetAdd with float failed: %v", err)
 		}
@@ -306,7 +306,7 @@ func BenchmarkSetWithBools(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("bool_member_%t", i%2 == 0))
+		member := op.PrimitiveString(fmt.Sprintf("bool_member_%t", i%2 == 0))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("SetAdd with bool failed: %v", err)
 		}
@@ -325,16 +325,16 @@ func BenchmarkSetMixedTypes(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		var member tower.PrimitiveData
+		var member op.PrimitiveData
 		switch i % 4 {
 		case 0:
-			member = tower.PrimitiveString(fmt.Sprintf("string_%d", i))
+			member = op.PrimitiveString(fmt.Sprintf("string_%d", i))
 		case 1:
-			member = tower.PrimitiveString(fmt.Sprintf("int_%d", i))
+			member = op.PrimitiveString(fmt.Sprintf("int_%d", i))
 		case 2:
-			member = tower.PrimitiveString(fmt.Sprintf("float_%.1f", float64(i)+0.5))
+			member = op.PrimitiveString(fmt.Sprintf("float_%.1f", float64(i)+0.5))
 		case 3:
-			member = tower.PrimitiveString(fmt.Sprintf("bool_%t", i%2 == 0))
+			member = op.PrimitiveString(fmt.Sprintf("bool_%t", i%2 == 0))
 		}
 
 		if _, err := twr.SetAdd(key, member); err != nil {
@@ -361,7 +361,7 @@ func BenchmarkConcurrentSetAdd(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			key := fmt.Sprintf("set:concurrent:add:%d", i%numSets)
-			member := tower.PrimitiveString(fmt.Sprintf("member_%d", i))
+			member := op.PrimitiveString(fmt.Sprintf("member_%d", i))
 			if _, err := twr.SetAdd(key, member); err != nil {
 				b.Fatalf("ConcurrentSetAdd failed: %v", err)
 			}
@@ -385,7 +385,7 @@ func BenchmarkConcurrentSetIsMember(b *testing.B) {
 		}
 
 		for j := 0; j < membersPerSet; j++ {
-			member := tower.PrimitiveString(fmt.Sprintf("member_%d", j))
+			member := op.PrimitiveString(fmt.Sprintf("member_%d", j))
 			if _, err := twr.SetAdd(key, member); err != nil {
 				b.Fatalf("Setup SetAdd failed: %v", err)
 			}
@@ -397,7 +397,7 @@ func BenchmarkConcurrentSetIsMember(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			key := fmt.Sprintf("set:concurrent:ismember:%d", i%numSets)
-			member := tower.PrimitiveString(fmt.Sprintf("member_%d", i%membersPerSet))
+			member := op.PrimitiveString(fmt.Sprintf("member_%d", i%membersPerSet))
 			if _, err := twr.SetIsMember(key, member); err != nil {
 				b.Fatalf("ConcurrentSetIsMember failed: %v", err)
 			}
@@ -430,7 +430,7 @@ func benchmarkSetOperationsBySize(b *testing.B, size string, setSize int) {
 
 	// Pre-populate set
 	for i := 0; i < setSize; i++ {
-		member := tower.PrimitiveString(fmt.Sprintf("member_%d", i))
+		member := op.PrimitiveString(fmt.Sprintf("member_%d", i))
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("Setup SetAdd failed: %v", err)
 		}
@@ -444,12 +444,12 @@ func benchmarkSetOperationsBySize(b *testing.B, size string, setSize int) {
 				b.Fatalf("SetCardinality failed: %v", err)
 			}
 		case 1:
-			member := tower.PrimitiveString(fmt.Sprintf("member_%d", i%setSize))
+			member := op.PrimitiveString(fmt.Sprintf("member_%d", i%setSize))
 			if _, err := twr.SetIsMember(key, member); err != nil {
 				b.Fatalf("SetIsMember failed: %v", err)
 			}
 		case 2:
-			member := tower.PrimitiveString(fmt.Sprintf("new_member_%d", i))
+			member := op.PrimitiveString(fmt.Sprintf("new_member_%d", i))
 			if _, err := twr.SetAdd(key, member); err != nil {
 				b.Fatalf("SetAdd failed: %v", err)
 			}
@@ -474,7 +474,7 @@ func BenchmarkSetAsTagSystem(b *testing.B) {
 	// Pre-populate with some common tags
 	commonTags := []string{"important", "urgent", "work", "personal", "draft", "reviewed"}
 	for _, tag := range commonTags {
-		member := tower.PrimitiveString(tag)
+		member := op.PrimitiveString(tag)
 		if _, err := twr.SetAdd(key, member); err != nil {
 			b.Fatalf("Setup common tags failed: %v", err)
 		}
@@ -486,19 +486,19 @@ func BenchmarkSetAsTagSystem(b *testing.B) {
 		switch i % 10 {
 		case 0, 1, 2, 3, 4, 5: // Check tag (60%)
 			tag := commonTags[i%len(commonTags)]
-			member := tower.PrimitiveString(tag)
+			member := op.PrimitiveString(tag)
 			if _, err := twr.SetIsMember(key, member); err != nil {
 				b.Fatalf("Tag check failed: %v", err)
 			}
 		case 6, 7, 8: // Add tag (30%)
 			tag := fmt.Sprintf("dynamic_tag_%d", i)
-			member := tower.PrimitiveString(tag)
+			member := op.PrimitiveString(tag)
 			if _, err := twr.SetAdd(key, member); err != nil {
 				b.Fatalf("Tag add failed: %v", err)
 			}
 		case 9: // Remove tag (10%)
 			tag := fmt.Sprintf("dynamic_tag_%d", i-10) // Remove older tags
-			member := tower.PrimitiveString(tag)
+			member := op.PrimitiveString(tag)
 			if _, err := twr.SetRemove(key, member); err != nil {
 				b.Fatalf("Tag remove failed: %v", err)
 			}
@@ -519,14 +519,14 @@ func BenchmarkSetAsUniqueConstraint(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Simulate unique constraint checking
-		id := tower.PrimitiveString(fmt.Sprintf("id_%d", i%1000)) // Limit to 1000 unique IDs
-		
+		id := op.PrimitiveString(fmt.Sprintf("id_%d", i%1000)) // Limit to 1000 unique IDs
+
 		// First check if ID already exists
 		exists, err := twr.SetIsMember(key, id)
 		if err != nil {
 			b.Fatalf("Unique constraint check failed: %v", err)
 		}
-		
+
 		// If not exists, add it
 		if !exists {
 			if _, err := twr.SetAdd(key, id); err != nil {

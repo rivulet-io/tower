@@ -5,18 +5,19 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/rivulet-io/tower"
+	"github.com/rivulet-io/tower/op"
+	"github.com/rivulet-io/tower/util/size"
 )
 
 // setupTowerForDecimalBenchmark creates an in-memory tower for Decimal benchmarking
-func setupTowerForDecimalBenchmark(b *testing.B) *tower.Tower {
+func setupTowerForDecimalBenchmark(b *testing.B) *op.Operator {
 	b.Helper()
-	twr, err := tower.NewTower(&tower.Options{
+	twr, err := op.NewOperator(&op.Options{
 		Path:         "benchmark_data",
-		FS:           tower.InMemory(),
-		CacheSize:    tower.NewSizeFromMegabytes(64),
-		MemTableSize: tower.NewSizeFromMegabytes(16),
-		BytesPerSync: tower.NewSizeFromKilobytes(512),
+		FS:           op.InMemory(),
+		CacheSize:    size.NewSizeFromMegabytes(64),
+		MemTableSize: size.NewSizeFromMegabytes(16),
+		BytesPerSync: size.NewSizeFromKilobytes(512),
 	})
 	if err != nil {
 		b.Fatalf("Failed to create tower: %v", err)

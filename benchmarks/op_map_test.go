@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rivulet-io/tower"
+	"github.com/rivulet-io/tower/op"
 )
 
 // Benchmark basic map operations
@@ -54,8 +54,8 @@ func BenchmarkMapSet(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("field_%d", i))
-		value := tower.PrimitiveInt(int64(i))
+		field := op.PrimitiveString(fmt.Sprintf("field_%d", i))
+		value := op.PrimitiveInt(int64(i))
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("MapSet failed: %v", err)
 		}
@@ -73,8 +73,8 @@ func BenchmarkMapGet(b *testing.B) {
 
 	// Pre-populate map
 	for i := 0; i < 100; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("field_%d", i))
-		value := tower.PrimitiveInt(int64(i))
+		field := op.PrimitiveString(fmt.Sprintf("field_%d", i))
+		value := op.PrimitiveInt(int64(i))
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("Setup MapSet failed: %v", err)
 		}
@@ -82,7 +82,7 @@ func BenchmarkMapGet(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("field_%d", i%100))
+		field := op.PrimitiveString(fmt.Sprintf("field_%d", i%100))
 		if _, err := twr.MapGet(key, field); err != nil {
 			b.Fatalf("MapGet failed: %v", err)
 		}
@@ -102,8 +102,8 @@ func BenchmarkMapDelete(b *testing.B) {
 			b.Fatalf("CreateMap failed: %v", err)
 		}
 
-		field := tower.PrimitiveString(fmt.Sprintf("field_%d", i))
-		value := tower.PrimitiveInt(int64(i))
+		field := op.PrimitiveString(fmt.Sprintf("field_%d", i))
+		value := op.PrimitiveInt(int64(i))
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("Setup MapSet failed: %v", err)
 		}
@@ -132,8 +132,8 @@ func BenchmarkMapKeys(b *testing.B) {
 
 	// Pre-populate map
 	for i := 0; i < 100; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("field_%d", i))
-		value := tower.PrimitiveInt(int64(i))
+		field := op.PrimitiveString(fmt.Sprintf("field_%d", i))
+		value := op.PrimitiveInt(int64(i))
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("Setup MapSet failed: %v", err)
 		}
@@ -158,8 +158,8 @@ func BenchmarkMapValues(b *testing.B) {
 
 	// Pre-populate map
 	for i := 0; i < 100; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("field_%d", i))
-		value := tower.PrimitiveInt(int64(i))
+		field := op.PrimitiveString(fmt.Sprintf("field_%d", i))
+		value := op.PrimitiveInt(int64(i))
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("Setup MapSet failed: %v", err)
 		}
@@ -184,8 +184,8 @@ func BenchmarkMapLength(b *testing.B) {
 
 	// Pre-populate map
 	for i := 0; i < 100; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("field_%d", i))
-		value := tower.PrimitiveInt(int64(i))
+		field := op.PrimitiveString(fmt.Sprintf("field_%d", i))
+		value := op.PrimitiveInt(int64(i))
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("Setup MapSet failed: %v", err)
 		}
@@ -213,8 +213,8 @@ func BenchmarkClearMap(b *testing.B) {
 		}
 
 		for j := 0; j < 10; j++ {
-			field := tower.PrimitiveString(fmt.Sprintf("field_%d", j))
-			value := tower.PrimitiveInt(int64(j))
+			field := op.PrimitiveString(fmt.Sprintf("field_%d", j))
+			value := op.PrimitiveInt(int64(j))
 			if err := twr.MapSet(key, field, value); err != nil {
 				b.Fatalf("Setup MapSet failed: %v", err)
 			}
@@ -244,8 +244,8 @@ func BenchmarkMapWithStrings(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("string_field_%d", i))
-		value := tower.PrimitiveString(fmt.Sprintf("string_value_%d", i))
+		field := op.PrimitiveString(fmt.Sprintf("string_field_%d", i))
+		value := op.PrimitiveString(fmt.Sprintf("string_value_%d", i))
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("MapSet with string failed: %v", err)
 		}
@@ -263,8 +263,8 @@ func BenchmarkMapWithInts(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("int_field_%d", i))
-		value := tower.PrimitiveInt(int64(i * 10))
+		field := op.PrimitiveString(fmt.Sprintf("int_field_%d", i))
+		value := op.PrimitiveInt(int64(i * 10))
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("MapSet with int failed: %v", err)
 		}
@@ -282,8 +282,8 @@ func BenchmarkMapWithFloats(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("float_field_%d", i))
-		value := tower.PrimitiveFloat(float64(i) + 0.5)
+		field := op.PrimitiveString(fmt.Sprintf("float_field_%d", i))
+		value := op.PrimitiveFloat(float64(i) + 0.5)
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("MapSet with float failed: %v", err)
 		}
@@ -301,8 +301,8 @@ func BenchmarkMapWithBools(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("bool_field_%d", i))
-		value := tower.PrimitiveBool(i%3 == 0)
+		field := op.PrimitiveString(fmt.Sprintf("bool_field_%d", i))
+		value := op.PrimitiveBool(i%3 == 0)
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("MapSet with bool failed: %v", err)
 		}
@@ -321,18 +321,18 @@ func BenchmarkMapMixedTypes(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("mixed_field_%d", i))
-		
-		var value tower.PrimitiveData
+		field := op.PrimitiveString(fmt.Sprintf("mixed_field_%d", i))
+
+		var value op.PrimitiveData
 		switch i % 4 {
 		case 0:
-			value = tower.PrimitiveString(fmt.Sprintf("string_value_%d", i))
+			value = op.PrimitiveString(fmt.Sprintf("string_value_%d", i))
 		case 1:
-			value = tower.PrimitiveInt(int64(i))
+			value = op.PrimitiveInt(int64(i))
 		case 2:
-			value = tower.PrimitiveFloat(float64(i) + 0.5)
+			value = op.PrimitiveFloat(float64(i) + 0.5)
 		case 3:
-			value = tower.PrimitiveBool(i%2 == 0)
+			value = op.PrimitiveBool(i%2 == 0)
 		}
 
 		if err := twr.MapSet(key, field, value); err != nil {
@@ -359,8 +359,8 @@ func BenchmarkConcurrentMapSet(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			key := fmt.Sprintf("map:concurrent:set:%d", i%numMaps)
-			field := tower.PrimitiveString(fmt.Sprintf("field_%d", i))
-			value := tower.PrimitiveInt(int64(i))
+			field := op.PrimitiveString(fmt.Sprintf("field_%d", i))
+			value := op.PrimitiveInt(int64(i))
 			if err := twr.MapSet(key, field, value); err != nil {
 				b.Fatalf("ConcurrentMapSet failed: %v", err)
 			}
@@ -384,8 +384,8 @@ func BenchmarkConcurrentMapGet(b *testing.B) {
 		}
 
 		for j := 0; j < fieldsPerMap; j++ {
-			field := tower.PrimitiveString(fmt.Sprintf("field_%d", j))
-			value := tower.PrimitiveInt(int64(j))
+			field := op.PrimitiveString(fmt.Sprintf("field_%d", j))
+			value := op.PrimitiveInt(int64(j))
 			if err := twr.MapSet(key, field, value); err != nil {
 				b.Fatalf("Setup MapSet failed: %v", err)
 			}
@@ -397,7 +397,7 @@ func BenchmarkConcurrentMapGet(b *testing.B) {
 		i := 0
 		for pb.Next() {
 			key := fmt.Sprintf("map:concurrent:get:%d", i%numMaps)
-			field := tower.PrimitiveString(fmt.Sprintf("field_%d", i%fieldsPerMap))
+			field := op.PrimitiveString(fmt.Sprintf("field_%d", i%fieldsPerMap))
 			if _, err := twr.MapGet(key, field); err != nil {
 				b.Fatalf("ConcurrentMapGet failed: %v", err)
 			}
@@ -430,8 +430,8 @@ func benchmarkMapOperationsBySize(b *testing.B, size string, mapSize int) {
 
 	// Pre-populate map
 	for i := 0; i < mapSize; i++ {
-		field := tower.PrimitiveString(fmt.Sprintf("field_%d", i))
-		value := tower.PrimitiveInt(int64(i))
+		field := op.PrimitiveString(fmt.Sprintf("field_%d", i))
+		value := op.PrimitiveInt(int64(i))
 		if err := twr.MapSet(key, field, value); err != nil {
 			b.Fatalf("Setup MapSet failed: %v", err)
 		}
@@ -445,13 +445,13 @@ func benchmarkMapOperationsBySize(b *testing.B, size string, mapSize int) {
 				b.Fatalf("MapLength failed: %v", err)
 			}
 		case 1:
-			field := tower.PrimitiveString(fmt.Sprintf("field_%d", i%mapSize))
+			field := op.PrimitiveString(fmt.Sprintf("field_%d", i%mapSize))
 			if _, err := twr.MapGet(key, field); err != nil {
 				b.Fatalf("MapGet failed: %v", err)
 			}
 		case 2:
-			field := tower.PrimitiveString(fmt.Sprintf("new_field_%d", i))
-			value := tower.PrimitiveInt(int64(i))
+			field := op.PrimitiveString(fmt.Sprintf("new_field_%d", i))
+			value := op.PrimitiveInt(int64(i))
 			if err := twr.MapSet(key, field, value); err != nil {
 				b.Fatalf("MapSet failed: %v", err)
 			}
@@ -479,8 +479,8 @@ func BenchmarkMapAsCache(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cacheKey := tower.PrimitiveString(fmt.Sprintf("cache_key_%d", i%100)) // Simulate cache with 100 keys
-		
+		cacheKey := op.PrimitiveString(fmt.Sprintf("cache_key_%d", i%100)) // Simulate cache with 100 keys
+
 		// 70% reads, 30% writes (typical cache pattern)
 		if i%10 < 7 {
 			// Read operation
@@ -489,7 +489,7 @@ func BenchmarkMapAsCache(b *testing.B) {
 			}
 		} else {
 			// Write operation
-			value := tower.PrimitiveString(fmt.Sprintf("cache_value_%d", i))
+			value := op.PrimitiveString(fmt.Sprintf("cache_value_%d", i))
 			if err := twr.MapSet(key, cacheKey, value); err != nil {
 				b.Fatalf("Cache MapSet failed: %v", err)
 			}
@@ -508,13 +508,13 @@ func BenchmarkMapAsConfig(b *testing.B) {
 	}
 
 	// Pre-populate with typical config keys
-	configs := map[tower.PrimitiveData]tower.PrimitiveData{
-		tower.PrimitiveString("timeout"):     tower.PrimitiveInt(30),
-		tower.PrimitiveString("max_retries"): tower.PrimitiveInt(3),
-		tower.PrimitiveString("debug_mode"):  tower.PrimitiveBool(false),
-		tower.PrimitiveString("app_name"):    tower.PrimitiveString("tower_app"),
-		tower.PrimitiveString("version"):     tower.PrimitiveString("1.0.0"),
-		tower.PrimitiveString("rate_limit"):  tower.PrimitiveFloat(100.5),
+	configs := map[op.PrimitiveData]op.PrimitiveData{
+		op.PrimitiveString("timeout"):     op.PrimitiveInt(30),
+		op.PrimitiveString("max_retries"): op.PrimitiveInt(3),
+		op.PrimitiveString("debug_mode"):  op.PrimitiveBool(false),
+		op.PrimitiveString("app_name"):    op.PrimitiveString("tower_app"),
+		op.PrimitiveString("version"):     op.PrimitiveString("1.0.0"),
+		op.PrimitiveString("rate_limit"):  op.PrimitiveFloat(100.5),
 	}
 
 	for field, value := range configs {
@@ -526,16 +526,16 @@ func BenchmarkMapAsConfig(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Mostly read operations for config
-		configKeys := []tower.PrimitiveData{
-			tower.PrimitiveString("timeout"),
-			tower.PrimitiveString("max_retries"),
-			tower.PrimitiveString("debug_mode"),
-			tower.PrimitiveString("app_name"),
-			tower.PrimitiveString("version"),
-			tower.PrimitiveString("rate_limit"),
+		configKeys := []op.PrimitiveData{
+			op.PrimitiveString("timeout"),
+			op.PrimitiveString("max_retries"),
+			op.PrimitiveString("debug_mode"),
+			op.PrimitiveString("app_name"),
+			op.PrimitiveString("version"),
+			op.PrimitiveString("rate_limit"),
 		}
 		configKey := configKeys[i%len(configKeys)]
-		
+
 		if _, err := twr.MapGet(key, configKey); err != nil {
 			b.Fatalf("Config MapGet failed: %v", err)
 		}
