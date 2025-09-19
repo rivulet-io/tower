@@ -116,7 +116,6 @@ func (opt *ClusterOptions) WithHTTPPort(port int) *ClusterOptions {
 
 func (opt *ClusterOptions) toNATSConfig() server.Options {
 	return server.Options{
-		DontListen: true,
 		ServerName: opt.serverName,
 		MaxPayload: int32(opt.maxPayload.Bytes()),
 		JetStream:  true,

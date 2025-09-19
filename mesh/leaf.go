@@ -40,7 +40,6 @@ func (opt *LeafOptions) toNATSConfig() *server.Options {
 
 	return &server.Options{
 		ServerName: opt.serverName,
-		DontListen: true,
 		LeafNode: server.LeafNodeOpts{
 			Username: opt.username,
 			Password: opt.password,
