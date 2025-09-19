@@ -134,7 +134,7 @@ func (opt *ClusterOptions) toNATSConfig() server.Options {
 			Username:     opt.clusterUsername,
 			Password:     opt.clusterPassword,
 			NoAdvertise:  false,
-			PingInterval: 30 * time.Second,
+			PingInterval: 10 * time.Second,
 		},
 		Routes:                strsToURLs(opt.routes),
 		JetStreamMaxMemory:    int64(opt.jetstreamMaxMemory.Bytes()),
