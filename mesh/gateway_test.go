@@ -127,34 +127,28 @@ func SetupGatewayTestThreeNodeCluster(t *testing.T, clusterName string, clusterI
 
 	// Node 2 - regular cluster node (no gateway)
 	config2 := &GatewayTestConfig{
-		ServerName:     fmt.Sprintf("%s-node2", clusterName), // Unique server name
-		ClusterName:    clusterName,                          // Use cluster-specific name
-		NodePort:       baseNodePort + 1,
-		ClusterPort:    baseClusterPort + 1,
-		HTTPPort:       baseHTTPPort + 1,
-		GatewayName:    "", // No gateway
-		GatewayPort:    0,
-		StoreDir:       storeDir2,
-		MaxMemory:      size.NewSizeFromMegabytes(50),
-		MaxStorage:     size.NewSizeFromMegabytes(100),
-		RemoteGateways: NewRemoteGateways(),                                           // Empty - no remote gateway info
-		Routes:         []string{fmt.Sprintf("nats://127.0.0.1:%d", baseClusterPort)}, // Route to node1
+		ServerName:  fmt.Sprintf("%s-node2", clusterName), // Unique server name
+		ClusterName: clusterName,                          // Use cluster-specific name
+		NodePort:    baseNodePort + 1,
+		ClusterPort: baseClusterPort + 1,
+		HTTPPort:    baseHTTPPort + 1,
+		StoreDir:    storeDir2,
+		MaxMemory:   size.NewSizeFromMegabytes(50),
+		MaxStorage:  size.NewSizeFromMegabytes(100),
+		Routes:      []string{fmt.Sprintf("nats://127.0.0.1:%d", baseClusterPort)}, // Route to node1
 	}
 
 	// Node 3 - regular cluster node (no gateway)
 	config3 := &GatewayTestConfig{
-		ServerName:     fmt.Sprintf("%s-node3", clusterName), // Unique server name
-		ClusterName:    clusterName,                          // Use cluster-specific name
-		NodePort:       baseNodePort + 2,
-		ClusterPort:    baseClusterPort + 2,
-		HTTPPort:       baseHTTPPort + 2,
-		GatewayName:    "", // No gateway
-		GatewayPort:    0,
-		StoreDir:       storeDir3,
-		MaxMemory:      size.NewSizeFromMegabytes(50),
-		MaxStorage:     size.NewSizeFromMegabytes(100),
-		RemoteGateways: NewRemoteGateways(),                                           // Empty - no remote gateway info
-		Routes:         []string{fmt.Sprintf("nats://127.0.0.1:%d", baseClusterPort)}, // Route to node1
+		ServerName:  fmt.Sprintf("%s-node3", clusterName), // Unique server name
+		ClusterName: clusterName,                          // Use cluster-specific name
+		NodePort:    baseNodePort + 2,
+		ClusterPort: baseClusterPort + 2,
+		HTTPPort:    baseHTTPPort + 2,
+		StoreDir:    storeDir3,
+		MaxMemory:   size.NewSizeFromMegabytes(50),
+		MaxStorage:  size.NewSizeFromMegabytes(100),
+		Routes:      []string{fmt.Sprintf("nats://127.0.0.1:%d", baseClusterPort)}, // Route to node1
 	}
 
 	// Create clusters using the same pattern as cluster_test.go
@@ -199,11 +193,13 @@ func SetupGatewayTestTwoClusters(t *testing.T) (*Cluster, *Cluster, *Cluster, *C
 	// Create remote gateway configurations
 	// Cluster A will connect to Cluster B's gateway
 	remoteGatewaysA := NewRemoteGateways().
-		Add("cluster-b", "nats://127.0.0.1:7223")
+		Add("cluster-b", "nats://127.0.0.1:7223").
+		Add("cluster-a", "nats://127.0.0.1:7222")
 
 	// Cluster B will connect to Cluster A's gateway
 	remoteGatewaysB := NewRemoteGateways().
-		Add("cluster-a", "nats://127.0.0.1:7222")
+		Add("cluster-a", "nats://127.0.0.1:7222").
+		Add("cluster-b", "nats://127.0.0.1:7223")
 
 	// Create cluster A (three nodes, node1 has gateway)
 	clusterA1, clusterA2, clusterA3 := SetupGatewayTestThreeNodeCluster(t, "cluster-a", 0, remoteGatewaysA)
@@ -284,6 +280,8 @@ func TestGatewayTwoClusterConnection(t *testing.T) {
 			}
 		}
 
+		time.Sleep(3 * time.Second) // Wait for gateways to connect
+
 		t.Logf("✓ Successfully created two three-node gateway-connected clusters:")
 		t.Logf("  - Cluster A:")
 		t.Logf("    - Node1 (gateway): port %d", clusterA1.nc.server.Addr().(*net.TCPAddr).Port)
@@ -303,6 +301,8 @@ func TestGatewayTwoClusterConnection(t *testing.T) {
 // testBasicCrossClusterMessaging tests basic messaging between clusters via gateways
 func testBasicCrossClusterMessaging(t *testing.T, clusterA, clusterB *Cluster) {
 	t.Helper()
+
+	t.Logf(" - Publishing from Cluster A to Cluster B via gateways")
 
 	subject := "gateway.test.message"
 	testMessage := []byte("Hello from cluster A to cluster B via gateway!")
