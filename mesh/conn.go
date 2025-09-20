@@ -3,6 +3,7 @@ package mesh
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/nats-io/nats-server/v2/server"
@@ -50,7 +51,7 @@ type conn struct {
 	js     nats.JetStreamContext
 }
 
-func newConn(opt *server.Options) (*conn, error) {
+func newServerConn(opt *server.Options) (*conn, error) {
 	srv, err := server.NewServer(opt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create nats server: %w", err)
@@ -81,8 +82,29 @@ func newConn(opt *server.Options) (*conn, error) {
 	}, nil
 }
 
+func newClientConn(servers []string, username, password string) (*conn, error) {
+	nc, err := nats.Connect(strings.Join(servers, ","),
+		nats.UserInfo(username, password),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to nats server: %w", err)
+	}
+
+	js, err := nc.JetStream(nats.Domain(defaultClusterName))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get jetstream context: %w", err)
+	}
+
+	return &conn{
+		conn: nc,
+		js:   js,
+	}, nil
+}
+
 func (c *conn) Close() {
 	c.conn.Close()
-	c.server.Shutdown()
-	c.server.WaitForShutdown()
+	if c.server != nil {
+		c.server.Shutdown()
+		c.server.WaitForShutdown()
+	}
 }

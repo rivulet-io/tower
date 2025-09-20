@@ -129,7 +129,7 @@ type Leaf struct {
 
 func NewLeaf(opt *LeafOptions) (*Leaf, error) {
 	so := opt.toNATSConfig()
-	nc, err := newConn(so)
+	nc, err := newServerConn(so)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create nats connection: %w", err)
 	}
