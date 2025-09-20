@@ -781,6 +781,52 @@ db.UpsertSafeBox("secure_data", sensitiveData, secureKey, op.EncryptionAlgorithm
 - 🔄 **Key Rotation**: Seamless encryption algorithm upgrades
 - 🛡️ **Data Protection**: GDPR/HIPAA compliant encrypted storage
 
+## 🔒 Secure In-Memory Storage (`guard`)
+
+Tower includes a `guard` package that provides a secure `MemoryBuffer` for handling sensitive data directly in memory. Built on `memguard`, it creates encrypted, immutable enclaves to protect data like passwords, API keys, or cryptographic material from being exposed in memory dumps or swapped to disk.
+
+```go
+import "github.com/rivulet-io/tower/util/guard"
+
+// Create a new secure memory buffer
+memBuf := guard.NewMemoryBuffer()
+
+// Securely store sensitive data
+sensitiveKey := []byte("my-super-secret-encryption-key")
+memBuf.Set("encryption_key", sensitiveKey)
+
+// Use the data within a secure callback. The data is decrypted only for the
+// duration of the function call and automatically wiped from memory afterward.
+err := memBuf.Use("encryption_key", func(decryptedKey []byte) error {
+    // Use the decrypted key for an operation
+    fmt.Printf("Using key: %s\n", string(decryptedKey))
+    return nil
+})
+
+if err != nil {
+    // Handle error (e.g., key not found)
+}
+
+// The original `sensitiveKey` byte slice should be zeroed out if possible,
+// as `memBuf.Set` creates a secure copy.
+
+// Delete the key from the buffer when no longer needed
+memBuf.Delete("encryption_key")
+```
+
+### Key Features
+- ✅ **Encrypted Enclaves**: Data is stored in `memguard`'s secure, encrypted memory buffers.
+- ✅ **Automatic Cleanup**: Decrypted data is automatically destroyed and wiped from memory after use.
+- ✅ **Memory Protection**: Guards against memory scanning, core dumps, and being swapped to disk.
+- ✅ **Thread-Safe**: All operations are concurrent-safe for use in multi-threaded applications.
+- ✅ **Immutable Storage**: Once set, the underlying data cannot be modified, only accessed or deleted.
+
+### Use Cases
+- 🔑 **Cryptographic Keys**: Temporarily holding private keys for signing or decryption.
+- 🛡️ **API Tokens**: Managing short-lived, sensitive tokens for service-to-service communication.
+- 🤫 **Secrets Management**: Handling configuration secrets that must be read into memory.
+- 🔒 **Password Processing**: Securely passing around user passwords during authentication flows before hashing.
+
 ## ⚙️ Configuration
 
 ### Storage Options
@@ -956,6 +1002,7 @@ Tower builds on excellent open-source foundations:
 
 - **[CockroachDB Pebble](https://github.com/cockroachdb/pebble)** - High-performance LSM-tree storage engine
 - **[Google UUID](https://github.com/google/uuid)** - UUID generation and parsing library
+- **[MemGuard](https://github.com/awnumar/memguard)** - Secure memory allocation and handling library
 
 All dependencies are carefully chosen for performance, reliability, and maintenance quality.
 
