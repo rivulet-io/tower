@@ -8,8 +8,9 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func (c *conn) SubscribeLeaderChange(stream string, handler func(stream string, leader string), errHandler func(error)) (cancel func(), err error) {
+func (c *conn) SubscribeLeaderChange(stream string, handler func(stream string, leader string, myName string), errHandler func(error)) (cancel func(), err error) {
 	subject := fmt.Sprintf("$JS.API.STREAM.LEADER.ELECTED.%s", stream)
+	myName := c.conn.Opts.Name
 	sub, err := c.conn.Subscribe(subject, func(msg *nats.Msg) {
 		kind, message, err := api.ParseMessage(msg.Data)
 		if err != nil {
@@ -18,7 +19,7 @@ func (c *conn) SubscribeLeaderChange(stream string, handler func(stream string, 
 		}
 		switch value := message.(type) {
 		case advisory.JSStreamLeaderElectedV1:
-			handler(stream, value.Leader)
+			handler(stream, value.Leader, myName)
 		default:
 			errHandler(fmt.Errorf("unknown stream leader change message type %q for stream %q", kind, stream))
 		}
