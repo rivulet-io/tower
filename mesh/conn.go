@@ -161,3 +161,5 @@ func (c *conn) Close() {
 func (c *conn) SetLogCallback(cb func(*NATSLog)) {
 	c.callback = cb
 }
+
+type WrapConn interface{}
