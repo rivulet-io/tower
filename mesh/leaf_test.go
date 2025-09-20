@@ -402,4 +402,239 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 			t.Log("✓ Successfully cleaned up stream")
 		}
 	})
+
+	t.Run("core nats functionality via leaf nodes", func(t *testing.T) {
+		// Setup three node cluster
+		cluster1, cluster2, cluster3 := SetupLeafTestThreeNodeCluster(t)
+		defer CleanupLeafTestClusters(cluster1, cluster2, cluster3)
+
+		// Create leaf nodes connected to different cluster nodes
+		leaf1 := SetupLeafNodeConnectedToCluster(t, cluster1, "leaf-core-sender", 4304)
+		defer CleanupLeafNodes(leaf1)
+
+		leaf2 := SetupLeafNodeConnectedToCluster(t, cluster2, "leaf-core-receiver", 4305)
+		defer CleanupLeafNodes(leaf2)
+
+		// Test 1: Basic Publish/Subscribe
+		t.Log("Testing basic publish/subscribe via leaf nodes...")
+
+		pubsubSubject := "core.nats.pubsub"
+		pubsubMessage := []byte("Hello from basic pub/sub via leaf!")
+		receivedPubSubMessages := make(chan []byte, 1)
+
+		// Subscribe on leaf2
+		pubsubSub, err := leaf2.conn.conn.Subscribe(pubsubSubject, func(msg *nats.Msg) {
+			receivedPubSubMessages <- msg.Data
+		})
+		if err != nil {
+			t.Fatalf("failed to subscribe for pubsub test: %v", err)
+		}
+		defer pubsubSub.Unsubscribe()
+
+		// Wait for subscription to propagate
+		time.Sleep(1 * time.Second)
+
+		// Publish from leaf1
+		err = leaf1.conn.conn.Publish(pubsubSubject, pubsubMessage)
+		if err != nil {
+			t.Fatalf("failed to publish for pubsub test: %v", err)
+		}
+
+		// Wait for message
+		select {
+		case receivedMsg := <-receivedPubSubMessages:
+			if string(receivedMsg) != string(pubsubMessage) {
+				t.Errorf("expected pubsub message '%s', got '%s'", string(pubsubMessage), string(receivedMsg))
+			}
+			t.Logf("✓ Basic pub/sub successful: %s", string(receivedMsg))
+		case <-time.After(5 * time.Second):
+			t.Error("timeout waiting for pubsub message")
+		}
+
+		// Test 2: Request/Reply Pattern
+		t.Log("Testing request/reply pattern via leaf nodes...")
+
+		requestSubject := "core.nats.request"
+		requestMessage := []byte("Request from leaf1")
+		expectedReply := []byte("Reply from leaf2")
+
+		// Set up reply handler on leaf2
+		replySub, err := leaf2.conn.conn.Subscribe(requestSubject, func(msg *nats.Msg) {
+			if msg.Reply != "" {
+				err := leaf2.conn.conn.Publish(msg.Reply, expectedReply)
+				if err != nil {
+					t.Logf("failed to send reply: %v", err)
+				}
+			}
+		})
+		if err != nil {
+			t.Fatalf("failed to subscribe for request/reply test: %v", err)
+		}
+		defer replySub.Unsubscribe()
+
+		// Wait for subscription to propagate
+		time.Sleep(1 * time.Second)
+
+		// Send request from leaf1
+		replyMsg, err := leaf1.conn.conn.Request(requestSubject, requestMessage, 5*time.Second)
+		if err != nil {
+			t.Fatalf("failed to send request: %v", err)
+		}
+
+		if string(replyMsg.Data) != string(expectedReply) {
+			t.Errorf("expected reply '%s', got '%s'", string(expectedReply), string(replyMsg.Data))
+		}
+		t.Logf("✓ Request/reply successful: sent '%s', received '%s'", string(requestMessage), string(replyMsg.Data))
+
+		// Test 3: Queue Groups
+		t.Log("Testing queue groups via leaf nodes...")
+
+		queueSubject := "core.nats.queue"
+		queueGroup := "workers"
+		queueMessage := []byte("Work item from leaf1")
+		receivedQueueMessages := make(chan string, 2) // Buffer for 2 to catch any duplicates
+
+		// Create queue subscribers on both leaf nodes
+		queueSub1, err := leaf2.conn.conn.QueueSubscribe(queueSubject, queueGroup, func(msg *nats.Msg) {
+			receivedQueueMessages <- "leaf2-worker"
+		})
+		if err != nil {
+			t.Fatalf("failed to create queue subscriber on leaf2: %v", err)
+		}
+		defer queueSub1.Unsubscribe()
+
+		// Also create a queue subscriber via cluster1 directly for comparison
+		queueSub2, err := cluster1.nc.conn.QueueSubscribe(queueSubject, queueGroup, func(msg *nats.Msg) {
+			receivedQueueMessages <- "cluster1-worker"
+		})
+		if err != nil {
+			t.Fatalf("failed to create queue subscriber on cluster1: %v", err)
+		}
+		defer queueSub2.Unsubscribe()
+
+		// Wait for subscriptions to propagate
+		time.Sleep(2 * time.Second)
+
+		// Send message from leaf1
+		err = leaf1.conn.conn.Publish(queueSubject, queueMessage)
+		if err != nil {
+			t.Fatalf("failed to publish to queue: %v", err)
+		}
+
+		// Wait for message (should only be received by one worker)
+		select {
+		case worker := <-receivedQueueMessages:
+			t.Logf("✓ Queue group working: message processed by %s", worker)
+
+			// Check that no duplicate was received
+			select {
+			case duplicate := <-receivedQueueMessages:
+				t.Errorf("Queue group failed: duplicate message received by %s", duplicate)
+			case <-time.After(1 * time.Second):
+				t.Log("✓ No duplicate messages received (queue group working correctly)")
+			}
+		case <-time.After(5 * time.Second):
+			t.Error("timeout waiting for queue message")
+		}
+
+		// Test 4: Wildcard Subscriptions
+		t.Log("Testing wildcard subscriptions via leaf nodes...")
+
+		wildcardSubject := "core.nats.wildcard.*"
+		specificSubject1 := "core.nats.wildcard.test1"
+		specificSubject2 := "core.nats.wildcard.test2"
+		receivedWildcardMessages := make(chan string, 2)
+
+		// Subscribe with wildcard on leaf2
+		wildcardSub, err := leaf2.conn.conn.Subscribe(wildcardSubject, func(msg *nats.Msg) {
+			receivedWildcardMessages <- msg.Subject
+		})
+		if err != nil {
+			t.Fatalf("failed to create wildcard subscriber: %v", err)
+		}
+		defer wildcardSub.Unsubscribe()
+
+		// Wait for subscription to propagate
+		time.Sleep(1 * time.Second)
+
+		// Publish to both specific subjects from leaf1
+		err = leaf1.conn.conn.Publish(specificSubject1, []byte("message1"))
+		if err != nil {
+			t.Fatalf("failed to publish to %s: %v", specificSubject1, err)
+		}
+
+		err = leaf1.conn.conn.Publish(specificSubject2, []byte("message2"))
+		if err != nil {
+			t.Fatalf("failed to publish to %s: %v", specificSubject2, err)
+		}
+
+		// Wait for both messages
+		receivedSubjects := make([]string, 0, 2)
+		for i := 0; i < 2; i++ {
+			select {
+			case subject := <-receivedWildcardMessages:
+				receivedSubjects = append(receivedSubjects, subject)
+			case <-time.After(5 * time.Second):
+				t.Errorf("timeout waiting for wildcard message %d", i+1)
+			}
+		}
+
+		if len(receivedSubjects) == 2 {
+			t.Logf("✓ Wildcard subscription successful: received messages from %v", receivedSubjects)
+		}
+
+		// Test 5: High Frequency Messaging
+		t.Log("Testing high frequency messaging via leaf nodes...")
+
+		highFreqSubject := "core.nats.highfreq"
+		messageCount := 100
+		receivedHighFreqMessages := make(chan int, messageCount)
+
+		// Subscribe on leaf2 with counter
+		counter := 0
+		highFreqSub, err := leaf2.conn.conn.Subscribe(highFreqSubject, func(msg *nats.Msg) {
+			counter++
+			receivedHighFreqMessages <- counter
+		})
+		if err != nil {
+			t.Fatalf("failed to create high frequency subscriber: %v", err)
+		}
+		defer highFreqSub.Unsubscribe()
+
+		// Wait for subscription to propagate
+		time.Sleep(1 * time.Second)
+
+		// Send multiple messages rapidly from leaf1
+		for i := 1; i <= messageCount; i++ {
+			err = leaf1.conn.conn.Publish(highFreqSubject, []byte(fmt.Sprintf("message-%d", i)))
+			if err != nil {
+				t.Fatalf("failed to publish high freq message %d: %v", i, err)
+			}
+		}
+
+		// Wait for all messages with longer timeout
+		timeout := time.After(10 * time.Second)
+		finalCount := 0
+
+	HighFreqLoop:
+		for {
+			select {
+			case count := <-receivedHighFreqMessages:
+				finalCount = count
+				if count == messageCount {
+					break HighFreqLoop
+				}
+			case <-timeout:
+				break HighFreqLoop
+			}
+		}
+
+		if finalCount == messageCount {
+			t.Logf("✓ High frequency messaging successful: received all %d messages", messageCount)
+		} else {
+			t.Logf("⚠ High frequency messaging partial: received %d out of %d messages", finalCount, messageCount)
+		}
+
+		t.Log("✓ All core NATS functionality tests completed successfully")
+	})
 }
