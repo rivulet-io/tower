@@ -309,19 +309,19 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 			Replicas:    1,
 		}
 
-		// Create stream via leaf1 (accessing hub's JetStream via domain)
-		err = leaf1.conn.CreateOrUpdateStream(streamConfig)
+		// Create stream via cluster1 (central hub)
+		err = cluster1.nc.CreateOrUpdateStream(streamConfig)
 		if err != nil {
-			t.Fatalf("failed to create stream via leaf1: %v", err)
+			t.Fatalf("failed to create stream via cluster1: %v", err)
 		}
-		t.Logf("✓ Successfully created stream '%s' via leaf1", streamConfig.Name)
+		t.Logf("✓ Successfully created stream '%s' via cluster1", streamConfig.Name)
 
-		// Verify stream exists by getting info via leaf2
-		streamInfo, err := leaf2.conn.GetStreamInfo("leaf_test_stream")
+		// Verify stream exists by getting info via cluster2
+		streamInfo, err := cluster2.nc.GetStreamInfo("leaf_test_stream")
 		if err != nil {
-			t.Fatalf("failed to get stream info via leaf2: %v", err)
+			t.Fatalf("failed to get stream info via cluster2: %v", err)
 		}
-		t.Logf("✓ Successfully retrieved stream info via leaf2: %s", streamInfo.Config.Name)
+		t.Logf("✓ Successfully retrieved stream info via cluster2: %s", streamInfo.Config.Name)
 
 		// Publish message to stream via leaf1
 		streamSubject := "leaf.test.message"
@@ -363,8 +363,8 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 			t.Error("timeout waiting for stream message to be received")
 		}
 
-		// Clean up stream
-		err = leaf1.conn.DeleteStream("leaf_test_stream")
+		// Clean up stream via cluster1 (central hub)
+		err = cluster1.nc.DeleteStream("leaf_test_stream")
 		if err != nil {
 			t.Logf("Warning: failed to delete stream: %v", err)
 		} else {
