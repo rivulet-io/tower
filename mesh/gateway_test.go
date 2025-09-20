@@ -75,12 +75,16 @@ func (c *GatewayTestConfig) CreateCluster() (*Cluster, error) {
 							WithRoutes(c.Routes).
 							WithJetStreamMaxMemory(c.MaxMemory).
 							WithJetStreamMaxStore(c.MaxStorage).
-							WithHTTPPort(c.HTTPPort) // Only add gateway if GatewayName is not empty
-	if c.GatewayName != "" {
+							WithHTTPPort(c.HTTPPort)
+
+	// Only add gateway if GatewayName is not empty and RemoteGateways is not nil
+	if c.GatewayName != "" && c.RemoteGateways != nil {
 		opts = opts.WithGateway(
 			c.GatewayName,
 			"127.0.0.1",
 			c.GatewayPort,
+			"",
+			"",
 			c.RemoteGateways,
 		)
 	}
@@ -133,7 +137,7 @@ func SetupGatewayTestThreeNodeCluster(t *testing.T, clusterName string, clusterI
 		StoreDir:       storeDir2,
 		MaxMemory:      size.NewSizeFromMegabytes(50),
 		MaxStorage:     size.NewSizeFromMegabytes(100),
-		RemoteGateways: NewRemoteGateways(),                                           // Empty
+		RemoteGateways: NewRemoteGateways(),                                           // Empty - no remote gateway info
 		Routes:         []string{fmt.Sprintf("nats://127.0.0.1:%d", baseClusterPort)}, // Route to node1
 	}
 
@@ -149,7 +153,7 @@ func SetupGatewayTestThreeNodeCluster(t *testing.T, clusterName string, clusterI
 		StoreDir:       storeDir3,
 		MaxMemory:      size.NewSizeFromMegabytes(50),
 		MaxStorage:     size.NewSizeFromMegabytes(100),
-		RemoteGateways: NewRemoteGateways(),                                           // Empty
+		RemoteGateways: NewRemoteGateways(),                                           // Empty - no remote gateway info
 		Routes:         []string{fmt.Sprintf("nats://127.0.0.1:%d", baseClusterPort)}, // Route to node1
 	}
 
@@ -204,7 +208,7 @@ func SetupGatewayTestTwoClusters(t *testing.T) (*Cluster, *Cluster, *Cluster, *C
 	// Create cluster A (three nodes, node1 has gateway)
 	clusterA1, clusterA2, clusterA3 := SetupGatewayTestThreeNodeCluster(t, "cluster-a", 0, remoteGatewaysA)
 
-	// Create cluster B (three nodes, node1 has gateway)
+	// Create cluster B (three nodes, node1 has gateway) - but first create without remote gateways
 	clusterB1, clusterB2, clusterB3 := SetupGatewayTestThreeNodeCluster(t, "cluster-b", 1, remoteGatewaysB)
 
 	// Additional sleep for gateway connections to establish (like cluster_test.go)
