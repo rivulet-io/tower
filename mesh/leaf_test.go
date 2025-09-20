@@ -21,7 +21,7 @@ func SetupLeafTestThreeNodeCluster(t *testing.T) (*Cluster, *Cluster, *Cluster) 
 	storeDir2 := filepath.Join(baseDir, "node2")
 	storeDir3 := filepath.Join(baseDir, "node3")
 
-	// Create configurations
+	// Create configurations with leaf node support
 	config1 := DefaultClusterTestConfig("node1", 0).
 		WithStoreDir(storeDir1).
 		WithRoutes(fmt.Sprintf("nats://127.0.0.1:%d", 14248)) // Self-route for JetStream
@@ -34,19 +34,53 @@ func SetupLeafTestThreeNodeCluster(t *testing.T) (*Cluster, *Cluster, *Cluster) 
 		WithStoreDir(storeDir3).
 		WithRoutes(fmt.Sprintf("nats://127.0.0.1:%d", 14248)) // Route to node1
 
-	// Create clusters
-	cluster1, err := config1.CreateCluster()
+	// Create clusters with leaf node support enabled
+	// Use NewClusterOptions directly to add leaf node support
+	opts1 := NewClusterOptions(config1.NodeName).
+		WithListen("127.0.0.1", config1.NodePort).
+		WithStoreDir(config1.StoreDir).
+		WithClusterName(config1.ClusterName).
+		WithClusterListen("127.0.0.1", config1.ClusterPort).
+		WithRoutes(config1.Routes).
+		WithJetStreamMaxMemory(config1.MaxMemory).
+		WithJetStreamMaxStore(config1.MaxStorage).
+		WithHTTPPort(config1.HTTPPort).
+		WithLeafNode("127.0.0.1", 7422, "", "") // Add leaf node listener
+
+	cluster1, err := NewCluster(opts1)
 	if err != nil {
 		t.Fatalf("failed to create cluster node 1: %v", err)
 	}
 
-	cluster2, err := config2.CreateCluster()
+	opts2 := NewClusterOptions(config2.NodeName).
+		WithListen("127.0.0.1", config2.NodePort).
+		WithStoreDir(config2.StoreDir).
+		WithClusterName(config2.ClusterName).
+		WithClusterListen("127.0.0.1", config2.ClusterPort).
+		WithRoutes(config2.Routes).
+		WithJetStreamMaxMemory(config2.MaxMemory).
+		WithJetStreamMaxStore(config2.MaxStorage).
+		WithHTTPPort(config2.HTTPPort).
+		WithLeafNode("127.0.0.1", 7423, "", "") // Add leaf node listener
+
+	cluster2, err := NewCluster(opts2)
 	if err != nil {
 		cluster1.Close()
 		t.Fatalf("failed to create cluster node 2: %v", err)
 	}
 
-	cluster3, err := config3.CreateCluster()
+	opts3 := NewClusterOptions(config3.NodeName).
+		WithListen("127.0.0.1", config3.NodePort).
+		WithStoreDir(config3.StoreDir).
+		WithClusterName(config3.ClusterName).
+		WithClusterListen("127.0.0.1", config3.ClusterPort).
+		WithRoutes(config3.Routes).
+		WithJetStreamMaxMemory(config3.MaxMemory).
+		WithJetStreamMaxStore(config3.MaxStorage).
+		WithHTTPPort(config3.HTTPPort).
+		WithLeafNode("127.0.0.1", 7424, "", "") // Add leaf node listener
+
+	cluster3, err := NewCluster(opts3)
 	if err != nil {
 		cluster1.Close()
 		cluster2.Close()
@@ -106,9 +140,9 @@ func waitForLeafReady(t *testing.T, leaf *Leaf, timeout time.Duration) {
 func SetupLeafNodeConnectedToCluster(t *testing.T, cluster *Cluster, leafName string, leafPort int) *Leaf {
 	t.Helper()
 
-	// Get cluster connection info - use the cluster's listen port
-	clusterPort := cluster.nc.server.Addr().(*net.TCPAddr).Port
-	hubURL := fmt.Sprintf("nats://127.0.0.1:%d", clusterPort)
+	// Get cluster leaf node connection info - use the cluster's leaf node port
+	clusterLeafPort := 7422 + (cluster.nc.server.Addr().(*net.TCPAddr).Port - 4222) // Calculate leaf port based on cluster port
+	hubURL := fmt.Sprintf("nats-leaf://127.0.0.1:%d", clusterLeafPort)
 
 	// Create leaf node options
 	opts := NewLeafOptions(leafName).
