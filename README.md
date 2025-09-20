@@ -19,6 +19,64 @@ A high-performance, distributed key-value database for Go, built on [CockroachDB
 
 ## 🚀 Quick Start
 
+### Unified Tower Instance (`tower.go`)
+
+The `tower.go` file provides a unified `Tower` struct that combines the `op.Operator` (for data operations) and a `mesh.WrapConn` (for network operations). This allows you to create a single instance that can act as a standalone database, a cluster node, a leaf node, or a client, depending on the provided options.
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/rivulet-io/tower"
+    "github.com/rivulet-io/tower/mesh"
+    "github.com/rivulet-io/tower/op"
+    "github.com/rivulet-io/tower/util/monad"
+    "github.com/rivulet-io/tower/util/size"
+)
+
+func main() {
+    // Example: Create a Tower instance that is also a cluster node
+    clusterOpts := mesh.NewClusterOptions("tower-node-1").
+        WithListen("127.0.0.1", 4222).
+        WithStoreDir("./node1").
+        WithClusterName("tower-cluster").
+        WithClusterListen("127.0.0.1", 6222)
+
+    opts := &tower.Options{
+        Operator: op.Options{
+            FS:           op.InMemory(),
+            BytesPerSync: size.NewSizeFromKilobytes(1),
+        },
+        Cluster: monad.Some(*clusterOpts),
+    }
+
+    t, err := tower.NewTower(opts)
+    if err != nil {
+        log.Fatalf("Failed to create tower instance: %v", err)
+    }
+    defer t.Close()
+
+    // Use the operator for data operations
+    op := t.Op()
+    op.SetString("greeting", "Hello from Tower!")
+    
+    value, _ := op.GetString("greeting")
+    fmt.Println(value)
+
+    // Use the mesh connection for network operations
+    meshConn := t.Mesh()
+    if meshConn != nil {
+        // e.g., publish a message
+        meshConn.PublishVolatile("some.subject", []byte("hello mesh"))
+    }
+    
+    select {}
+}
+```
+
 ### Standalone Engine (`op.Operator`)
 
 Use the `op.Operator` for a high-performance, single-node database directly in your Go application.
@@ -185,12 +243,16 @@ go get github.com/rivulet-io/tower
 
 Tower's architecture is split into two primary packages:
 
+- **`tower`**: The main package that provides a unified `Tower` struct. It combines the `op.Operator` and `mesh.WrapConn` to create a single, flexible instance that can function as a standalone database or a networked node (Cluster, Leaf, or Client). This is the recommended entry point for most applications.
+
 - **`op` (Operator)**: The core database engine. It manages the underlying Pebble storage, provides all data-specific operations (e.g., `SetString`, `AddInt`), and ensures thread-safety through fine-grained locking. This package can be used on its own for a standalone key-value store.
 
 - **`mesh` (Mesh Network)**: Provides the functionality to run Tower in a distributed cluster. It is built on NATS and offers a robust foundation for scaling out.
-    - **`Cluster`**: A full-fledged member of a NATS cluster. It forms the backbone of the distributed system, handling data replication (via JetStream), routing, and high availability.
-    - **`Gateway`**: A special mode for a `Cluster` node that connects it to other, separate clusters. This allows for building a "super-cluster" of interconnected systems, though features like JetStream remain local to each cluster.
-    - **`Leaf`**: A lightweight node that connects to a `Cluster` to extend the network. It's ideal for edge computing scenarios or for clients that need to interact with the cluster's capabilities (like JetStream, KV Store) without the overhead of being a full cluster member.
+    - **`WrapConn`**: A unified interface for all network connections, implemented by `Cluster`, `Leaf`, and `Client`. It abstracts the underlying connection type and enforces permission-based access to network resources.
+    - **`Cluster`**: A full-fledged member of a NATS cluster. It forms the backbone of the distributed system, handling data replication (via JetStream), routing, and high availability. It has full permissions to create, read, update, and delete all network resources.
+    - **`Gateway`**: A special mode for a `Cluster` node that connects it to other, separate clusters. This allows for building a "super-cluster" of interconnected systems.
+    - **`Leaf`**: A lightweight node that connects to a `Cluster` to extend the network. It's ideal for edge computing scenarios. A Leaf node has restricted permissions: it can read and write data to existing Streams, KV Stores, and Object Stores, but it cannot create or delete them.
+    - **`Client`**: Represents a standard client connection to the mesh network. Like a `Cluster` node, it has full permissions to manage all network resources.
 
 This modular design allows you to start with a simple, embedded database and scale up to a complex, globally distributed system as your needs grow.
 
