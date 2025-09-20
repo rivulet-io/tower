@@ -94,7 +94,7 @@ func newServerConn(opt *server.Options) (*conn, error) {
 	dl := &DebugLogger{
 		logChan: make(chan *NATSLog, 4096),
 	}
-	srv.SetLoggerV2(dl, true, true, true)
+	srv.SetLoggerV2(dl, true, true, false)
 	srv.ConfigureLogger()
 
 	c := &conn{}
