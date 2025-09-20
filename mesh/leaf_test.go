@@ -261,9 +261,6 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		leaf2 := SetupLeafNodeConnectedToCluster(t, cluster2, "leaf-receiver", 4303)
 		defer CleanupLeafNodes(leaf2)
 
-		// Wait additional time for leaf-cluster connections to fully establish
-		time.Sleep(3 * time.Second)
-
 		// Test basic connectivity by sending a simple message from leaf1 to cluster and back
 		testSubject := "connectivity.test"
 		connectivityCh := make(chan []byte, 1)
