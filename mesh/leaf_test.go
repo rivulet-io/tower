@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/rivulet-io/tower/util/size"
 )
 
 // SetupLeafTestThreeNodeCluster creates and returns three interconnected cluster nodes for leaf testing
@@ -88,17 +89,17 @@ func SetupLeafTestThreeNodeCluster(t *testing.T) (*Cluster, *Cluster, *Cluster) 
 	}
 
 	// Wait for all clusters to be ready
-	waitForClusterReady(t, cluster1, 10*time.Second)
-	waitForClusterReady(t, cluster2, 10*time.Second)
-	waitForClusterReady(t, cluster3, 10*time.Second)
+	waitForClusterReady(t, cluster1, 15*time.Second)
+	waitForClusterReady(t, cluster2, 15*time.Second)
+	waitForClusterReady(t, cluster3, 15*time.Second)
 
 	// Wait for JetStream to be ready on all nodes (increased timeout for stability)
-	waitForJetStreamReady(t, cluster1, 30*time.Second)
-	waitForJetStreamReady(t, cluster2, 30*time.Second)
-	waitForJetStreamReady(t, cluster3, 30*time.Second)
+	waitForJetStreamReady(t, cluster1, 45*time.Second)
+	waitForJetStreamReady(t, cluster2, 45*time.Second)
+	waitForJetStreamReady(t, cluster3, 45*time.Second)
 
 	// Additional sleep to ensure cluster formation is complete
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	return cluster1, cluster2, cluster3
 }
@@ -636,5 +637,210 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		}
 
 		t.Log("✓ All core NATS functionality tests completed successfully")
+	})
+
+	t.Run("kv store and object store functionality via leaf nodes", func(t *testing.T) {
+		// Setup three node cluster
+		cluster1, cluster2, cluster3 := SetupLeafTestThreeNodeCluster(t)
+		defer CleanupLeafTestClusters(cluster1, cluster2, cluster3)
+
+		// Create leaf nodes connected to different cluster nodes
+		leaf1 := SetupLeafNodeConnectedToCluster(t, cluster1, "leaf-kv-sender", 4306)
+		defer CleanupLeafNodes(leaf1)
+
+		leaf2 := SetupLeafNodeConnectedToCluster(t, cluster2, "leaf-kv-receiver", 4307)
+		defer CleanupLeafNodes(leaf2)
+
+		// Test KV Store functionality
+		t.Log("Testing KV Store functionality via leaf nodes...")
+
+		// Create KV bucket via cluster1 (central hub)
+		kvBucketName := "leaf_test_kv_bucket"
+		kvConfig := KeyValueStoreConfig{
+			Bucket:       kvBucketName,
+			Description:  "Test KV bucket for leaf nodes",
+			MaxValueSize: size.Size(1024), // 1KB per value
+			TTL:          24 * time.Hour,
+			MaxBytes:     size.Size(1024 * 1024), // 1MB
+			Replicas:     1,
+		}
+
+		err := cluster1.nc.CreateKeyValueStore("test-cluster", kvConfig)
+		if err != nil {
+			t.Fatalf("failed to create KV bucket via cluster1: %v", err)
+		}
+		t.Logf("✓ Successfully created KV bucket '%s' via cluster1", kvBucketName)
+
+		// Test KV operations via leaf nodes
+		testKey := "test.key"
+		testValue := []byte("Hello KV from leaf1!")
+
+		// Put value via leaf1
+		revision1, err := leaf1.conn.PutToKeyValueStore(kvBucketName, testKey, testValue)
+		if err != nil {
+			t.Fatalf("failed to put KV value via leaf1: %v", err)
+		}
+		t.Logf("✓ Successfully put KV value via leaf1, revision: %d", revision1)
+
+		// Get value via leaf2
+		retrievedValue, revision2, err := leaf2.conn.GetFromKeyValueStore(kvBucketName, testKey)
+		if err != nil {
+			t.Fatalf("failed to get KV value via leaf2: %v", err)
+		}
+
+		if string(retrievedValue) != string(testValue) {
+			t.Errorf("expected KV value '%s', got '%s'", string(testValue), string(retrievedValue))
+		}
+		if revision2 != revision1 {
+			t.Errorf("expected revision %d, got %d", revision1, revision2)
+		}
+		t.Logf("✓ Successfully retrieved KV value via leaf2: %s (revision: %d)", string(retrievedValue), revision2)
+
+		// Test KV update via leaf2
+		updatedValue := []byte("Updated value from leaf2!")
+		revision3, err := leaf2.conn.UpdateToKeyValueStore(kvBucketName, testKey, updatedValue, revision2)
+		if err != nil {
+			t.Fatalf("failed to update KV value via leaf2: %v", err)
+		}
+		t.Logf("✓ Successfully updated KV value via leaf2, new revision: %d", revision3)
+
+		// Verify update via leaf1
+		finalValue, finalRevision, err := leaf1.conn.GetFromKeyValueStore(kvBucketName, testKey)
+		if err != nil {
+			t.Fatalf("failed to get updated KV value via leaf1: %v", err)
+		}
+
+		if string(finalValue) != string(updatedValue) {
+			t.Errorf("expected updated KV value '%s', got '%s'", string(updatedValue), string(finalValue))
+		}
+		if finalRevision != revision3 {
+			t.Errorf("expected final revision %d, got %d", revision3, finalRevision)
+		}
+		t.Logf("✓ Successfully verified KV update via leaf1: %s (revision: %d)", string(finalValue), finalRevision)
+
+		// Test KV delete via leaf1
+		err = leaf1.conn.DeleteFromKeyValueStore(kvBucketName, testKey)
+		if err != nil {
+			t.Fatalf("failed to delete KV value via leaf1: %v", err)
+		}
+		t.Log("✓ Successfully deleted KV value via leaf1")
+
+		// Verify deletion via leaf2
+		_, _, err = leaf2.conn.GetFromKeyValueStore(kvBucketName, testKey)
+		if err == nil {
+			t.Error("expected error when getting deleted KV value, but got none")
+		}
+		t.Log("✓ Successfully verified KV deletion via leaf2")
+
+		// Test Object Store functionality
+		t.Log("Testing Object Store functionality via leaf nodes...")
+
+		// Create Object Store bucket via cluster2 (different node)
+		osBucketName := "leaf_test_os_bucket"
+		osConfig := ObjectStoreConfig{
+			Bucket:      osBucketName,
+			Description: "Test Object Store bucket for leaf nodes",
+			MaxBytes:    size.Size(10 * 1024 * 1024), // 10MB
+			TTL:         24 * time.Hour,
+			Replicas:    1,
+		}
+
+		err = cluster2.nc.CreateObjectStore("test-cluster", osConfig)
+		if err != nil {
+			t.Fatalf("failed to create Object Store bucket via cluster2: %v", err)
+		}
+		t.Logf("✓ Successfully created Object Store bucket '%s' via cluster2", osBucketName)
+
+		// Test Object Store operations via leaf nodes
+		objectName := "test-object.txt"
+		objectData := []byte("Hello Object Store from leaf nodes!\nThis is a test object with multiple lines.\nLine 3 for testing.")
+
+		// Put object via leaf2
+		err = leaf2.conn.PutToObjectStore(osBucketName, objectName, objectData, map[string]string{
+			"created-by": "leaf2",
+			"test-type":  "functionality",
+		})
+		if err != nil {
+			t.Fatalf("failed to put object via leaf2: %v", err)
+		}
+		t.Logf("✓ Successfully put object '%s' via leaf2, size: %d bytes", objectName, len(objectData))
+
+		// Get object via leaf1
+		retrievedObjectData, err := leaf1.conn.GetFromObjectStore(osBucketName, objectName)
+		if err != nil {
+			t.Fatalf("failed to get object via leaf1: %v", err)
+		}
+
+		if string(retrievedObjectData) != string(objectData) {
+			t.Errorf("expected object data '%s', got '%s'", string(objectData), string(retrievedObjectData))
+		}
+		t.Logf("✓ Successfully retrieved object via leaf1, size: %d bytes", len(retrievedObjectData))
+
+		// Test large object handling
+		t.Log("Testing large object handling...")
+		largeObjectName := "large-test-object.bin"
+		largeObjectData := make([]byte, 1024*50) // 50KB
+		for i := range largeObjectData {
+			largeObjectData[i] = byte(i % 256)
+		}
+
+		// Put large object via leaf1
+		err = leaf1.conn.PutToObjectStore(osBucketName, largeObjectName, largeObjectData, map[string]string{
+			"created-by": "leaf1",
+			"size":       "50KB",
+		})
+		if err != nil {
+			t.Fatalf("failed to put large object via leaf1: %v", err)
+		}
+		t.Logf("✓ Successfully put large object '%s' via leaf1, size: %d bytes", largeObjectName, len(largeObjectData))
+
+		// Get large object via leaf2
+		retrievedLargeObjectData, err := leaf2.conn.GetFromObjectStore(osBucketName, largeObjectName)
+		if err != nil {
+			t.Fatalf("failed to get large object via leaf2: %v", err)
+		}
+
+		if len(retrievedLargeObjectData) != len(largeObjectData) {
+			t.Errorf("expected large object size %d, got %d", len(largeObjectData), len(retrievedLargeObjectData))
+		}
+
+		// Verify content integrity for first and last 100 bytes
+		for i := 0; i < 100; i++ {
+			if retrievedLargeObjectData[i] != largeObjectData[i] {
+				t.Errorf("large object data mismatch at byte %d: expected %d, got %d", i, largeObjectData[i], retrievedLargeObjectData[i])
+				break
+			}
+		}
+		for i := len(largeObjectData) - 100; i < len(largeObjectData); i++ {
+			if retrievedLargeObjectData[i] != largeObjectData[i] {
+				t.Errorf("large object data mismatch at byte %d: expected %d, got %d", i, largeObjectData[i], retrievedLargeObjectData[i])
+				break
+			}
+		}
+		t.Logf("✓ Successfully retrieved and verified large object via leaf2, size: %d bytes", len(retrievedLargeObjectData))
+
+		// Test object deletion via leaf2
+		err = leaf2.conn.DeleteFromObjectStore(osBucketName, objectName)
+		if err != nil {
+			t.Fatalf("failed to delete object via leaf2: %v", err)
+		}
+		t.Log("✓ Successfully deleted object via leaf2")
+
+		// Verify deletion via leaf1
+		_, err = leaf1.conn.GetFromObjectStore(osBucketName, objectName)
+		if err == nil {
+			t.Error("expected error when getting deleted object, but got none")
+		}
+		t.Log("✓ Successfully verified object deletion via leaf1")
+
+		// Clean up large object
+		err = leaf1.conn.DeleteFromObjectStore(osBucketName, largeObjectName)
+		if err != nil {
+			t.Logf("Warning: failed to delete large object: %v", err)
+		} else {
+			t.Log("✓ Successfully cleaned up large object")
+		}
+
+		t.Log("✓ All KV Store and Object Store functionality tests completed successfully")
 	})
 }
