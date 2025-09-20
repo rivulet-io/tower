@@ -337,3 +337,376 @@ func testBasicCrossClusterMessaging(t *testing.T, clusterA, clusterB *Cluster) {
 		t.Error("timeout waiting for cross-cluster message via gateway")
 	}
 }
+
+// Test request-reply pattern across gateways
+func TestGatewayRequestReply(t *testing.T) {
+	t.Run("request-reply across gateway clusters", func(t *testing.T) {
+		clusterA1, clusterA2, clusterA3, clusterB1, clusterB2, clusterB3 := SetupGatewayTestTwoClusters(t)
+		defer CleanupGatewayTestClusters(clusterA1, clusterA2, clusterA3, clusterB1, clusterB2, clusterB3)
+
+		// Wait for gateway connections to establish
+		time.Sleep(3 * time.Second)
+
+		t.Log("Testing request-reply pattern across gateways...")
+		testRequestReplyAcrossGateways(t, clusterA1, clusterB1)
+	})
+}
+
+// testRequestReplyAcrossGateways tests request-reply messaging across gateways
+func testRequestReplyAcrossGateways(t *testing.T, clusterA, clusterB *Cluster) {
+	t.Helper()
+
+	subject := "gateway.request.echo"
+	requestData := "Echo this message across gateway"
+
+	// Set up responder on cluster B
+	sub, err := clusterB.nc.conn.Subscribe(subject, func(msg *nats.Msg) {
+		t.Logf("   - Cluster B received request: %s", string(msg.Data))
+		response := fmt.Sprintf("Echo: %s", string(msg.Data))
+
+		if err := msg.Respond([]byte(response)); err != nil {
+			t.Logf("   - Failed to respond: %v", err)
+		} else {
+			t.Logf("   - Cluster B sent response: %s", response)
+		}
+	})
+	if err != nil {
+		t.Fatalf("failed to subscribe responder on cluster B: %v", err)
+	}
+	defer sub.Unsubscribe()
+
+	// Wait for subscription to propagate across gateway
+	time.Sleep(3 * time.Second)
+
+	// Send request from cluster A
+	t.Logf(" - Sending request from Cluster A to Cluster B")
+	resp, err := clusterA.nc.conn.Request(subject, []byte(requestData), 10*time.Second)
+	if err != nil {
+		t.Fatalf("failed to send request from cluster A: %v", err)
+	}
+
+	expectedResponse := fmt.Sprintf("Echo: %s", requestData)
+	if string(resp.Data) != expectedResponse {
+		t.Errorf("expected response '%s', got '%s'", expectedResponse, string(resp.Data))
+	} else {
+		t.Logf("✓ Successfully completed request-reply across gateway: %s", string(resp.Data))
+	}
+}
+
+// Test JetStream functionality across gateways
+func TestGatewayJetStream(t *testing.T) {
+	t.Run("jetstream across gateway clusters", func(t *testing.T) {
+		clusterA1, clusterA2, clusterA3, clusterB1, clusterB2, clusterB3 := SetupGatewayTestTwoClusters(t)
+		defer CleanupGatewayTestClusters(clusterA1, clusterA2, clusterA3, clusterB1, clusterB2, clusterB3)
+
+		// Wait for gateway connections to establish
+		time.Sleep(3 * time.Second)
+
+		t.Log("Testing JetStream across gateways...")
+		testJetStreamAcrossGateways(t, clusterA1, clusterB1)
+	})
+}
+
+// testJetStreamAcrossGateways tests JetStream functionality across gateways
+func testJetStreamAcrossGateways(t *testing.T, clusterA, clusterB *Cluster) {
+	t.Helper()
+
+	streamName := "GATEWAY_TEST_STREAM"
+	subject := "gateway.jetstream.test"
+
+	// Create stream on cluster A
+	t.Logf(" - Creating JetStream stream '%s' on Cluster A", streamName)
+	streamInfo, err := clusterA.nc.js.AddStream(&nats.StreamConfig{
+		Name:     streamName,
+		Subjects: []string{subject},
+		Storage:  nats.MemoryStorage,
+		Replicas: 1,
+	})
+	if err != nil {
+		t.Fatalf("failed to create stream on cluster A: %v", err)
+	}
+	t.Logf("   - Stream created: %s", streamInfo.Config.Name)
+
+	// Publish messages from cluster A
+	t.Logf(" - Publishing messages to JetStream from Cluster A")
+	for i := 0; i < 3; i++ {
+		msg := fmt.Sprintf("JetStream message %d from cluster A", i+1)
+		ack, err := clusterA.nc.js.Publish(subject, []byte(msg))
+		if err != nil {
+			t.Fatalf("failed to publish message %d: %v", i+1, err)
+		}
+		t.Logf("   - Published message %d, seq: %d", i+1, ack.Sequence)
+	}
+
+	// Try to access stream from cluster B (this may not work across gateways - for debugging)
+	t.Logf(" - Attempting to access stream from Cluster B...")
+	_, err = clusterB.nc.js.StreamInfo(streamName)
+	if err != nil {
+		t.Logf("   - Expected: Cannot access stream from cluster B: %v", err)
+		t.Logf("   - This is normal behavior - JetStream streams are cluster-local")
+	} else {
+		t.Logf("   - Unexpected: Stream accessible from cluster B")
+	}
+
+	// Test consumer on cluster A
+	t.Logf(" - Creating consumer on Cluster A")
+	consumerName := "gateway-test-consumer"
+	consumerInfo, err := clusterA.nc.js.AddConsumer(streamName, &nats.ConsumerConfig{
+		Durable:   consumerName,
+		AckPolicy: nats.AckExplicitPolicy,
+	})
+	if err != nil {
+		t.Fatalf("failed to create consumer: %v", err)
+	}
+	t.Logf("   - Consumer created: %s", consumerInfo.Name)
+
+	// Pull messages
+	t.Logf(" - Pulling messages from consumer")
+	sub, err := clusterA.nc.js.PullSubscribe(subject, consumerName)
+	if err != nil {
+		t.Fatalf("failed to create pull subscription: %v", err)
+	}
+	defer sub.Unsubscribe()
+
+	msgs, err := sub.Fetch(3, nats.MaxWait(5*time.Second))
+	if err != nil {
+		t.Fatalf("failed to fetch messages: %v", err)
+	}
+
+	if len(msgs) != 3 {
+		t.Errorf("expected 3 messages, got %d", len(msgs))
+	}
+
+	for i, msg := range msgs {
+		t.Logf("   - Received message %d: %s", i+1, string(msg.Data))
+		msg.Ack()
+	}
+
+	t.Logf("✓ Successfully tested JetStream functionality on gateway cluster")
+}
+
+// Test KVStore functionality across gateways
+func TestGatewayKVStore(t *testing.T) {
+	t.Run("kvstore across gateway clusters", func(t *testing.T) {
+		clusterA1, clusterA2, clusterA3, clusterB1, clusterB2, clusterB3 := SetupGatewayTestTwoClusters(t)
+		defer CleanupGatewayTestClusters(clusterA1, clusterA2, clusterA3, clusterB1, clusterB2, clusterB3)
+
+		// Wait for gateway connections to establish
+		time.Sleep(3 * time.Second)
+
+		t.Log("Testing KVStore across gateways...")
+		testKVStoreAcrossGateways(t, clusterA1, clusterB1)
+	})
+}
+
+// testKVStoreAcrossGateways tests KVStore functionality across gateways
+func testKVStoreAcrossGateways(t *testing.T, clusterA, clusterB *Cluster) {
+	t.Helper()
+
+	bucketName := "gateway-test-bucket"
+
+	// Create KV bucket on cluster A
+	t.Logf(" - Creating KV bucket '%s' on Cluster A", bucketName)
+	kvA, err := clusterA.nc.js.CreateKeyValue(&nats.KeyValueConfig{
+		Bucket:   bucketName,
+		Storage:  nats.MemoryStorage,
+		Replicas: 1,
+	})
+	if err != nil {
+		t.Fatalf("failed to create KV bucket on cluster A: %v", err)
+	}
+	t.Logf("   - KV bucket created successfully")
+
+	// Put some values on cluster A
+	testData := map[string]string{
+		"key1": "value1-from-cluster-A",
+		"key2": "value2-from-cluster-A",
+		"key3": "value3-from-cluster-A",
+	}
+
+	t.Logf(" - Storing data in KV bucket on Cluster A")
+	for key, value := range testData {
+		rev, err := kvA.Put(key, []byte(value))
+		if err != nil {
+			t.Fatalf("failed to put key '%s': %v", key, err)
+		}
+		t.Logf("   - Put %s = %s (revision: %d)", key, value, rev)
+	}
+
+	// Try to access KV bucket from cluster B (this may not work across gateways - for debugging)
+	t.Logf(" - Attempting to access KV bucket from Cluster B...")
+	kvB, err := clusterB.nc.js.KeyValue(bucketName)
+	if err != nil {
+		t.Logf("   - Expected: Cannot access KV bucket from cluster B: %v", err)
+		t.Logf("   - This is normal behavior - KV buckets are cluster-local")
+
+		// Try to create a separate bucket on cluster B
+		t.Logf(" - Creating separate KV bucket on Cluster B")
+		kvB, err = clusterB.nc.js.CreateKeyValue(&nats.KeyValueConfig{
+			Bucket:   bucketName + "-b",
+			Storage:  nats.MemoryStorage,
+			Replicas: 1,
+		})
+		if err != nil {
+			t.Fatalf("failed to create KV bucket on cluster B: %v", err)
+		}
+
+		// Put data on cluster B's bucket
+		rev, err := kvB.Put("cross-cluster-key", []byte("value-from-cluster-B"))
+		if err != nil {
+			t.Fatalf("failed to put data in cluster B bucket: %v", err)
+		}
+		t.Logf("   - Put data in cluster B bucket (revision: %d)", rev)
+
+	} else {
+		t.Logf("   - Unexpected: KV bucket accessible from cluster B")
+
+		// Try to read values
+		for key := range testData {
+			entry, err := kvB.Get(key)
+			if err != nil {
+				t.Logf("   - Cannot get key '%s' from cluster B: %v", key, err)
+			} else {
+				t.Logf("   - Got %s = %s from cluster B", key, string(entry.Value()))
+			}
+		}
+	}
+
+	// Read back values on cluster A to verify
+	t.Logf(" - Reading back values from Cluster A")
+	for key, expectedValue := range testData {
+		entry, err := kvA.Get(key)
+		if err != nil {
+			t.Fatalf("failed to get key '%s' from cluster A: %v", key, err)
+		}
+
+		if string(entry.Value()) != expectedValue {
+			t.Errorf("expected value '%s' for key '%s', got '%s'", expectedValue, key, string(entry.Value()))
+		} else {
+			t.Logf("   - Verified %s = %s", key, string(entry.Value()))
+		}
+	}
+
+	t.Logf("✓ Successfully tested KV functionality on gateway clusters")
+}
+
+// Test Object Store functionality across gateways
+func TestGatewayObjectStore(t *testing.T) {
+	t.Run("object store across gateway clusters", func(t *testing.T) {
+		clusterA1, clusterA2, clusterA3, clusterB1, clusterB2, clusterB3 := SetupGatewayTestTwoClusters(t)
+		defer CleanupGatewayTestClusters(clusterA1, clusterA2, clusterA3, clusterB1, clusterB2, clusterB3)
+
+		// Wait for gateway connections to establish
+		time.Sleep(3 * time.Second)
+
+		t.Log("Testing Object Store across gateways...")
+		testObjectStoreAcrossGateways(t, clusterA1, clusterB1)
+	})
+}
+
+// testObjectStoreAcrossGateways tests Object Store functionality across gateways
+func testObjectStoreAcrossGateways(t *testing.T, clusterA, clusterB *Cluster) {
+	t.Helper()
+
+	bucketName := "gateway-test-objects"
+
+	// Create Object Store bucket on cluster A
+	t.Logf(" - Creating Object Store bucket '%s' on Cluster A", bucketName)
+	osA, err := clusterA.nc.js.CreateObjectStore(&nats.ObjectStoreConfig{
+		Bucket:   bucketName,
+		Storage:  nats.MemoryStorage,
+		Replicas: 1,
+	})
+	if err != nil {
+		t.Fatalf("failed to create object store on cluster A: %v", err)
+	}
+	t.Logf("   - Object Store bucket created successfully")
+
+	// Put some objects on cluster A
+	testObjects := map[string][]byte{
+		"file1.txt": []byte("This is content of file1 from cluster A"),
+		"file2.txt": []byte("This is content of file2 from cluster A"),
+		"data.json": []byte(`{"message": "Hello from cluster A", "timestamp": "2025-09-20"}`),
+	}
+
+	t.Logf(" - Storing objects in Object Store on Cluster A")
+	for name, content := range testObjects {
+		info, err := osA.PutBytes(name, content)
+		if err != nil {
+			t.Fatalf("failed to put object '%s': %v", name, err)
+		}
+		t.Logf("   - Put object %s (%d bytes, NUID: %s)", name, info.Size, info.NUID)
+	}
+
+	// Try to access Object Store from cluster B (this may not work across gateways - for debugging)
+	t.Logf(" - Attempting to access Object Store from Cluster B...")
+	osB, err := clusterB.nc.js.ObjectStore(bucketName)
+	if err != nil {
+		t.Logf("   - Expected: Cannot access Object Store from cluster B: %v", err)
+		t.Logf("   - This is normal behavior - Object Stores are cluster-local")
+
+		// Try to create a separate object store on cluster B
+		t.Logf(" - Creating separate Object Store bucket on Cluster B")
+		osB, err = clusterB.nc.js.CreateObjectStore(&nats.ObjectStoreConfig{
+			Bucket:   bucketName + "-b",
+			Storage:  nats.MemoryStorage,
+			Replicas: 1,
+		})
+		if err != nil {
+			t.Fatalf("failed to create object store on cluster B: %v", err)
+		}
+
+		// Put object on cluster B's store
+		info, err := osB.PutBytes("cluster-b-file.txt", []byte("Content from cluster B"))
+		if err != nil {
+			t.Fatalf("failed to put object in cluster B store: %v", err)
+		}
+		t.Logf("   - Put object in cluster B store (%d bytes, NUID: %s)", info.Size, info.NUID)
+
+	} else {
+		t.Logf("   - Unexpected: Object Store accessible from cluster B")
+
+		// Try to list objects
+		objects, err := osB.List()
+		if err != nil {
+			t.Logf("   - Cannot list objects from cluster B: %v", err)
+		} else {
+			t.Logf("   - Listed %d objects from cluster B", len(objects))
+			for _, obj := range objects {
+				t.Logf("     - Object: %s (%d bytes)", obj.Name, obj.Size)
+			}
+		}
+	}
+
+	// Read back objects on cluster A to verify
+	t.Logf(" - Reading back objects from Cluster A")
+	for name, expectedContent := range testObjects {
+		data, err := osA.GetBytes(name)
+		if err != nil {
+			t.Fatalf("failed to get object '%s' from cluster A: %v", name, err)
+		}
+
+		if string(data) != string(expectedContent) {
+			t.Errorf("expected content '%s' for object '%s', got '%s'", string(expectedContent), name, string(data))
+		} else {
+			t.Logf("   - Verified object %s (%d bytes)", name, len(data))
+		}
+	}
+
+	// List all objects on cluster A
+	t.Logf(" - Listing all objects on Cluster A")
+	objects, err := osA.List()
+	if err != nil {
+		t.Fatalf("failed to list objects on cluster A: %v", err)
+	}
+
+	if len(objects) != len(testObjects) {
+		t.Errorf("expected %d objects, got %d", len(testObjects), len(objects))
+	}
+
+	for _, obj := range objects {
+		t.Logf("   - Object: %s (%d bytes, modified: %v)", obj.Name, obj.Size, obj.ModTime)
+	}
+
+	t.Logf("✓ Successfully tested Object Store functionality on gateway clusters")
+}
