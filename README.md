@@ -6,6 +6,9 @@ A high-performance, distributed key-value database for Go, built on [CockroachDB
 
 - **🚀 High Performance**: Built on CockroachDB's Pebble LSM-tree storage engine.
 - **🌐 Distributed Clustering**: Scalable and resilient clustering powered by NATS for high availability and load distribution (`mesh` package).
+    - **Cluster Nodes**: Full-fledged members participating in routing and data distribution.
+    - **Gateway Connections**: Connect multiple independent Tower clusters into a super-cluster.
+    - **Leaf Nodes**: Lightweight edge nodes to extend the network without complex routing overhead.
 - **🔒 Thread-Safe**: Concurrent operations with fine-grained per-key locking.
 - **📊 Rich Data Types**: Native support for strings, integers, floats, booleans, timestamps, durations, UUIDs, binary data, BigInts, and Decimals.
 - **🗂️ Advanced Data Structures**: Built-in Lists, Maps, Sets, Time Series, and Bloom Filters with atomic operations.
@@ -62,36 +65,48 @@ func main() {
 
 ### Distributed Cluster (`mesh` package)
 
-Create a distributed network of Tower nodes using the `mesh` package, which leverages NATS for clustering, routing, and high availability.
+Create a distributed network of Tower nodes using the `mesh` package, which leverages NATS for clustering, routing, and high availability. The mesh network supports three main components: **Cluster Nodes**, **Gateways**, and **Leaf Nodes**.
 
-**Starting a Cluster Node:**
+**1. Starting a Cluster Node:**
+A cluster node is a full member of the NATS cluster, participating in data replication and routing.
+
 ```go
 // main_cluster.go
 package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/rivulet-io/tower/mesh"
+	"github.com/rivulet-io/tower/util/size"
 )
 
 func main() {
 	opts := mesh.NewClusterOptions("tower-node-1").
 		WithListen("127.0.0.1", 4222).
+		WithStoreDir("./node1").
 		WithClusterName("tower-cluster").
-		WithClusterListen("127.0.0.1", 6222)
+		WithClusterListen("127.0.0.1", 6222).
+		WithJetStreamMaxMemory(size.NewSizeFromMegabytes(256)).
+		WithJetStreamMaxStore(size.NewSizeFromGigabytes(2))
 
-	// This starts the server and blocks.
-	// You would typically run this in its own process.
-	if err := mesh.StartCluster(opts); err != nil {
+	cluster, err := mesh.NewCluster(opts)
+	if err != nil {
 		log.Fatalf("Failed to start cluster: %v", err)
 	}
+	defer cluster.Close()
+
+	log.Println("Cluster node is running...")
+	select {} // Block forever
 }
 ```
 
-**Connecting as a Leaf Node:**
+**2. Connecting Clusters with a Gateway:**
+Gateways connect two or more independent clusters, allowing for large-scale, geographically distributed deployments. Core features like JetStream remain cluster-local, but basic messaging can cross gateways.
+
 ```go
-// main_leaf.go
+// main_gateway.go
 package main
 
 import (
@@ -102,20 +117,60 @@ import (
 )
 
 func main() {
-	opts := mesh.NewLeafOptions("leaf-1").
+	// Define remote gateways to connect to
+	remotes := mesh.NewRemoteGateways().
+		Add("other-cluster", "nats://<other-cluster-gateway-ip>:7223")
+
+	opts := mesh.NewClusterOptions("gateway-node-1").
 		WithListen("127.0.0.1", 5222).
-		WithLeafRemotes([][]string{{"nats://127.0.0.1:6222"}}...)
+		WithClusterName("my-cluster").
+		WithClusterListen("127.0.0.1", 7222).
+		WithGateway("my-cluster", "127.0.0.1", 7222, "", "", remotes)
+
+	cluster, err := mesh.NewCluster(opts)
+	if err != nil {
+		log.Fatalf("Failed to start gateway node: %v", err)
+	}
+	defer cluster.Close()
+
+	log.Println("Gateway node is running...")
+	select {}
+}
+```
+
+**3. Connecting as a Leaf Node:**
+A leaf node connects to a cluster to extend the network, ideal for edge devices or clients. It can access the cluster's features without participating in complex cluster routing.
+
+```go
+// main_leaf.go
+package main
+
+import (
+	"log"
+	"time"
+
+	"github.comcom/rivulet-io/tower/mesh"
+)
+
+func main() {
+	// Connect to one or more cluster nodes that accept leaf connections
+	remotes := []string{"nats-leaf://127.0.0.1:7422"}
+
+	opts := mesh.NewLeafOptions("leaf-1").
+		WithListen("127.0.0.1", 8222).
+		WithLeafRemotes(remotes)
 
 	leaf, err := mesh.NewLeaf(opts)
 	if err != nil {
 		log.Fatalf("Failed to create leaf: %v", err)
 	}
+	defer leaf.Close()
 	
-	// The 'leaf' instance can now be used to interact with the cluster.
-	// (Further implementation for client operations needed on top of the mesh.Conn)
 	log.Println("Leaf node connected to cluster.")
 	
-	// Keep the application running.
+	// The 'leaf' instance can now be used to interact with the cluster.
+	// For example, using its core NATS and JetStream functionalities.
+	
 	select {}
 }
 ```
@@ -132,11 +187,12 @@ Tower's architecture is split into two primary packages:
 
 - **`op` (Operator)**: The core database engine. It manages the underlying Pebble storage, provides all data-specific operations (e.g., `SetString`, `AddInt`), and ensures thread-safety through fine-grained locking. This package can be used on its own for a standalone key-value store.
 
-- **`mesh` (Mesh Network)**: Provides the functionality to run Tower in a distributed cluster. It uses NATS to connect multiple Tower nodes.
-    - **`Cluster`**: A full-fledged member of a NATS cluster, participating in routing and data distribution.
-    - **`Leaf`**: A lightweight node that connects to a `Cluster` to extend the network without participating in complex routing.
+- **`mesh` (Mesh Network)**: Provides the functionality to run Tower in a distributed cluster. It is built on NATS and offers a robust foundation for scaling out.
+    - **`Cluster`**: A full-fledged member of a NATS cluster. It forms the backbone of the distributed system, handling data replication (via JetStream), routing, and high availability.
+    - **`Gateway`**: A special mode for a `Cluster` node that connects it to other, separate clusters. This allows for building a "super-cluster" of interconnected systems, though features like JetStream remain local to each cluster.
+    - **`Leaf`**: A lightweight node that connects to a `Cluster` to extend the network. It's ideal for edge computing scenarios or for clients that need to interact with the cluster's capabilities (like JetStream, KV Store) without the overhead of being a full cluster member.
 
-This modular design allows you to start with a simple, embedded database and scale up to a distributed system as your needs grow.
+This modular design allows you to start with a simple, embedded database and scale up to a complex, globally distributed system as your needs grow.
 
 ## 📋 Data Types
 
@@ -719,27 +775,23 @@ fmt.Println(s.String())                 // "1.00 GB"
 
 ## 🧪 Testing
 
-Tower includes comprehensive test coverage for all operations in the `op` package:
+Tower includes comprehensive test coverage for all operations in both the `op` and `mesh` packages.
 
 ```bash
 # Run all tests
 go test ./...
 
-# Run specific operation tests  
-go test -v -run "TestString"        # String operations
-go test -v -run "TestInt"           # Integer operations  
-go test -v -run "TestList"          # List data structure
-go test -v -run "TestMap"           # Map data structure
-
-# Run with coverage
-go test -v -cover ./...
+# Run tests for a specific package
+go test ./op -v
+go test ./mesh -v
 ```
 
-All tests use in-memory storage for fast execution and are designed to validate:
-- **Correctness**: All operations produce expected results
-- **Atomicity**: Operations are atomic and consistent
-- **Concurrency**: Thread-safe access patterns
-- **Error Handling**: Proper error propagation and edge cases
+The test suite is designed to validate:
+- **Correctness**: All operations produce expected results.
+- **Atomicity**: Operations are atomic and consistent.
+- **Concurrency**: Thread-safe access patterns are enforced.
+- **Error Handling**: Proper error propagation and edge cases are handled.
+- **Distributed Scenarios (`mesh` package)**: The `mesh` tests are particularly noteworthy, simulating realistic multi-node clusters, gateway connections, and leaf node interactions. They verify complex behaviors such as data replication, distributed locking, and message routing in a clustered environment, ensuring the reliability of the distributed system.
 
 ## 🚦 Concurrency
 
@@ -824,41 +876,6 @@ go test ./...  # Ensure all tests pass
 - **Testing**: All new features must include comprehensive tests.
 - **Documentation**: Update README and add code comments for public APIs.
 - **Commits**: Use conventional commit format for clear history.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔗 Dependencies
-
-Tower builds on excellent open-source foundations:
-
-- **[CockroachDB Pebble](https://github.com/cockroachdb/pebble)** - High-performance LSM-tree storage engine.
-- **[NATS.io](https://github.com/nats-io/nats-server)** - High-performance messaging system for clustering.
-- **[Google UUID](https://github.com/google/uuid)** - UUID generation and parsing library.
-
-## 🆘 Support
-
-### Documentation
-- **API Reference**: Generated Go docs with `go doc github.com/rivulet-io/tower/op`
-- **Examples**: See the code snippets in this README for usage patterns.
-
-### Community
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/rivulet-io/tower/issues)
-- **✨ Feature Requests**: [GitHub Discussions](https://github.com/rivulet-io/tower/discussions)  
-- **❓ Questions**: Use GitHub Discussions for questions and help.
-
-### Enterprise Support
-For production deployments and enterprise requirements, contact: [support@rivulet.io](mailto:support@rivulet.io)
-
----
-
-Built with ❤️ by the Rivulet team
-1. Fork the repository and create a feature branch
-2. Write tests for new functionality
-3. Ensure all tests pass: `go test ./...`
-4. Run `go fmt` and `go vet`
-5. Submit PR with clear description of changes
 
 ### Areas for Contribution
 - Additional data type operations
