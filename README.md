@@ -207,7 +207,7 @@ import (
 	"log"
 	"time"
 
-	"github.comcom/rivulet-io/tower/mesh"
+	"github.com/rivulet-io/tower/mesh"
 )
 
 func main() {
@@ -967,48 +967,54 @@ Comprehensive examples demonstrating Tower's capabilities:
 // Example: Building a URL shortener with Tower
 func urlShortener() {
     db, _ := tower.NewTower(&tower.Options{
-        FS:           tower.InMemory(),
-        CacheSize:    tower.NewSizeFromMegabytes(50),
-        MemTableSize: tower.NewSizeFromMegabytes(10),
+        Operator: op.Options{
+            FS:           op.InMemory(),
+            CacheSize:    size.NewSizeFromMegabytes(50),
+            MemTableSize: size.NewSizeFromMegabytes(10),
+        },
     })
     defer db.Close()
     
+    op := db.Op()
+
     // Store URL mapping
     shortCode := "abc123"
     originalURL := "https://example.com/very/long/url"
-    db.SetString(shortCode, originalURL)
+    op.SetString(shortCode, originalURL)
     
     // Track click count
-    db.SetInt(shortCode+"_clicks", 0)
+    op.SetInt(shortCode+"_clicks", 0)
     
     // Handle redirect
-    url, _ := db.GetString(shortCode)
-    clicks, _ := db.IncInt(shortCode + "_clicks")
+    url, _ := op.GetString(shortCode)
+    clicks, _ := op.IncInt(shortCode + "_clicks")
     
     fmt.Printf("Redirecting to %s (click #%d)\n", url, clicks)
 }
 
 // Example: Real-time analytics with data structures
 func analytics() {
-    db, _ := tower.NewTower(&tower.Options{FS: tower.InMemory()})
+    db, _ := tower.NewTower(&tower.Options{Operator: op.Options{FS: op.InMemory()}})
     defer db.Close()
+
+    op := db.Op()
     
     // Track unique visitors with Set
-    db.CreateSet("visitors")
-    db.SetAdd("visitors", "user123")
-    db.SetAdd("visitors", "user456")
-    uniqueCount, _ := db.SetCardinality("visitors")
+    op.CreateSet("visitors")
+    op.SetAdd("visitors", "user123")
+    op.SetAdd("visitors", "user456")
+    uniqueCount, _ := op.SetCardinality("visitors")
     
     // Store recent page views with List
-    db.CreateList("recent_views")
-    db.PushRight("recent_views", "/home")
-    db.PushRight("recent_views", "/products")
-    db.ListTrim("recent_views", -10, -1) // Keep last 10
+    op.CreateList("recent_views")
+    op.PushRight("recent_views", op.PrimitiveString("/home"))
+    op.PushRight("recent_views", op.PrimitiveString("/products"))
+    op.ListTrim("recent_views", -10, -1) // Keep last 10
     
     // Cache user preferences with Map
-    db.CreateMap("user123_prefs")
-    db.MapSet("user123_prefs", "theme", "dark")
-    db.MapSet("user123_prefs", "notifications", true)
+    op.CreateMap("user123_prefs")
+    op.MapSet("user123_prefs", op.PrimitiveString("theme"), op.PrimitiveString("dark"))
+    op.MapSet("user123_prefs", op.PrimitiveString("notifications"), op.PrimitiveBool(true))
 }
 ```
 
@@ -1016,7 +1022,7 @@ func analytics() {
 
 ### Documentation
 - **API Reference**: Generated Go docs with `go doc github.com/rivulet-io/tower`
-- **Examples**: See the `/examples` directory for complete applications
+- **Examples**: See the `op/tests` directory for complete applications
 - **Best Practices**: Performance and usage guidelines in the wiki
 
 ### Community
