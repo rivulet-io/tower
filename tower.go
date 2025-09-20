@@ -15,7 +15,7 @@ type Options struct {
 
 type Tower struct {
 	operator *op.Operator
-	cluster  mesh.WrapConn
+	mesh     mesh.WrapConn
 }
 
 func NewTower(opt *Options) (*Tower, error) {
@@ -35,7 +35,7 @@ func NewTower(opt *Options) (*Tower, error) {
 			operator.Close()
 			return nil, err
 		}
-		t.cluster = clusterConn
+		t.mesh = clusterConn
 	}
 
 	if opt.Leaf.IsSome() {
@@ -45,7 +45,7 @@ func NewTower(opt *Options) (*Tower, error) {
 			operator.Close()
 			return nil, err
 		}
-		t.cluster = leafConn
+		t.mesh = leafConn
 	}
 
 	if opt.Client.IsSome() {
@@ -55,7 +55,7 @@ func NewTower(opt *Options) (*Tower, error) {
 			operator.Close()
 			return nil, err
 		}
-		t.cluster = clientConn
+		t.mesh = clientConn
 	}
 
 	return t, nil
@@ -63,4 +63,12 @@ func NewTower(opt *Options) (*Tower, error) {
 
 func (t *Tower) Close() error {
 	return t.operator.Close()
+}
+
+func (t *Tower) Mesh() mesh.WrapConn {
+	return t.mesh
+}
+
+func (t *Tower) Op() *op.Operator {
+	return t.operator
 }
