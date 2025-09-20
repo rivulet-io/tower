@@ -29,6 +29,8 @@ type ClusterOptions struct {
 	jetstreamMaxBufferedSize size.Size
 	jetstreamSyncInterval    time.Duration
 	gatewayName              string
+	gatewayUsername          string
+	gatewayPassword          string
 	gatewayListenHost        string
 	gatewayListenPort        int
 	gatewayRemotes           *RemoteGateways
@@ -112,10 +114,12 @@ func (opt *ClusterOptions) WithJetStreamSyncInterval(interval time.Duration) *Cl
 	return opt
 }
 
-func (opt *ClusterOptions) WithGateway(name, host string, port int, remotes *RemoteGateways) *ClusterOptions {
+func (opt *ClusterOptions) WithGateway(name, host string, port int, username string, password string, remotes *RemoteGateways) *ClusterOptions {
 	opt.gatewayName = name
 	opt.gatewayListenHost = host
 	opt.gatewayListenPort = port
+	opt.gatewayUsername = username
+	opt.gatewayPassword = password
 	opt.gatewayRemotes = remotes
 	return opt
 }
@@ -168,12 +172,20 @@ func (opt *ClusterOptions) toNATSConfig() server.Options {
 		StreamMaxBufferedMsgs: opt.jetstreamMaxBufferedMsgs,
 		StreamMaxBufferedSize: int64(opt.jetstreamMaxBufferedSize.Bytes()),
 		SyncInterval:          opt.jetstreamSyncInterval,
-		Gateway: server.GatewayOpts{
-			Name:     opt.gatewayName,
-			Host:     opt.gatewayListenHost,
-			Port:     opt.gatewayListenPort,
-			Gateways: opt.gatewayRemotes.toNATSConfig(),
-		},
+		Gateway: func() server.GatewayOpts {
+			if opt.gatewayName == "" || opt.gatewayRemotes == nil || len(*opt.gatewayRemotes) == 0 {
+				return server.GatewayOpts{}
+			}
+
+			return server.GatewayOpts{
+				Name:     opt.gatewayName,
+				Host:     opt.gatewayListenHost,
+				Port:     opt.gatewayListenPort,
+				Username: opt.gatewayUsername,
+				Password: opt.gatewayPassword,
+				Gateways: opt.gatewayRemotes.toNATSConfig(),
+			}
+		}(),
 		HTTPPort: opt.httpPort,
 	}
 }
