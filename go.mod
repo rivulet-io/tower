@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/RoaringBitmap/roaring/v2 v2.10.0
 	github.com/RyuaNerin/go-krypto v1.3.0
+	github.com/awnumar/memguard v0.23.0
 	github.com/cockroachdb/pebble v1.1.5
 	github.com/corvus-ch/shamir v1.0.1
 	github.com/dgryski/go-camellia v0.0.0-20191119043421-69a8a13fb23d
@@ -16,6 +17,7 @@ require (
 
 require (
 	github.com/antithesishq/antithesis-sdk-go v0.4.3-default-no-op // indirect
+	github.com/awnumar/memcall v0.4.0 // indirect
 	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/minio/highwayhash v1.0.3 // indirect
 	github.com/nats-io/jwt/v2 v2.7.4 // indirect
