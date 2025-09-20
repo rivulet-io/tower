@@ -69,7 +69,7 @@ func newConn(opt *server.Options) (*conn, error) {
 		return nil, fmt.Errorf("failed to connect to nats server: %w", err)
 	}
 
-	js, err := nc.JetStream()
+	js, err := nc.JetStream(nats.Domain(defaultClusterName))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get jetstream context: %w", err)
 	}
