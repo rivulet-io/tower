@@ -51,13 +51,21 @@ type conn struct {
 	js     nats.JetStreamContext
 }
 
+var (
+	EnableDebugLog    = false
+	EnableTraceLog    = false
+	EnableSysTraceLog = false
+)
+
 func newServerConn(opt *server.Options) (*conn, error) {
 	srv, err := server.NewServer(opt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create nats server: %w", err)
 	}
 
-	// srv.SetLoggerV2(&DebugLogger{}, false, false, true)
+	if EnableDebugLog || EnableTraceLog || EnableSysTraceLog {
+		srv.SetLoggerV2(&DebugLogger{}, EnableDebugLog, EnableTraceLog, EnableSysTraceLog)
+	}
 
 	srv.Start()
 
