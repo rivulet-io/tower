@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -162,4 +163,59 @@ func (c *conn) SetLogCallback(cb func(*NATSLog)) {
 	c.callback = cb
 }
 
-type WrapConn interface{}
+// WrapConn defines the interface for all connection operations
+type WrapConn interface {
+	// Connection management
+	Close()
+	SetLogCallback(cb func(*NATSLog))
+
+	// Core messaging operations
+	SubscribeVolatileViaFanout(subject string, handler func(subject string, msg []byte, headers nats.Header) ([]byte, nats.Header, bool), errHandler func(error)) (cancel func(), err error)
+	SubscribeVolatileViaQueue(subject, queue string, handler func(subject string, msg []byte, headers nats.Header) ([]byte, nats.Header, bool), errHandler func(error)) (cancel func(), err error)
+	PublishVolatile(subject string, msg []byte, headers ...nats.Header) error
+	RequestVolatile(subject string, msg []byte, timeout time.Duration, headers ...nats.Header) ([]byte, nats.Header, error)
+	PublishVolatileBatch(messages []struct {
+		Subject string
+		Data    []byte
+		Headers nats.Header
+	}) error
+	FlushTimeout(timeout time.Duration) error
+
+	// Stream operations
+	CreateOrUpdateStream(cfg *PersistentConfig) error
+	SubscribeStreamViaDurable(subscriberID string, subject string, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error), opt ...nats.SubOpt) (cancel func(), err error)
+	PullPersistentViaDurable(subscriberID string, subject string, option PullOptions, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error), opt ...nats.SubOpt) (cancel func(), err error)
+	SubscribePersistentViaEphemeral(subject string, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error), opt ...nats.SubOpt) (cancel func(), err error)
+	PullPersistentViaEphemeral(subject string, option PullOptions, handler func(subject string, msg []byte) (response []byte, reply bool, ack bool), errHandler func(error), opt ...nats.SubOpt) (cancel func(), err error)
+	PublishPersistent(subject string, msg []byte, opts ...nats.PubOpt) error
+	PublishPersistentWithOptions(subject string, msg []byte, opts ...nats.PubOpt) (*nats.PubAck, error)
+	DeleteStream(streamName string) error
+	GetStreamInfo(streamName string) (*nats.StreamInfo, error)
+
+	// KV Store operations
+	CreateKeyValueStore(cluster string, config KeyValueStoreConfig) error
+	GetFromKeyValueStore(bucket, key string) ([]byte, uint64, error)
+	PutToKeyValueStore(bucket, key string, value []byte) (uint64, error)
+	UpdateToKeyValueStore(bucket, key string, value []byte, expectedRevision uint64) (uint64, error)
+	DeleteFromKeyValueStore(bucket, key string) error
+	PurgeKeyValueStore(bucket, key string) error
+	DeleteKeyValueStore(bucket string) error
+	KeyValueStoreExists(bucket string) bool
+	ListKeysInKeyValueStore(bucket string) ([]string, error)
+	WatchKeyValueStore(bucket, key string) (nats.KeyWatcher, error)
+	WatchAllKeysInKeyValueStore(bucket string) (nats.KeyWatcher, error)
+
+	// Object Store operations
+	CreateObjectStore(cluster string, config ObjectStoreConfig) error
+	GetFromObjectStore(bucket, key string) ([]byte, error)
+	PutToObjectStore(bucket, key string, data []byte, metadata map[string]string) error
+	DeleteFromObjectStore(bucket, key string) error
+	PutToObjectStoreStream(bucket, key string, reader io.Reader, metadata map[string]string) error
+	GetFromObjectStoreStream(bucket, key string) (io.ReadCloser, error)
+	GetObjectInfo(bucket, key string) (*nats.ObjectInfo, error)
+	ListObjects(bucket string) ([]*nats.ObjectInfo, error)
+	ObjectExists(bucket, key string) (bool, error)
+	DeleteObjectStore(bucket string) error
+	PutToObjectStoreChunked(bucket, key string, reader io.Reader, chunkSize int64, metadata map[string]string) error
+	CopyObject(sourceBucket, sourceKey, destBucket, destKey string, metadata map[string]string) error
+}
