@@ -124,7 +124,7 @@ func (opt *LeafOptions) toNATSConfig() *server.Options {
 }
 
 type Leaf struct {
-	conn *conn
+	nc *conn
 }
 
 func NewLeaf(opt *LeafOptions) (*Leaf, error) {
@@ -135,12 +135,12 @@ func NewLeaf(opt *LeafOptions) (*Leaf, error) {
 	}
 
 	return &Leaf{
-		conn: nc,
+		nc: nc,
 	}, nil
 }
 
 func (l *Leaf) Close() {
-	if l.conn != nil {
-		l.conn.Close()
+	if l.nc != nil {
+		l.nc.Close()
 	}
 }

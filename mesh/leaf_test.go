@@ -123,11 +123,11 @@ func waitForLeafReady(t *testing.T, leaf *Leaf, timeout time.Duration) {
 			t.Fatalf("leaf not ready within timeout %v", timeout)
 		}
 
-		if leaf.conn != nil && leaf.conn.server.Running() && leaf.conn.conn != nil {
+		if leaf.nc != nil && leaf.nc.server.Running() && leaf.nc.conn != nil {
 			// Test a simple ping to ensure connection is working
-			if err := leaf.conn.conn.Flush(); err == nil {
+			if err := leaf.nc.conn.Flush(); err == nil {
 				// Also check if the connection is actually connected
-				if leaf.conn.conn.IsConnected() {
+				if leaf.nc.conn.IsConnected() {
 					return
 				}
 			}
@@ -230,18 +230,18 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		if !cluster3.nc.server.Running() {
 			t.Error("cluster3 is not running")
 		}
-		if !leaf1.conn.server.Running() {
+		if !leaf1.nc.server.Running() {
 			t.Error("leaf1 is not running")
 		}
-		if !leaf2.conn.server.Running() {
+		if !leaf2.nc.server.Running() {
 			t.Error("leaf2 is not running")
 		}
 
 		// Verify leaf connections
-		if leaf1.conn.conn == nil {
+		if leaf1.nc.conn == nil {
 			t.Error("leaf1 connection is nil")
 		}
-		if leaf2.conn.conn == nil {
+		if leaf2.nc.conn == nil {
 			t.Error("leaf2 connection is nil")
 		}
 
@@ -267,7 +267,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		connectivityCh := make(chan []byte, 1)
 
 		// Subscribe on leaf1 to test round-trip
-		sub, err := leaf1.conn.conn.Subscribe(testSubject+".reply", func(msg *nats.Msg) {
+		sub, err := leaf1.nc.conn.Subscribe(testSubject+".reply", func(msg *nats.Msg) {
 			connectivityCh <- msg.Data
 		})
 		if err != nil {
@@ -279,7 +279,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 
 		// Send test message
-		err = leaf1.conn.conn.Publish(testSubject+".reply", []byte("connectivity-test"))
+		err = leaf1.nc.conn.Publish(testSubject+".reply", []byte("connectivity-test"))
 		if err != nil {
 			t.Fatalf("failed to publish connectivity test: %v", err)
 		}
@@ -298,7 +298,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 
 		// Subscribe on leaf2
 		receivedMessages := make(chan []byte, 1)
-		msgSub, err := leaf2.conn.conn.Subscribe(subject, func(msg *nats.Msg) {
+		msgSub, err := leaf2.nc.conn.Subscribe(subject, func(msg *nats.Msg) {
 			receivedMessages <- msg.Data
 		})
 		if err != nil {
@@ -310,7 +310,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		time.Sleep(3 * time.Second)
 
 		// Publish from leaf1
-		err = leaf1.conn.conn.Publish(subject, testMessage)
+		err = leaf1.nc.conn.Publish(subject, testMessage)
 		if err != nil {
 			t.Fatalf("failed to publish from leaf1: %v", err)
 		}
@@ -359,7 +359,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		streamSubject := "leaf.test.message"
 		streamMessage := []byte("Hello JetStream from leaf1!")
 
-		err = leaf1.conn.PublishPersistent(streamSubject, streamMessage)
+		err = leaf1.nc.PublishPersistent(streamSubject, streamMessage)
 		if err != nil {
 			t.Fatalf("failed to publish to stream via leaf1: %v", err)
 		}
@@ -369,7 +369,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		receivedStreamMessages := make(chan []byte, 1)
 		var streamCancel func()
 
-		streamCancel, err = leaf2.conn.SubscribePersistentViaEphemeral(
+		streamCancel, err = leaf2.nc.SubscribePersistentViaEphemeral(
 			streamSubject,
 			func(subject string, msg []byte) (response []byte, reply bool, ack bool) {
 				receivedStreamMessages <- msg
@@ -424,7 +424,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		receivedPubSubMessages := make(chan []byte, 1)
 
 		// Subscribe on leaf2
-		pubsubSub, err := leaf2.conn.conn.Subscribe(pubsubSubject, func(msg *nats.Msg) {
+		pubsubSub, err := leaf2.nc.conn.Subscribe(pubsubSubject, func(msg *nats.Msg) {
 			receivedPubSubMessages <- msg.Data
 		})
 		if err != nil {
@@ -436,7 +436,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Publish from leaf1
-		err = leaf1.conn.conn.Publish(pubsubSubject, pubsubMessage)
+		err = leaf1.nc.conn.Publish(pubsubSubject, pubsubMessage)
 		if err != nil {
 			t.Fatalf("failed to publish for pubsub test: %v", err)
 		}
@@ -460,9 +460,9 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		expectedReply := []byte("Reply from leaf2")
 
 		// Set up reply handler on leaf2
-		replySub, err := leaf2.conn.conn.Subscribe(requestSubject, func(msg *nats.Msg) {
+		replySub, err := leaf2.nc.conn.Subscribe(requestSubject, func(msg *nats.Msg) {
 			if msg.Reply != "" {
-				err := leaf2.conn.conn.Publish(msg.Reply, expectedReply)
+				err := leaf2.nc.conn.Publish(msg.Reply, expectedReply)
 				if err != nil {
 					t.Logf("failed to send reply: %v", err)
 				}
@@ -477,7 +477,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Send request from leaf1
-		replyMsg, err := leaf1.conn.conn.Request(requestSubject, requestMessage, 5*time.Second)
+		replyMsg, err := leaf1.nc.conn.Request(requestSubject, requestMessage, 5*time.Second)
 		if err != nil {
 			t.Fatalf("failed to send request: %v", err)
 		}
@@ -496,7 +496,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		receivedQueueMessages := make(chan string, 2) // Buffer for 2 to catch any duplicates
 
 		// Create queue subscribers on both leaf nodes
-		queueSub1, err := leaf2.conn.conn.QueueSubscribe(queueSubject, queueGroup, func(msg *nats.Msg) {
+		queueSub1, err := leaf2.nc.conn.QueueSubscribe(queueSubject, queueGroup, func(msg *nats.Msg) {
 			receivedQueueMessages <- "leaf2-worker"
 		})
 		if err != nil {
@@ -517,7 +517,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		time.Sleep(2 * time.Second)
 
 		// Send message from leaf1
-		err = leaf1.conn.conn.Publish(queueSubject, queueMessage)
+		err = leaf1.nc.conn.Publish(queueSubject, queueMessage)
 		if err != nil {
 			t.Fatalf("failed to publish to queue: %v", err)
 		}
@@ -547,7 +547,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		receivedWildcardMessages := make(chan string, 2)
 
 		// Subscribe with wildcard on leaf2
-		wildcardSub, err := leaf2.conn.conn.Subscribe(wildcardSubject, func(msg *nats.Msg) {
+		wildcardSub, err := leaf2.nc.conn.Subscribe(wildcardSubject, func(msg *nats.Msg) {
 			receivedWildcardMessages <- msg.Subject
 		})
 		if err != nil {
@@ -559,12 +559,12 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		time.Sleep(1 * time.Second)
 
 		// Publish to both specific subjects from leaf1
-		err = leaf1.conn.conn.Publish(specificSubject1, []byte("message1"))
+		err = leaf1.nc.conn.Publish(specificSubject1, []byte("message1"))
 		if err != nil {
 			t.Fatalf("failed to publish to %s: %v", specificSubject1, err)
 		}
 
-		err = leaf1.conn.conn.Publish(specificSubject2, []byte("message2"))
+		err = leaf1.nc.conn.Publish(specificSubject2, []byte("message2"))
 		if err != nil {
 			t.Fatalf("failed to publish to %s: %v", specificSubject2, err)
 		}
@@ -593,7 +593,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 
 		// Subscribe on leaf2 with counter
 		counter := 0
-		highFreqSub, err := leaf2.conn.conn.Subscribe(highFreqSubject, func(msg *nats.Msg) {
+		highFreqSub, err := leaf2.nc.conn.Subscribe(highFreqSubject, func(msg *nats.Msg) {
 			counter++
 			receivedHighFreqMessages <- counter
 		})
@@ -607,7 +607,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 
 		// Send multiple messages rapidly from leaf1
 		for i := 1; i <= messageCount; i++ {
-			err = leaf1.conn.conn.Publish(highFreqSubject, []byte(fmt.Sprintf("message-%d", i)))
+			err = leaf1.nc.conn.Publish(highFreqSubject, []byte(fmt.Sprintf("message-%d", i)))
 			if err != nil {
 				t.Fatalf("failed to publish high freq message %d: %v", i, err)
 			}
@@ -676,14 +676,14 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		testValue := []byte("Hello KV from leaf1!")
 
 		// Put value via leaf1
-		revision1, err := leaf1.conn.PutToKeyValueStore(kvBucketName, testKey, testValue)
+		revision1, err := leaf1.nc.PutToKeyValueStore(kvBucketName, testKey, testValue)
 		if err != nil {
 			t.Fatalf("failed to put KV value via leaf1: %v", err)
 		}
 		t.Logf("✓ Successfully put KV value via leaf1, revision: %d", revision1)
 
 		// Get value via leaf2
-		retrievedValue, revision2, err := leaf2.conn.GetFromKeyValueStore(kvBucketName, testKey)
+		retrievedValue, revision2, err := leaf2.nc.GetFromKeyValueStore(kvBucketName, testKey)
 		if err != nil {
 			t.Fatalf("failed to get KV value via leaf2: %v", err)
 		}
@@ -698,14 +698,14 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 
 		// Test KV update via leaf2
 		updatedValue := []byte("Updated value from leaf2!")
-		revision3, err := leaf2.conn.UpdateToKeyValueStore(kvBucketName, testKey, updatedValue, revision2)
+		revision3, err := leaf2.nc.UpdateToKeyValueStore(kvBucketName, testKey, updatedValue, revision2)
 		if err != nil {
 			t.Fatalf("failed to update KV value via leaf2: %v", err)
 		}
 		t.Logf("✓ Successfully updated KV value via leaf2, new revision: %d", revision3)
 
 		// Verify update via leaf1
-		finalValue, finalRevision, err := leaf1.conn.GetFromKeyValueStore(kvBucketName, testKey)
+		finalValue, finalRevision, err := leaf1.nc.GetFromKeyValueStore(kvBucketName, testKey)
 		if err != nil {
 			t.Fatalf("failed to get updated KV value via leaf1: %v", err)
 		}
@@ -719,14 +719,14 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		t.Logf("✓ Successfully verified KV update via leaf1: %s (revision: %d)", string(finalValue), finalRevision)
 
 		// Test KV delete via leaf1
-		err = leaf1.conn.DeleteFromKeyValueStore(kvBucketName, testKey)
+		err = leaf1.nc.DeleteFromKeyValueStore(kvBucketName, testKey)
 		if err != nil {
 			t.Fatalf("failed to delete KV value via leaf1: %v", err)
 		}
 		t.Log("✓ Successfully deleted KV value via leaf1")
 
 		// Verify deletion via leaf2
-		_, _, err = leaf2.conn.GetFromKeyValueStore(kvBucketName, testKey)
+		_, _, err = leaf2.nc.GetFromKeyValueStore(kvBucketName, testKey)
 		if err == nil {
 			t.Error("expected error when getting deleted KV value, but got none")
 		}
@@ -756,7 +756,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		objectData := []byte("Hello Object Store from leaf nodes!\nThis is a test object with multiple lines.\nLine 3 for testing.")
 
 		// Put object via leaf2
-		err = leaf2.conn.PutToObjectStore(osBucketName, objectName, objectData, map[string]string{
+		err = leaf2.nc.PutToObjectStore(osBucketName, objectName, objectData, map[string]string{
 			"created-by": "leaf2",
 			"test-type":  "functionality",
 		})
@@ -766,7 +766,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		t.Logf("✓ Successfully put object '%s' via leaf2, size: %d bytes", objectName, len(objectData))
 
 		// Get object via leaf1
-		retrievedObjectData, err := leaf1.conn.GetFromObjectStore(osBucketName, objectName)
+		retrievedObjectData, err := leaf1.nc.GetFromObjectStore(osBucketName, objectName)
 		if err != nil {
 			t.Fatalf("failed to get object via leaf1: %v", err)
 		}
@@ -785,7 +785,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		}
 
 		// Put large object via leaf1
-		err = leaf1.conn.PutToObjectStore(osBucketName, largeObjectName, largeObjectData, map[string]string{
+		err = leaf1.nc.PutToObjectStore(osBucketName, largeObjectName, largeObjectData, map[string]string{
 			"created-by": "leaf1",
 			"size":       "50KB",
 		})
@@ -795,7 +795,7 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		t.Logf("✓ Successfully put large object '%s' via leaf1, size: %d bytes", largeObjectName, len(largeObjectData))
 
 		// Get large object via leaf2
-		retrievedLargeObjectData, err := leaf2.conn.GetFromObjectStore(osBucketName, largeObjectName)
+		retrievedLargeObjectData, err := leaf2.nc.GetFromObjectStore(osBucketName, largeObjectName)
 		if err != nil {
 			t.Fatalf("failed to get large object via leaf2: %v", err)
 		}
@@ -820,21 +820,21 @@ func TestLeafNodesConnectedToCluster(t *testing.T) {
 		t.Logf("✓ Successfully retrieved and verified large object via leaf2, size: %d bytes", len(retrievedLargeObjectData))
 
 		// Test object deletion via leaf2
-		err = leaf2.conn.DeleteFromObjectStore(osBucketName, objectName)
+		err = leaf2.nc.DeleteFromObjectStore(osBucketName, objectName)
 		if err != nil {
 			t.Fatalf("failed to delete object via leaf2: %v", err)
 		}
 		t.Log("✓ Successfully deleted object via leaf2")
 
 		// Verify deletion via leaf1
-		_, err = leaf1.conn.GetFromObjectStore(osBucketName, objectName)
+		_, err = leaf1.nc.GetFromObjectStore(osBucketName, objectName)
 		if err == nil {
 			t.Error("expected error when getting deleted object, but got none")
 		}
 		t.Log("✓ Successfully verified object deletion via leaf1")
 
 		// Clean up large object
-		err = leaf1.conn.DeleteFromObjectStore(osBucketName, largeObjectName)
+		err = leaf1.nc.DeleteFromObjectStore(osBucketName, largeObjectName)
 		if err != nil {
 			t.Logf("Warning: failed to delete large object: %v", err)
 		} else {
