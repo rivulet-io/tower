@@ -2,7 +2,6 @@ package mesh
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -12,50 +11,79 @@ import (
 
 var _ server.Logger = (*DebugLogger)(nil)
 
+const (
+	NATSLogTypeDebug  = "debug"
+	NATSLogTypeError  = "error"
+	NATSLogTypeFatal  = "fatal"
+	NATSLogTypeNotice = "notice"
+	NATSLogTypeTrace  = "trace"
+	NATSLogTypeWarn   = "warn"
+)
+
+type NATSLog struct {
+	Type string `json:"type"`
+	Msg  string `json:"msg"`
+}
+
 type DebugLogger struct {
+	logChan chan *NATSLog
 }
 
 // Debugf implements server.Logger.
 func (d *DebugLogger) Debugf(format string, v ...any) {
-	log.Printf("[DEBUG] "+format, v...)
+	d.logChan <- &NATSLog{
+		Type: NATSLogTypeDebug,
+		Msg:  fmt.Sprintf(format, v...),
+	}
 }
 
 // Errorf implements server.Logger.
 func (d *DebugLogger) Errorf(format string, v ...any) {
-	log.Printf("[ERROR] "+format, v...)
+	d.logChan <- &NATSLog{
+		Type: NATSLogTypeError,
+		Msg:  fmt.Sprintf(format, v...),
+	}
 }
 
 // Fatalf implements server.Logger.
 func (d *DebugLogger) Fatalf(format string, v ...any) {
-	log.Fatalf("[FATAL] "+format, v...)
+	d.logChan <- &NATSLog{
+		Type: NATSLogTypeFatal,
+		Msg:  fmt.Sprintf(format, v...),
+	}
 }
 
 // Noticef implements server.Logger.
 func (d *DebugLogger) Noticef(format string, v ...any) {
-	log.Printf("[NOTICE] "+format, v...)
+	d.logChan <- &NATSLog{
+		Type: NATSLogTypeNotice,
+		Msg:  fmt.Sprintf(format, v...),
+	}
 }
 
 // Tracef implements server.Logger.
 func (d *DebugLogger) Tracef(format string, v ...any) {
-	log.Printf("[TRACE] "+format, v...)
+	d.logChan <- &NATSLog{
+		Type: NATSLogTypeTrace,
+		Msg:  fmt.Sprintf(format, v...),
+	}
 }
 
 // Warnf implements server.Logger.
 func (d *DebugLogger) Warnf(format string, v ...any) {
-	log.Printf("[WARN] "+format, v...)
+	d.logChan <- &NATSLog{
+		Type: NATSLogTypeWarn,
+		Msg:  fmt.Sprintf(format, v...),
+	}
 }
 
 type conn struct {
-	server *server.Server
-	conn   *nats.Conn
-	js     nats.JetStreamContext
+	server   *server.Server
+	conn     *nats.Conn
+	js       nats.JetStreamContext
+	logger   *DebugLogger
+	callback func(*NATSLog)
 }
-
-var (
-	EnableDebugLog    = false
-	EnableTraceLog    = false
-	EnableSysTraceLog = false
-)
 
 func newServerConn(opt *server.Options) (*conn, error) {
 	srv, err := server.NewServer(opt)
@@ -63,9 +91,21 @@ func newServerConn(opt *server.Options) (*conn, error) {
 		return nil, fmt.Errorf("failed to create nats server: %w", err)
 	}
 
-	if EnableDebugLog || EnableTraceLog || EnableSysTraceLog {
-		srv.SetLoggerV2(&DebugLogger{}, EnableDebugLog, EnableTraceLog, EnableSysTraceLog)
+	dl := &DebugLogger{
+		logChan: make(chan *NATSLog, 4096),
 	}
+	srv.SetLoggerV2(dl, true, true, true)
+	srv.ConfigureLogger()
+
+	c := &conn{}
+
+	go func() {
+		for log := range dl.logChan {
+			if c.callback != nil {
+				c.callback(log)
+			}
+		}
+	}()
 
 	srv.Start()
 
@@ -83,11 +123,12 @@ func newServerConn(opt *server.Options) (*conn, error) {
 		return nil, fmt.Errorf("failed to get jetstream context: %w", err)
 	}
 
-	return &conn{
-		server: srv,
-		conn:   nc,
-		js:     js,
-	}, nil
+	c.server = srv
+	c.conn = nc
+	c.js = js
+	c.logger = dl
+
+	return c, nil
 }
 
 func newClientConn(servers []string, username, password string) (*conn, error) {
@@ -115,4 +156,8 @@ func (c *conn) Close() {
 		c.server.Shutdown()
 		c.server.WaitForShutdown()
 	}
+}
+
+func (c *conn) SetLogCallback(cb func(*NATSLog)) {
+	c.callback = cb
 }
