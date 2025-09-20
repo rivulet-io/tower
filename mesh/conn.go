@@ -27,7 +27,7 @@ func (d *DebugLogger) Errorf(format string, v ...any) {
 
 // Fatalf implements server.Logger.
 func (d *DebugLogger) Fatalf(format string, v ...any) {
-	log.Printf("[FATAL] "+format, v...)
+	log.Fatalf("[FATAL] "+format, v...)
 }
 
 // Noticef implements server.Logger.
