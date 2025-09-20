@@ -182,3 +182,8 @@ func (l *Leaf) PutToObjectStoreChunked(bucket, key string, reader io.Reader, chu
 func (l *Leaf) CopyObject(sourceBucket, sourceKey, destBucket, destKey string, metadata map[string]string) error {
 	return l.nc.CopyObject(sourceBucket, sourceKey, destBucket, destKey, metadata)
 }
+
+// Advisory operations
+func (l *Leaf) SubscribeLeaderChange(stream string, handler func(stream string, leader string, myName string), errHandler func(error)) (cancel func(), err error) {
+	return l.nc.SubscribeLeaderChange(stream, handler, errHandler)
+}

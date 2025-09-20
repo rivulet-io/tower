@@ -218,4 +218,7 @@ type WrapConn interface {
 	DeleteObjectStore(bucket string) error
 	PutToObjectStoreChunked(bucket, key string, reader io.Reader, chunkSize int64, metadata map[string]string) error
 	CopyObject(sourceBucket, sourceKey, destBucket, destKey string, metadata map[string]string) error
+
+	// Advisory operations
+	SubscribeLeaderChange(stream string, handler func(stream string, leader string, myName string), errHandler func(error)) (cancel func(), err error)
 }

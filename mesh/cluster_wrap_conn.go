@@ -177,3 +177,8 @@ func (c *Cluster) PutToObjectStoreChunked(bucket, key string, reader io.Reader, 
 func (c *Cluster) CopyObject(sourceBucket, sourceKey, destBucket, destKey string, metadata map[string]string) error {
 	return c.nc.CopyObject(sourceBucket, sourceKey, destBucket, destKey, metadata)
 }
+
+// Advisory operations
+func (c *Cluster) SubscribeLeaderChange(stream string, handler func(stream string, leader string, myName string), errHandler func(error)) (cancel func(), err error) {
+	return c.nc.SubscribeLeaderChange(stream, handler, errHandler)
+}
