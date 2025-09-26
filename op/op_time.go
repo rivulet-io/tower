@@ -39,7 +39,7 @@ func (op *Operator) GetTime(key string) (time.Time, error) {
 }
 
 // 시간 계산 연산
-func (op *Operator) AddDurationToTime(key string, duration time.Duration) (time.Time, error) {
+func (op *Operator) AddTimeWithDuration(key string, duration time.Duration) (time.Time, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -65,12 +65,12 @@ func (op *Operator) AddDurationToTime(key string, duration time.Duration) (time.
 	return newValue, nil
 }
 
-func (op *Operator) SubDurationFromTime(key string, duration time.Duration) (time.Time, error) {
-	return op.AddDurationToTime(key, -duration)
+func (op *Operator) SubTimeWithDuration(key string, duration time.Duration) (time.Time, error) {
+	return op.AddTimeWithDuration(key, -duration)
 }
 
 // 비교 연산
-func (op *Operator) TimeBefore(key string, other time.Time) (bool, error) {
+func (op *Operator) CompareTimeBefore(key string, other time.Time) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -87,7 +87,7 @@ func (op *Operator) TimeBefore(key string, other time.Time) (bool, error) {
 	return current.Before(other), nil
 }
 
-func (op *Operator) TimeAfter(key string, other time.Time) (bool, error) {
+func (op *Operator) CompareTimeAfter(key string, other time.Time) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -104,7 +104,7 @@ func (op *Operator) TimeAfter(key string, other time.Time) (bool, error) {
 	return current.After(other), nil
 }
 
-func (op *Operator) TimeEqual(key string, other time.Time) (bool, error) {
+func (op *Operator) CompareTimeEqual(key string, other time.Time) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -121,7 +121,7 @@ func (op *Operator) TimeEqual(key string, other time.Time) (bool, error) {
 	return current.Equal(other), nil
 }
 
-func (op *Operator) TimeDiff(key string, other time.Time) (time.Duration, error) {
+func (op *Operator) CalculateTimeDiff(key string, other time.Time) (time.Duration, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -139,7 +139,7 @@ func (op *Operator) TimeDiff(key string, other time.Time) (time.Duration, error)
 }
 
 // 유틸리티 연산
-func (op *Operator) IsZeroTime(key string) (bool, error) {
+func (op *Operator) CheckTimeZero(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

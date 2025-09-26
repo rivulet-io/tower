@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"bytes"
@@ -339,3 +339,4 @@ func TestSafeBoxOperations(t *testing.T) {
 		}
 	})
 }
+

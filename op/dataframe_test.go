@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -380,3 +380,4 @@ func TestDataFrameError(t *testing.T) {
 		t.Errorf("Error message = %s, expected %s", err.Error(), expected)
 	}
 }
+

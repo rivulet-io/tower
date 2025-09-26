@@ -67,11 +67,11 @@ func (op *Operator) SubInt(key string, delta int64) (int64, error) {
 	return op.AddInt(key, -delta)
 }
 
-func (op *Operator) IncInt(key string) (int64, error) {
+func (op *Operator) IncrementInt(key string) (int64, error) {
 	return op.AddInt(key, 1)
 }
 
-func (op *Operator) DecInt(key string) (int64, error) {
+func (op *Operator) DecrementInt(key string) (int64, error) {
 	return op.SubInt(key, 1)
 }
 

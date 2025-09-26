@@ -62,7 +62,7 @@ func (op *Operator) GenerateUUID(key string) (*uuid.UUID, error) {
 }
 
 // 비교 연산
-func (op *Operator) EqualUUID(key string, other *uuid.UUID) (bool, error) {
+func (op *Operator) CompareUUIDEqual(key string, other *uuid.UUID) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -105,7 +105,7 @@ func (op *Operator) CompareUUID(key string, other *uuid.UUID) (int, error) {
 }
 
 // 검증 연산
-func (op *Operator) IsValidUUID(key string) (bool, error) {
+func (op *Operator) ValidateUUID(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -122,7 +122,7 @@ func (op *Operator) IsValidUUID(key string) (bool, error) {
 	return current != nil && current.String() != uuid.Nil.String(), nil
 }
 
-func (op *Operator) IsNilUUID(key string) (bool, error) {
+func (op *Operator) CheckUUIDNil(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -140,7 +140,7 @@ func (op *Operator) IsNilUUID(key string) (bool, error) {
 }
 
 // 변환 연산
-func (op *Operator) UUIDToString(key string) (string, error) {
+func (op *Operator) ConvertUUIDToString(key string) (string, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -157,7 +157,7 @@ func (op *Operator) UUIDToString(key string) (string, error) {
 	return current.String(), nil
 }
 
-func (op *Operator) StringToUUID(key string, uuidStr string) (*uuid.UUID, error) {
+func (op *Operator) ConvertStringToUUID(key string, uuidStr string) (*uuid.UUID, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -179,7 +179,7 @@ func (op *Operator) StringToUUID(key string, uuidStr string) (*uuid.UUID, error)
 }
 
 // UUID 정보 연산
-func (op *Operator) UUIDVersion(key string) (uuid.Version, error) {
+func (op *Operator) GetUUIDVersion(key string) (uuid.Version, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -196,7 +196,7 @@ func (op *Operator) UUIDVersion(key string) (uuid.Version, error) {
 	return current.Version(), nil
 }
 
-func (op *Operator) UUIDVariant(key string) (uuid.Variant, error) {
+func (op *Operator) GetUUIDVariant(key string) (uuid.Variant, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

@@ -58,7 +58,7 @@ func (op *Operator) extractCandidatesForExpiration(criteria time.Time) ([]string
 	v := op.floorTTLTimestamp(criteria)
 	key := op.makeTTLKey(v)
 
-	members, err := op.ListGetAllMembersAndDelete(key)
+	members, err := op.GetAllListMembersAndDelete(key)
 	if err != nil {
 		// If the list does not exist, return empty list
 		return []string{}, nil
@@ -84,7 +84,7 @@ func (op *Operator) addCandidatesForExpiration(key string, expireAt time.Time) e
 		return fmt.Errorf("failed to create TTL list %s: %w", k, err)
 	}
 
-	if _, err := op.PushRight(k, PrimitiveString(key)); err != nil {
+	if _, err := op.PushRightList(k, PrimitiveString(key)); err != nil {
 		return fmt.Errorf("failed to add key %s to TTL list %s: %w", key, k, err)
 	}
 

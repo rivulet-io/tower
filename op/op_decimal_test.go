@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"math"
@@ -127,3 +127,4 @@ func TestDecimalOperations(t *testing.T) {
 		}
 	})
 }
+

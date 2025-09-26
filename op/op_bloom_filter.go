@@ -41,8 +41,8 @@ func (op *Operator) CreateBloomFilter(key string, slots int) error {
 	return op.set(key, df)
 }
 
-// BloomFilterAdd는 Bloom filter에 요소를 추가
-func (op *Operator) BloomFilterAdd(key, item string) error {
+// AddBloomFilter는 Bloom filter에 요소를 추가
+func (op *Operator) AddBloomFilter(key, item string) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -89,8 +89,8 @@ func (op *Operator) BloomFilterAdd(key, item string) error {
 	return op.set(key, df)
 }
 
-// BloomFilterContains는 요소가 Bloom filter에 있는지 확인
-func (op *Operator) BloomFilterContains(key, item string) (bool, error) {
+// ContainsBloomFilter는 요소가 Bloom filter에 있는지 확인
+func (op *Operator) ContainsBloomFilter(key, item string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -136,8 +136,8 @@ func (op *Operator) BloomFilterContains(key, item string) (bool, error) {
 	return true, nil
 }
 
-// BloomFilterClear는 Bloom filter를 초기화
-func (op *Operator) BloomFilterClear(key string) error {
+// ClearBloomFilter는 Bloom filter를 초기화
+func (op *Operator) ClearBloomFilter(key string) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -171,8 +171,8 @@ func (op *Operator) BloomFilterClear(key string) error {
 	return op.set(key, df)
 }
 
-// BloomFilterCount는 Bloom filter의 요소 수를 반환
-func (op *Operator) BloomFilterCount(key string) (uint64, error) {
+// CountBloomFilter는 Bloom filter의 요소 수를 반환
+func (op *Operator) CountBloomFilter(key string) (uint64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

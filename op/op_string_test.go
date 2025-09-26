@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -167,7 +167,7 @@ func TestStringOperations(t *testing.T) {
 		value := "hello"
 
 		tower.SetString(key, value)
-		result, err := tower.LengthString(key)
+		result, err := tower.GetStringLength(key)
 		if err != nil {
 			t.Errorf("LengthString failed: %v", err)
 		}
@@ -186,7 +186,7 @@ func TestStringOperations(t *testing.T) {
 		length := 5
 
 		tower.SetString(key, value)
-		result, err := tower.SubstringString(key, start, length)
+		result, err := tower.GetStringSubstring(key, start, length)
 		if err != nil {
 			t.Errorf("SubstringString failed: %v", err)
 		}
@@ -230,7 +230,7 @@ func TestStringOperations(t *testing.T) {
 		value := "test"
 
 		tower.SetString(key, value)
-		result, err := tower.EqualString(key, "test")
+		result, err := tower.CompareStringEqual(key, "test")
 		if err != nil {
 			t.Errorf("EqualString failed: %v", err)
 		}
@@ -239,7 +239,7 @@ func TestStringOperations(t *testing.T) {
 			t.Error("Expected true, got false")
 		}
 
-		result, err = tower.EqualString(key, "other")
+		result, err = tower.CompareStringEqual(key, "other")
 		if err != nil {
 			t.Errorf("EqualString failed: %v", err)
 		}
@@ -295,3 +295,4 @@ func TestStringOperations(t *testing.T) {
 		}
 	})
 }
+

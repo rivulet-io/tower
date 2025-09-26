@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -269,3 +269,4 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 		t.Fatalf("Expected %d data points, got %d", len(testCases), len(rangeData))
 	}
 }
+

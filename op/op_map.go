@@ -77,7 +77,7 @@ func (op *Operator) deleteMap(key string) error {
 	return nil
 }
 
-func (op *Operator) MapExists(key string) (bool, error) {
+func (op *Operator) ExistsMap(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -86,7 +86,7 @@ func (op *Operator) MapExists(key string) (bool, error) {
 	return err == nil, nil
 }
 
-func (op *Operator) MapSet(key string, field PrimitiveData, value PrimitiveData) error {
+func (op *Operator) SetMapKey(key string, field PrimitiveData, value PrimitiveData) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -174,7 +174,7 @@ func (op *Operator) MapSet(key string, field PrimitiveData, value PrimitiveData)
 	return nil
 }
 
-func (op *Operator) MapGet(key string, field PrimitiveData) (PrimitiveData, error) {
+func (op *Operator) GetMapKey(key string, field PrimitiveData) (PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -229,7 +229,7 @@ func (op *Operator) MapGet(key string, field PrimitiveData) (PrimitiveData, erro
 	return value, nil
 }
 
-func (op *Operator) MapDelete(key string, field PrimitiveData) (int64, error) {
+func (op *Operator) DeleteMapKey(key string, field PrimitiveData) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -277,7 +277,7 @@ func (op *Operator) MapDelete(key string, field PrimitiveData) (int64, error) {
 	return int64(mapData.Count), nil
 }
 
-func (op *Operator) MapKeys(key string) ([]PrimitiveData, error) {
+func (op *Operator) GetMapKeys(key string) ([]PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -322,7 +322,7 @@ func (op *Operator) MapKeys(key string) ([]PrimitiveData, error) {
 	return result, nil
 }
 
-func (op *Operator) MapValues(key string) ([]PrimitiveData, error) {
+func (op *Operator) GetMapValues(key string) ([]PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -377,7 +377,7 @@ func (op *Operator) MapValues(key string) ([]PrimitiveData, error) {
 	return result, nil
 }
 
-func (op *Operator) MapLength(key string) (int64, error) {
+func (op *Operator) GetMapLength(key string) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

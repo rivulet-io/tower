@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"bytes"
@@ -112,7 +112,7 @@ func TestBinaryOperations(t *testing.T) {
 			t.Fatalf("Failed to set binary: %v", err)
 		}
 
-		length, err := tower.LengthBinary(key)
+		length, err := tower.GetBinaryLength(key)
 		if err != nil {
 			t.Fatalf("Failed to get binary length: %v", err)
 		}
@@ -128,7 +128,7 @@ func TestBinaryOperations(t *testing.T) {
 			t.Fatalf("Failed to set empty binary: %v", err)
 		}
 
-		length, err = tower.LengthBinary(key)
+		length, err = tower.GetBinaryLength(key)
 		if err != nil {
 			t.Fatalf("Failed to get empty binary length: %v", err)
 		}
@@ -156,7 +156,7 @@ func TestBinaryOperations(t *testing.T) {
 				}
 				return data
 			}()},
-			{"UTF8Text", []byte("Hello, 世界! 🌍")},
+			{"UTF8Text", []byte("Hello, 世界! 🚀💻")},
 			{"BinaryPattern", []byte{0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE}},
 		}
 
@@ -177,7 +177,7 @@ func TestBinaryOperations(t *testing.T) {
 				}
 
 				// Test length
-				length, err := tower.LengthBinary(key)
+				length, err := tower.GetBinaryLength(key)
 				if err != nil {
 					t.Fatalf("Failed to get %s binary length: %v", tc.name, err)
 				}
@@ -201,7 +201,7 @@ func TestBinaryOperations(t *testing.T) {
 
 		// Test SubBinary
 		start, length := 5, 5
-		sub, err := tower.SubBinary(key, start, length)
+		sub, err := tower.GetBinarySubstring(key, start, length)
 		if err != nil {
 			t.Fatalf("Failed to get sub binary: %v", err)
 		}
@@ -213,7 +213,7 @@ func TestBinaryOperations(t *testing.T) {
 
 		// Test edge cases
 		// Get from beginning
-		sub, err = tower.SubBinary(key, 0, 5)
+		sub, err = tower.GetBinarySubstring(key, 0, 5)
 		if err != nil {
 			t.Fatalf("Failed to get sub binary from beginning: %v", err)
 		}
@@ -223,7 +223,7 @@ func TestBinaryOperations(t *testing.T) {
 		}
 
 		// Get with length beyond end (should truncate)
-		sub, err = tower.SubBinary(key, 10, 20)
+		sub, err = tower.GetBinarySubstring(key, 10, 20)
 		if err != nil {
 			t.Fatalf("Failed to get sub binary beyond end: %v", err)
 		}
@@ -233,12 +233,12 @@ func TestBinaryOperations(t *testing.T) {
 		}
 
 		// Test invalid ranges
-		_, err = tower.SubBinary(key, -1, 5) // negative start
+		_, err = tower.GetBinarySubstring(key, -1, 5) // negative start
 		if err == nil {
 			t.Error("Expected error for negative start")
 		}
 
-		_, err = tower.SubBinary(key, len(testData), 1) // start beyond length
+		_, err = tower.GetBinarySubstring(key, len(testData), 1) // start beyond length
 		if err == nil {
 			t.Error("Expected error for start beyond length")
 		}
@@ -255,7 +255,7 @@ func TestBinaryOperations(t *testing.T) {
 		}
 
 		// Test equal comparison
-		equal, err := tower.EqualBinary(key, baseData)
+		equal, err := tower.CompareBinaryEqual(key, baseData)
 		if err != nil {
 			t.Fatalf("Failed to compare equal binary: %v", err)
 		}
@@ -265,7 +265,7 @@ func TestBinaryOperations(t *testing.T) {
 
 		// Test not equal comparison
 		differentData := []byte("different")
-		equal, err = tower.EqualBinary(key, differentData)
+		equal, err = tower.CompareBinaryEqual(key, differentData)
 		if err != nil {
 			t.Fatalf("Failed to compare different binary: %v", err)
 		}
@@ -421,7 +421,7 @@ func TestBinaryOperations(t *testing.T) {
 		}
 
 		// Test length
-		length, err := tower.LengthBinary(key)
+		length, err := tower.GetBinaryLength(key)
 		if err != nil {
 			t.Fatalf("Failed to get large binary length: %v", err)
 		}
@@ -471,7 +471,7 @@ func TestBinaryOperations(t *testing.T) {
 		}
 
 		// Test IndexBinary
-		index, err := tower.IndexBinary(key, []byte("World"))
+		index, err := tower.GetBinaryIndex(key, []byte("World"))
 		if err != nil {
 			t.Fatalf("Failed to get index: %v", err)
 		}
@@ -481,7 +481,7 @@ func TestBinaryOperations(t *testing.T) {
 		}
 
 		// Test with non-existent substring
-		index, err = tower.IndexBinary(key, []byte("NotFound"))
+		index, err = tower.GetBinaryIndex(key, []byte("NotFound"))
 		if err != nil {
 			t.Fatalf("Failed to get index for non-existent: %v", err)
 		}
@@ -551,12 +551,12 @@ func TestBinaryOperations(t *testing.T) {
 			t.Error("Expected error when appending to non-existent key")
 		}
 
-		_, err = tower.LengthBinary(nonExistentKey)
+		_, err = tower.GetBinaryLength(nonExistentKey)
 		if err == nil {
 			t.Error("Expected error when getting length of non-existent key")
 		}
 
-		_, err = tower.EqualBinary(nonExistentKey, []byte("test"))
+		_, err = tower.CompareBinaryEqual(nonExistentKey, []byte("test"))
 		if err == nil {
 			t.Error("Expected error when comparing non-existent key")
 		}

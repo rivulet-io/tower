@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -10,13 +10,13 @@ func TestMapBasicOperations(t *testing.T) {
 
 	key := "test_map"
 
-	// 맵 생성
+	// �??�성
 	if err := tower.CreateMap(key); err != nil {
 		t.Fatalf("Failed to create map: %v", err)
 	}
 
-	// 맵 존재 확인
-	exists, err := tower.MapExists(key)
+	// �?존재 ?�인
+	exists, err := tower.ExistsMap(key)
 	if err != nil {
 		t.Fatalf("Failed to check map existence: %v", err)
 	}
@@ -24,8 +24,8 @@ func TestMapBasicOperations(t *testing.T) {
 		t.Error("Expected map to exist")
 	}
 
-	// 초기 길이 확인
-	length, err := tower.MapLength(key)
+	// 초기 길이 ?�인
+	length, err := tower.GetMapLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get map length: %v", err)
 	}
@@ -33,13 +33,13 @@ func TestMapBasicOperations(t *testing.T) {
 		t.Errorf("Expected empty map length 0, got %d", length)
 	}
 
-	// 맵 삭제
+	// �???��
 	if err := tower.DeleteMap(key); err != nil {
 		t.Fatalf("Failed to delete map: %v", err)
 	}
 
-	// 삭제 후 존재 확인
-	exists, err = tower.MapExists(key)
+	// ??�� ??존재 ?�인
+	exists, err = tower.ExistsMap(key)
 	if err != nil {
 		t.Fatalf("Failed to check map existence after delete: %v", err)
 	}
@@ -54,12 +54,12 @@ func TestMapSetAndGet(t *testing.T) {
 
 	key := "test_map"
 
-	// 맵 생성
+	// �??�성
 	if err := tower.CreateMap(key); err != nil {
 		t.Fatalf("Failed to create map: %v", err)
 	}
 
-	// 다양한 타입의 필드 설정 및 조회
+	// ?�양???�?�의 ?�드 ?�정 �?조회
 	testCases := []struct {
 		field PrimitiveData
 		value PrimitiveData
@@ -71,16 +71,16 @@ func TestMapSetAndGet(t *testing.T) {
 		{PrimitiveString("binary_field"), PrimitiveBinary([]byte("binary_data"))},
 	}
 
-	// 설정 테스트
+	// ?�정 ?�스??
 	for _, tc := range testCases {
-		if err := tower.MapSet(key, tc.field, tc.value); err != nil {
+		if err := tower.SetMapKey(key, tc.field, tc.value); err != nil {
 			fieldStr, _ := tc.field.String()
 			t.Fatalf("Failed to set field %s: %v", fieldStr, err)
 		}
 	}
 
-	// 길이 확인
-	length, err := tower.MapLength(key)
+	// 길이 ?�인
+	length, err := tower.GetMapLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get map length: %v", err)
 	}
@@ -88,15 +88,15 @@ func TestMapSetAndGet(t *testing.T) {
 		t.Errorf("Expected length %d, got %d", len(testCases), length)
 	}
 
-	// 조회 테스트
+	// 조회 ?�스??
 	for _, tc := range testCases {
-		value, err := tower.MapGet(key, tc.field)
+		value, err := tower.GetMapKey(key, tc.field)
 		if err != nil {
 			fieldStr, _ := tc.field.String()
 			t.Fatalf("Failed to get field %s: %v", fieldStr, err)
 		}
 
-		// 바이너리 데이터는 별도로 비교
+		// 바이?�리 ?�이?�는 별도�?비교
 		if expectedBin, err := tc.value.Binary(); err == nil {
 			if retrievedBin, err := value.Binary(); err == nil {
 				if string(expectedBin) != string(retrievedBin) {
@@ -108,7 +108,7 @@ func TestMapSetAndGet(t *testing.T) {
 				t.Errorf("Expected binary data for field %s", fieldStr)
 			}
 		} else {
-			// 다른 타입들은 직접 비교
+			// ?�른 ?�?�들?� 직접 비교
 			if value.Type() != tc.value.Type() {
 				fieldStr, _ := tc.field.String()
 				t.Errorf("Type mismatch for field %s", fieldStr)
@@ -155,35 +155,36 @@ func TestMapErrorCases(t *testing.T) {
 
 	key := "test_map"
 
-	// 존재하지 않는 맵에 대한 작업 테스트
-	_, err := tower.MapExists(key)
+	// 존재?��? ?�는 맵에 ?�???�업 ?�스??
+	_, err := tower.ExistsMap(key)
 	if err != nil {
 		t.Fatalf("MapExists should not error for non-existent map: %v", err)
 	}
 
-	err = tower.MapSet(key, PrimitiveString("field"), PrimitiveString("value"))
+	err = tower.SetMapKey(key, PrimitiveString("field"), PrimitiveString("value"))
 	if err == nil {
 		t.Error("Expected error when setting field in non-existent map")
 	}
 
-	_, err = tower.MapGet(key, PrimitiveString("field"))
+	_, err = tower.GetMapKey(key, PrimitiveString("field"))
 	if err == nil {
 		t.Error("Expected error when getting field from non-existent map")
 	}
 
-	// 맵 생성
+	// �??�성
 	if err := tower.CreateMap(key); err != nil {
 		t.Fatalf("Failed to create map: %v", err)
 	}
 
-	// 중복 생성 시도
+	// 중복 ?�성 ?�도
 	if err := tower.CreateMap(key); err == nil {
 		t.Error("Expected error when creating map that already exists")
 	}
 
-	// 존재하지 않는 필드 조회
-	_, err = tower.MapGet(key, PrimitiveString("nonexistent_field"))
+	// 존재?��? ?�는 ?�드 조회
+	_, err = tower.GetMapKey(key, PrimitiveString("nonexistent_field"))
 	if err == nil {
 		t.Error("Expected error when getting non-existent field")
 	}
 }
+

@@ -76,7 +76,7 @@ func (op *Operator) deleteSet(key string) error {
 	return nil
 }
 
-func (op *Operator) SetExists(key string) (bool, error) {
+func (op *Operator) ExistsSet(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -85,7 +85,7 @@ func (op *Operator) SetExists(key string) (bool, error) {
 	return err == nil, nil
 }
 
-func (op *Operator) SetAdd(key string, member PrimitiveData) (int64, error) {
+func (op *Operator) AddSetMember(key string, member PrimitiveData) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -170,7 +170,7 @@ func (op *Operator) SetAdd(key string, member PrimitiveData) (int64, error) {
 	return int64(setData.Count), nil
 }
 
-func (op *Operator) SetRemove(key string, member PrimitiveData) (int64, error) {
+func (op *Operator) RemoveSetMember(key string, member PrimitiveData) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -218,7 +218,7 @@ func (op *Operator) SetRemove(key string, member PrimitiveData) (int64, error) {
 	return int64(setData.Count), nil
 }
 
-func (op *Operator) SetIsMember(key string, member PrimitiveData) (bool, error) {
+func (op *Operator) ContainsSetMember(key string, member PrimitiveData) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -247,7 +247,7 @@ func (op *Operator) SetIsMember(key string, member PrimitiveData) (bool, error) 
 	return err == nil, nil
 }
 
-func (op *Operator) SetMembers(key string) ([]PrimitiveData, error) {
+func (op *Operator) GetSetMembers(key string) ([]PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -302,7 +302,7 @@ func (op *Operator) SetMembers(key string) ([]PrimitiveData, error) {
 	return result, nil
 }
 
-func (op *Operator) SetCardinality(key string) (int64, error) {
+func (op *Operator) GetSetCardinality(key string) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

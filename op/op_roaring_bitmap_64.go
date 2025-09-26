@@ -64,7 +64,7 @@ func (op *Operator) GetRoaringBitmap64Bytes(key string) ([]byte, error) {
 }
 
 // 기본 비트 연산 (64비트)
-func (op *Operator) AddBit64(key string, bit uint64) error {
+func (op *Operator) AddBitmap64Bit(key string, bit uint64) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -91,7 +91,7 @@ func (op *Operator) AddBit64(key string, bit uint64) error {
 	return nil
 }
 
-func (op *Operator) RemoveBit64(key string, bit uint64) error {
+func (op *Operator) RemoveBitmap64Bit(key string, bit uint64) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -118,7 +118,7 @@ func (op *Operator) RemoveBit64(key string, bit uint64) error {
 	return nil
 }
 
-func (op *Operator) HasBit64(key string, bit uint64) (bool, error) {
+func (op *Operator) ContainsBitmap64Bit(key string, bit uint64) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -136,7 +136,7 @@ func (op *Operator) HasBit64(key string, bit uint64) (bool, error) {
 }
 
 // 집합 연산 (64비트)
-func (op *Operator) UnionRoaringBitmap64(key string, other *roaring64.Bitmap) error {
+func (op *Operator) UnionBitmap64(key string, other *roaring64.Bitmap) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -163,7 +163,7 @@ func (op *Operator) UnionRoaringBitmap64(key string, other *roaring64.Bitmap) er
 	return nil
 }
 
-func (op *Operator) IntersectRoaringBitmap64(key string, other *roaring64.Bitmap) error {
+func (op *Operator) IntersectBitmap64(key string, other *roaring64.Bitmap) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -190,7 +190,7 @@ func (op *Operator) IntersectRoaringBitmap64(key string, other *roaring64.Bitmap
 	return nil
 }
 
-func (op *Operator) DifferenceRoaringBitmap64(key string, other *roaring64.Bitmap) error {
+func (op *Operator) DifferenceBitmap64(key string, other *roaring64.Bitmap) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -317,7 +317,7 @@ func (op *Operator) XorBits64(key string, bits ...uint64) error {
 }
 
 // 추가 유틸리티 함수 (64비트)
-func (op *Operator) CardinalityRoaringBitmap64(key string) (uint64, error) {
+func (op *Operator) GetBitmap64Cardinality(key string) (uint64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

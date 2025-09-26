@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -454,3 +454,4 @@ func BenchmarkPasswordOperations(b *testing.B) {
 		}
 	})
 }
+

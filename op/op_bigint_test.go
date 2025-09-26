@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"math/big"
@@ -113,3 +113,4 @@ func TestBigIntOperations(t *testing.T) {
 		}
 	})
 }
+

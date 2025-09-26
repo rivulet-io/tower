@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -478,3 +478,4 @@ func TestDurationOperations(t *testing.T) {
 		}
 	})
 }
+

@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -79,7 +79,7 @@ func TestRoaringBitmapOperations(t *testing.T) {
 
 		tower.SetRoaringBitmap(key, bitmap)
 
-		err := tower.AddBit(key, 5)
+		err := tower.AddBitmapBit(key, 5)
 		if err != nil {
 			t.Errorf("AddBit failed: %v", err)
 		}
@@ -99,7 +99,7 @@ func TestRoaringBitmapOperations(t *testing.T) {
 
 		tower.SetRoaringBitmap(key, bitmap)
 
-		err := tower.RemoveBit(key, 5)
+		err := tower.RemoveBitmapBit(key, 5)
 		if err != nil {
 			t.Errorf("RemoveBit failed: %v", err)
 		}
@@ -119,7 +119,7 @@ func TestRoaringBitmapOperations(t *testing.T) {
 
 		tower.SetRoaringBitmap(key, bitmap)
 
-		hasBit, err := tower.HasBit(key, 1)
+		hasBit, err := tower.ContainsBitmapBit(key, 1)
 		if err != nil {
 			t.Errorf("HasBit failed: %v", err)
 		}
@@ -127,7 +127,7 @@ func TestRoaringBitmapOperations(t *testing.T) {
 			t.Errorf("Expected bit 1 to be present")
 		}
 
-		hasBit, err = tower.HasBit(key, 10)
+		hasBit, err = tower.ContainsBitmapBit(key, 10)
 		if err != nil {
 			t.Errorf("HasBit failed: %v", err)
 		}
@@ -149,7 +149,7 @@ func TestRoaringBitmapOperations(t *testing.T) {
 
 		tower.SetRoaringBitmap(key, bitmap1)
 
-		err := tower.UnionRoaringBitmap(key, bitmap2)
+		err := tower.UnionBitmap(key, bitmap2)
 		if err != nil {
 			t.Errorf("UnionRoaringBitmap failed: %v", err)
 		}
@@ -175,7 +175,7 @@ func TestRoaringBitmapOperations(t *testing.T) {
 
 		tower.SetRoaringBitmap(key, bitmap1)
 
-		err := tower.IntersectRoaringBitmap(key, bitmap2)
+		err := tower.IntersectBitmap(key, bitmap2)
 		if err != nil {
 			t.Errorf("IntersectRoaringBitmap failed: %v", err)
 		}
@@ -200,7 +200,7 @@ func TestRoaringBitmapOperations(t *testing.T) {
 
 		tower.SetRoaringBitmap(key, bitmap1)
 
-		err := tower.DifferenceRoaringBitmap(key, bitmap2)
+		err := tower.DifferenceBitmap(key, bitmap2)
 		if err != nil {
 			t.Errorf("DifferenceRoaringBitmap failed: %v", err)
 		}
@@ -286,7 +286,7 @@ func TestRoaringBitmapOperations(t *testing.T) {
 
 		tower.SetRoaringBitmap(key, bitmap)
 
-		count, err := tower.CardinalityRoaringBitmap(key)
+		count, err := tower.GetBitmapCardinality(key)
 		if err != nil {
 			t.Errorf("CardinalityRoaringBitmap failed: %v", err)
 		}
@@ -317,3 +317,4 @@ func TestRoaringBitmapOperations(t *testing.T) {
 		}
 	})
 }
+

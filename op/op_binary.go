@@ -92,7 +92,7 @@ func (op *Operator) PrependBinary(key string, data []byte) ([]byte, error) {
 }
 
 // 길이 및 부분 바이트 연산
-func (op *Operator) LengthBinary(key string) (int, error) {
+func (op *Operator) GetBinaryLength(key string) (int, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -109,7 +109,7 @@ func (op *Operator) LengthBinary(key string) (int, error) {
 	return len(current), nil
 }
 
-func (op *Operator) SubBinary(key string, start, length int) ([]byte, error) {
+func (op *Operator) GetBinarySubstring(key string, start, length int) ([]byte, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -138,7 +138,7 @@ func (op *Operator) SubBinary(key string, start, length int) ([]byte, error) {
 }
 
 // 비교 연산
-func (op *Operator) EqualBinary(key string, other []byte) (bool, error) {
+func (op *Operator) CompareBinaryEqual(key string, other []byte) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -302,7 +302,7 @@ func (op *Operator) ContainsBinary(key string, sub []byte) (bool, error) {
 	return bytes.Contains(current, sub), nil
 }
 
-func (op *Operator) IndexBinary(key string, sub []byte) (int, error) {
+func (op *Operator) GetBinaryIndex(key string, sub []byte) (int, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

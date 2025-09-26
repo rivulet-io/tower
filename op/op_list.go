@@ -74,7 +74,7 @@ func (op *Operator) deleteList(key string) error {
 	return nil
 }
 
-func (op *Operator) ListExists(key string) (bool, error) {
+func (op *Operator) ExistsList(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -84,7 +84,7 @@ func (op *Operator) ListExists(key string) (bool, error) {
 }
 
 // 기본 Push/Pop 연산
-func (op *Operator) PushLeft(key string, value PrimitiveData) (int64, error) {
+func (op *Operator) PushLeftList(key string, value PrimitiveData) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -162,7 +162,7 @@ func (op *Operator) PushLeft(key string, value PrimitiveData) (int64, error) {
 	return listData.Length, nil
 }
 
-func (op *Operator) PushRight(key string, value PrimitiveData) (int64, error) {
+func (op *Operator) PushRightList(key string, value PrimitiveData) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -240,7 +240,7 @@ func (op *Operator) PushRight(key string, value PrimitiveData) (int64, error) {
 	return listData.Length, nil
 }
 
-func (op *Operator) PopLeft(key string) (PrimitiveData, error) {
+func (op *Operator) PopLeftList(key string) (PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -310,7 +310,7 @@ func (op *Operator) PopLeft(key string) (PrimitiveData, error) {
 	return value, nil
 }
 
-func (op *Operator) PopRight(key string) (PrimitiveData, error) {
+func (op *Operator) PopRightList(key string) (PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -381,7 +381,7 @@ func (op *Operator) PopRight(key string) (PrimitiveData, error) {
 }
 
 // 조회 연산
-func (op *Operator) ListLength(key string) (int64, error) {
+func (op *Operator) GetListLength(key string) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -400,7 +400,7 @@ func (op *Operator) ListLength(key string) (int64, error) {
 	return listData.Length, nil
 }
 
-func (op *Operator) ListIndex(key string, index int64) (PrimitiveData, error) {
+func (op *Operator) GetListIndex(key string, index int64) (PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -464,7 +464,7 @@ func (op *Operator) ListIndex(key string, index int64) (PrimitiveData, error) {
 	return value, nil
 }
 
-func (op *Operator) ListRange(key string, start, end int64) ([]PrimitiveData, error) {
+func (op *Operator) GetListRange(key string, start, end int64) ([]PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -552,7 +552,7 @@ func (op *Operator) listRange(key string, start, end int64) ([]PrimitiveData, er
 }
 
 // 수정 연산
-func (op *Operator) ListSet(key string, index int64, value PrimitiveData) error {
+func (op *Operator) SetListIndex(key string, index int64, value PrimitiveData) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -625,7 +625,7 @@ func (op *Operator) ListSet(key string, index int64, value PrimitiveData) error 
 	return nil
 }
 
-func (op *Operator) ListTrim(key string, start, end int64) error {
+func (op *Operator) TrimList(key string, start, end int64) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -706,7 +706,7 @@ func (op *Operator) ListTrim(key string, start, end int64) error {
 	return nil
 }
 
-func (op *Operator) ListGetAllMembersAndDelete(key string) ([]PrimitiveData, error) {
+func (op *Operator) GetAllListMembersAndDelete(key string) ([]PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

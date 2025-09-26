@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -51,7 +51,7 @@ func TestTimeOperations(t *testing.T) {
 			t.Fatalf("Failed to set time: %v", err)
 		}
 
-		result, err := tower.AddDurationToTime(key, duration)
+		result, err := tower.AddTimeWithDuration(key, duration)
 		if err != nil {
 			t.Fatalf("Failed to add duration: %v", err)
 		}
@@ -82,7 +82,7 @@ func TestTimeOperations(t *testing.T) {
 			t.Fatalf("Failed to set time: %v", err)
 		}
 
-		result, err := tower.SubDurationFromTime(key, duration)
+		result, err := tower.SubTimeWithDuration(key, duration)
 		if err != nil {
 			t.Fatalf("Failed to subtract duration: %v", err)
 		}
@@ -106,7 +106,7 @@ func TestTimeOperations(t *testing.T) {
 		}
 
 		// Test TimeBefore
-		before, err := tower.TimeBefore(key, laterTime)
+		before, err := tower.CompareTimeBefore(key, laterTime)
 		if err != nil {
 			t.Fatalf("Failed to check TimeBefore: %v", err)
 		}
@@ -114,7 +114,7 @@ func TestTimeOperations(t *testing.T) {
 			t.Error("Expected time to be before later time")
 		}
 
-		before, err = tower.TimeBefore(key, earlierTime)
+		before, err = tower.CompareTimeBefore(key, earlierTime)
 		if err != nil {
 			t.Fatalf("Failed to check TimeBefore: %v", err)
 		}
@@ -123,7 +123,7 @@ func TestTimeOperations(t *testing.T) {
 		}
 
 		// Test TimeAfter
-		after, err := tower.TimeAfter(key, earlierTime)
+		after, err := tower.CompareTimeAfter(key, earlierTime)
 		if err != nil {
 			t.Fatalf("Failed to check TimeAfter: %v", err)
 		}
@@ -131,7 +131,7 @@ func TestTimeOperations(t *testing.T) {
 			t.Error("Expected time to be after earlier time")
 		}
 
-		after, err = tower.TimeAfter(key, laterTime)
+		after, err = tower.CompareTimeAfter(key, laterTime)
 		if err != nil {
 			t.Fatalf("Failed to check TimeAfter: %v", err)
 		}
@@ -140,7 +140,7 @@ func TestTimeOperations(t *testing.T) {
 		}
 
 		// Test TimeEqual
-		equal, err := tower.TimeEqual(key, testTime)
+		equal, err := tower.CompareTimeEqual(key, testTime)
 		if err != nil {
 			t.Fatalf("Failed to check TimeEqual: %v", err)
 		}
@@ -148,7 +148,7 @@ func TestTimeOperations(t *testing.T) {
 			t.Error("Expected times to be equal")
 		}
 
-		equal, err = tower.TimeEqual(key, laterTime)
+		equal, err = tower.CompareTimeEqual(key, laterTime)
 		if err != nil {
 			t.Fatalf("Failed to check TimeEqual: %v", err)
 		}
@@ -168,7 +168,7 @@ func TestTimeOperations(t *testing.T) {
 			t.Fatalf("Failed to set time: %v", err)
 		}
 
-		diff, err := tower.TimeDiff(key, otherTime)
+		diff, err := tower.CalculateTimeDiff(key, otherTime)
 		if err != nil {
 			t.Fatalf("Failed to get time diff: %v", err)
 		}
@@ -189,7 +189,7 @@ func TestTimeOperations(t *testing.T) {
 			t.Fatalf("Failed to set zero time: %v", err)
 		}
 
-		isZero, err := tower.IsZeroTime(key)
+		isZero, err := tower.CheckTimeZero(key)
 		if err != nil {
 			t.Fatalf("Failed to check IsZeroTime: %v", err)
 		}
@@ -204,7 +204,7 @@ func TestTimeOperations(t *testing.T) {
 			t.Fatalf("Failed to set non-zero time: %v", err)
 		}
 
-		isZero, err = tower.IsZeroTime(key)
+		isZero, err = tower.CheckTimeZero(key)
 		if err != nil {
 			t.Fatalf("Failed to check IsZeroTime: %v", err)
 		}
@@ -349,14 +349,15 @@ func TestTimeOperations(t *testing.T) {
 		}
 
 		// Test operations on non-existent key
-		_, err = tower.AddDurationToTime(nonExistentKey, time.Hour)
+		_, err = tower.AddTimeWithDuration(nonExistentKey, time.Hour)
 		if err == nil {
 			t.Error("Expected error when adding duration to non-existent key")
 		}
 
-		_, err = tower.TimeBefore(nonExistentKey, time.Now())
+		_, err = tower.CompareTimeBefore(nonExistentKey, time.Now())
 		if err == nil {
 			t.Error("Expected error when comparing non-existent key")
 		}
 	})
 }
+

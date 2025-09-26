@@ -170,7 +170,7 @@ func (op *Operator) EndsWithString(key string, suffix string) (bool, error) {
 }
 
 // 길이 및 부분 문자열 연산
-func (op *Operator) LengthString(key string) (int, error) {
+func (op *Operator) GetStringLength(key string) (int, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -187,7 +187,7 @@ func (op *Operator) LengthString(key string) (int, error) {
 	return len(current), nil
 }
 
-func (op *Operator) SubstringString(key string, start, length int) (string, error) {
+func (op *Operator) GetStringSubstring(key string, start, length int) (string, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -232,7 +232,7 @@ func (op *Operator) CompareString(key string, other string) (int, error) {
 	return strings.Compare(current, other), nil
 }
 
-func (op *Operator) EqualString(key string, other string) (bool, error) {
+func (op *Operator) CompareStringEqual(key string, other string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

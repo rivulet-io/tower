@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -79,7 +79,7 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 
 		tower.SetRoaringBitmap64(key, bitmap)
 
-		err := tower.AddBit64(key, 5)
+		err := tower.AddBitmap64Bit(key, 5)
 		if err != nil {
 			t.Errorf("AddBit64 failed: %v", err)
 		}
@@ -99,7 +99,7 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 
 		tower.SetRoaringBitmap64(key, bitmap)
 
-		err := tower.RemoveBit64(key, 5)
+		err := tower.RemoveBitmap64Bit(key, 5)
 		if err != nil {
 			t.Errorf("RemoveBit64 failed: %v", err)
 		}
@@ -119,7 +119,7 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 
 		tower.SetRoaringBitmap64(key, bitmap)
 
-		hasBit, err := tower.HasBit64(key, 1)
+		hasBit, err := tower.ContainsBitmap64Bit(key, 1)
 		if err != nil {
 			t.Errorf("HasBit64 failed: %v", err)
 		}
@@ -127,7 +127,7 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 			t.Errorf("Expected bit 1 to be present")
 		}
 
-		hasBit, err = tower.HasBit64(key, 10)
+		hasBit, err = tower.ContainsBitmap64Bit(key, 10)
 		if err != nil {
 			t.Errorf("HasBit64 failed: %v", err)
 		}
@@ -149,7 +149,7 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 
 		tower.SetRoaringBitmap64(key, bitmap1)
 
-		err := tower.UnionRoaringBitmap64(key, bitmap2)
+		err := tower.UnionBitmap64(key, bitmap2)
 		if err != nil {
 			t.Errorf("UnionRoaringBitmap64 failed: %v", err)
 		}
@@ -175,7 +175,7 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 
 		tower.SetRoaringBitmap64(key, bitmap1)
 
-		err := tower.IntersectRoaringBitmap64(key, bitmap2)
+		err := tower.IntersectBitmap64(key, bitmap2)
 		if err != nil {
 			t.Errorf("IntersectRoaringBitmap64 failed: %v", err)
 		}
@@ -200,7 +200,7 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 
 		tower.SetRoaringBitmap64(key, bitmap1)
 
-		err := tower.DifferenceRoaringBitmap64(key, bitmap2)
+		err := tower.DifferenceBitmap64(key, bitmap2)
 		if err != nil {
 			t.Errorf("DifferenceRoaringBitmap64 failed: %v", err)
 		}
@@ -286,7 +286,7 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 
 		tower.SetRoaringBitmap64(key, bitmap)
 
-		count, err := tower.CardinalityRoaringBitmap64(key)
+		count, err := tower.GetBitmap64Cardinality(key)
 		if err != nil {
 			t.Errorf("CardinalityRoaringBitmap64 failed: %v", err)
 		}
@@ -317,3 +317,4 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 		}
 	})
 }
+

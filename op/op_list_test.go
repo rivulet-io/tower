@@ -28,13 +28,13 @@ func TestListBasicOperations(t *testing.T) {
 
 	key := "test_list"
 
-	// 리스트 생성
+	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
-	// 리스트 존재 확인
-	exists, err := tower.ListExists(key)
+	// ����??���� ??��
+	exists, err := tower.ExistsList(key)
 	if err != nil {
 		t.Fatalf("Failed to check list existence: %v", err)
 	}
@@ -42,8 +42,8 @@ func TestListBasicOperations(t *testing.T) {
 		t.Error("Expected list to exist")
 	}
 
-	// 초기 길이 확인
-	length, err := tower.ListLength(key)
+	// �ʱ� ���� ??��
+	length, err := tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get list length: %v", err)
 	}
@@ -51,13 +51,13 @@ func TestListBasicOperations(t *testing.T) {
 		t.Errorf("Expected empty list length 0, got %d", length)
 	}
 
-	// 리스트 삭제
+	// ����??????
 	if err := tower.DeleteList(key); err != nil {
 		t.Fatalf("Failed to delete list: %v", err)
 	}
 
-	// 삭제 후 존재 확인
-	exists, err = tower.ListExists(key)
+	// ???? ??���� ??��
+	exists, err = tower.ExistsList(key)
 	if err != nil {
 		t.Fatalf("Failed to check list existence after delete: %v", err)
 	}
@@ -72,13 +72,13 @@ func TestListPushPopOperations(t *testing.T) {
 
 	key := "test_list"
 
-	// 리스트 생성
+	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
-	// PushLeft 테스트
-	length, err := tower.PushLeft(key, PrimitiveString("left1"))
+	// PushLeft ??��??
+	length, err := tower.PushLeftList(key, PrimitiveString("left1"))
 	if err != nil {
 		t.Fatalf("Failed to push left: %v", err)
 	}
@@ -86,8 +86,8 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected length 1, got %d", length)
 	}
 
-	// PushRight 테스트
-	length, err = tower.PushRight(key, PrimitiveString("right1"))
+	// PushRight ??��??
+	length, err = tower.PushRightList(key, PrimitiveString("right1"))
 	if err != nil {
 		t.Fatalf("Failed to push right: %v", err)
 	}
@@ -95,13 +95,13 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected length 2, got %d", length)
 	}
 
-	// 더 많은 아이템 추가
-	tower.PushLeft(key, PrimitiveString("left2"))
-	tower.PushRight(key, PrimitiveString("right2"))
-	// 현재 순서: [left2, left1, right1, right2]
+	// ??��?? ??��??��??
+	tower.PushLeftList(key, PrimitiveString("left2"))
+	tower.PushRightList(key, PrimitiveString("right2"))
+	// ??�� ??��: [left2, left1, right1, right2]
 
-	// 길이 확인
-	length, err = tower.ListLength(key)
+	// ���� ??��
+	length, err = tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get list length: %v", err)
 	}
@@ -109,8 +109,8 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected length 4, got %d", length)
 	}
 
-	// PopLeft 테스트
-	item, err := tower.PopLeft(key)
+	// PopLeft ??��??
+	item, err := tower.PopLeftList(key)
 	if err != nil {
 		t.Fatalf("Failed to pop left: %v", err)
 	}
@@ -122,8 +122,8 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected 'left2', got %v", itemStr)
 	}
 
-	// PopRight 테스트
-	item, err = tower.PopRight(key)
+	// PopRight ??��??
+	item, err = tower.PopRightList(key)
 	if err != nil {
 		t.Fatalf("Failed to pop right: %v", err)
 	}
@@ -135,8 +135,8 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected 'right2', got %v", itemStr)
 	}
 
-	// 길이 확인
-	length, err = tower.ListLength(key)
+	// ���� ??��
+	length, err = tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get list length: %v", err)
 	}
@@ -151,19 +151,19 @@ func TestListIndexAndRange(t *testing.T) {
 
 	key := "test_list"
 
-	// 리스트 생성 및 데이터 추가
+	// ����????�� ????��??��??
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
 	items := []PrimitiveString{"item0", "item1", "item2", "item3", "item4"}
 	for _, item := range items {
-		tower.PushRight(key, item)
+		tower.PushRightList(key, item)
 	}
 
-	// ListIndex 테스트
+	// ListIndex ??��??
 	for i, expected := range items {
-		item, err := tower.ListIndex(key, int64(i))
+		item, err := tower.GetListIndex(key, int64(i))
 		if err != nil {
 			t.Fatalf("Failed to get item at index %d: %v", i, err)
 		}
@@ -176,8 +176,8 @@ func TestListIndexAndRange(t *testing.T) {
 		}
 	}
 
-	// 음수 인덱스 테스트
-	item, err := tower.ListIndex(key, -1)
+	// ??�� ??��????��??
+	item, err := tower.GetListIndex(key, -1)
 	if err != nil {
 		t.Fatalf("Failed to get item at index -1: %v", err)
 	}
@@ -189,8 +189,8 @@ func TestListIndexAndRange(t *testing.T) {
 		t.Errorf("Expected 'item4' at index -1, got %v", itemStr)
 	}
 
-	// ListRange 테스트
-	rangeItems, err := tower.ListRange(key, 1, 3)
+	// ListRange ??��??
+	rangeItems, err := tower.GetListRange(key, 1, 3)
 	if err != nil {
 		t.Fatalf("Failed to get range 1-3: %v", err)
 	}
@@ -208,8 +208,8 @@ func TestListIndexAndRange(t *testing.T) {
 		}
 	}
 
-	// 전체 범위 테스트
-	allItems, err := tower.ListRange(key, 0, -1)
+	// ??ü ���� ??��??
+	allItems, err := tower.GetListRange(key, 0, -1)
 	if err != nil {
 		t.Fatalf("Failed to get full range: %v", err)
 	}
@@ -224,21 +224,21 @@ func TestListSetAndModify(t *testing.T) {
 
 	key := "test_list"
 
-	// 리스트 생성 및 데이터 추가
+	// ����????�� ????��??��??
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
-	tower.PushRight(key, PrimitiveString("item0"))
-	tower.PushRight(key, PrimitiveString("item1"))
-	tower.PushRight(key, PrimitiveString("item2"))
+	tower.PushRightList(key, PrimitiveString("item0"))
+	tower.PushRightList(key, PrimitiveString("item1"))
+	tower.PushRightList(key, PrimitiveString("item2"))
 
-	// ListSet 테스트
-	if err := tower.ListSet(key, 1, PrimitiveString("modified_item1")); err != nil {
+	// ListSet ??��??
+	if err := tower.SetListIndex(key, 1, PrimitiveString("modified_item1")); err != nil {
 		t.Fatalf("Failed to set item at index 1: %v", err)
 	}
 
-	item, err := tower.ListIndex(key, 1)
+	item, err := tower.GetListIndex(key, 1)
 	if err != nil {
 		t.Fatalf("Failed to get modified item: %v", err)
 	}
@@ -250,12 +250,12 @@ func TestListSetAndModify(t *testing.T) {
 		t.Errorf("Expected 'modified_item1', got %v", itemStr)
 	}
 
-	// 음수 인덱스로 설정
-	if err := tower.ListSet(key, -1, PrimitiveString("last_modified")); err != nil {
+	// ??�� ??��??�� ??��
+	if err := tower.SetListIndex(key, -1, PrimitiveString("last_modified")); err != nil {
 		t.Fatalf("Failed to set item at index -1: %v", err)
 	}
 
-	item, err = tower.ListIndex(key, -1)
+	item, err = tower.GetListIndex(key, -1)
 	if err != nil {
 		t.Fatalf("Failed to get last item: %v", err)
 	}
@@ -274,22 +274,22 @@ func TestListTrim(t *testing.T) {
 
 	key := "test_list"
 
-	// 리스트 생성 및 데이터 추가
+	// ����????�� ????��??��??
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
 	for i := 0; i < 10; i++ {
-		tower.PushRight(key, PrimitiveString(fmt.Sprintf("item%d", i)))
+		tower.PushRightList(key, PrimitiveString(fmt.Sprintf("item%d", i)))
 	}
 
-	// Trim 테스트 (2-7 범위만 유지)
-	if err := tower.ListTrim(key, 2, 7); err != nil {
+	// Trim ??��??(2-7 ����??????)
+	if err := tower.TrimList(key, 2, 7); err != nil {
 		t.Fatalf("Failed to trim list: %v", err)
 	}
 
-	// 길이 확인
-	length, err := tower.ListLength(key)
+	// ���� ??��
+	length, err := tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get list length after trim: %v", err)
 	}
@@ -297,8 +297,8 @@ func TestListTrim(t *testing.T) {
 		t.Errorf("Expected length 6 after trim, got %d", length)
 	}
 
-	// 내용 확인
-	firstItem, err := tower.ListIndex(key, 0)
+	// ??�� ??��
+	firstItem, err := tower.GetListIndex(key, 0)
 	if err != nil {
 		t.Fatalf("Failed to get first item after trim: %v", err)
 	}
@@ -310,7 +310,7 @@ func TestListTrim(t *testing.T) {
 		t.Errorf("Expected 'item2' as first item, got %v", firstStr)
 	}
 
-	lastItem, err := tower.ListIndex(key, -1)
+	lastItem, err := tower.GetListIndex(key, -1)
 	if err != nil {
 		t.Fatalf("Failed to get last item after trim: %v", err)
 	}
@@ -329,63 +329,63 @@ func TestListErrorCases(t *testing.T) {
 
 	key := "test_list"
 
-	// 존재하지 않는 리스트에 대한 작업 테스트
-	_, err := tower.ListExists(key)
+	// ����???? ??�� ����??�� ??????�� ??��??
+	_, err := tower.ExistsList(key)
 	if err != nil {
 		t.Fatalf("ListExists should not error for non-existent list: %v", err)
 	}
 
-	_, err = tower.PushLeft(key, PrimitiveString("item"))
+	_, err = tower.PushLeftList(key, PrimitiveString("item"))
 	if err == nil {
 		t.Error("Expected error when pushing to non-existent list")
 	}
 
-	_, err = tower.PopLeft(key)
+	_, err = tower.PopLeftList(key)
 	if err == nil {
 		t.Error("Expected error when popping from non-existent list")
 	}
 
-	_, err = tower.ListIndex(key, 0)
+	_, err = tower.GetListIndex(key, 0)
 	if err == nil {
 		t.Error("Expected error when accessing index of non-existent list")
 	}
 
-	// 리스트 생성
+	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
-	// 중복 생성 시도
+	// �ߺ� ??�� ??��
 	if err := tower.CreateList(key); err == nil {
 		t.Error("Expected error when creating list that already exists")
 	}
 
-	// 빈 리스트에서 pop 시도
-	_, err = tower.PopLeft(key)
+	// 빈 리스트에서 pop 테스트
+	_, err = tower.PopLeftList(key)
 	if err == nil {
 		t.Error("Expected error when popping from empty list")
 	}
 
-	_, err = tower.PopRight(key)
+	_, err = tower.PopRightList(key)
 	if err == nil {
 		t.Error("Expected error when popping from empty list")
 	}
 
-	// 잘못된 인덱스 접근
-	_, err = tower.ListIndex(key, 0)
+	// ??��????��????��
+	_, err = tower.GetListIndex(key, 0)
 	if err == nil {
 		t.Error("Expected error when accessing index 0 of empty list")
 	}
 
-	// 데이터 추가 후 범위 초과 테스트
-	tower.PushRight(key, PrimitiveString("item"))
+	// ??��??��?? ??���� �ʰ� ??��??
+	tower.PushRightList(key, PrimitiveString("item"))
 
-	_, err = tower.ListIndex(key, 10)
+	_, err = tower.GetListIndex(key, 10)
 	if err == nil {
 		t.Error("Expected error when accessing out-of-bounds index")
 	}
 
-	err = tower.ListSet(key, 10, PrimitiveString("new_item"))
+	err = tower.SetListIndex(key, 10, PrimitiveString("new_item"))
 	if err == nil {
 		t.Error("Expected error when setting out-of-bounds index")
 	}
@@ -397,19 +397,19 @@ func TestListWithDifferentTypes(t *testing.T) {
 
 	key := "mixed_list"
 
-	// 리스트 생성
+	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
-	// 다양한 타입의 데이터 추가
-	tower.PushRight(key, PrimitiveString("string_value"))
-	tower.PushRight(key, PrimitiveInt(42))
-	tower.PushRight(key, PrimitiveFloat(3.14))
-	tower.PushRight(key, PrimitiveBool(true))
+	// ??��??????�� ??��??��??
+	tower.PushRightList(key, PrimitiveString("string_value"))
+	tower.PushRightList(key, PrimitiveInt(42))
+	tower.PushRightList(key, PrimitiveFloat(3.14))
+	tower.PushRightList(key, PrimitiveBool(true))
 
-	// 각 타입이 올바르게 저장되었는지 확인
-	stringItem, err := tower.ListIndex(key, 0)
+	// ??????�� ??�ٸ��� ????��??���� ??��
+	stringItem, err := tower.GetListIndex(key, 0)
 	if err != nil {
 		t.Fatalf("Failed to get string item: %v", err)
 	}
@@ -421,7 +421,7 @@ func TestListWithDifferentTypes(t *testing.T) {
 		t.Errorf("Expected 'string_value', got %v", stringVal)
 	}
 
-	intItem, err := tower.ListIndex(key, 1)
+	intItem, err := tower.GetListIndex(key, 1)
 	if err != nil {
 		t.Fatalf("Failed to get int item: %v", err)
 	}
@@ -433,7 +433,7 @@ func TestListWithDifferentTypes(t *testing.T) {
 		t.Errorf("Expected 42, got %v", intVal)
 	}
 
-	floatItem, err := tower.ListIndex(key, 2)
+	floatItem, err := tower.GetListIndex(key, 2)
 	if err != nil {
 		t.Fatalf("Failed to get float item: %v", err)
 	}
@@ -445,7 +445,7 @@ func TestListWithDifferentTypes(t *testing.T) {
 		t.Errorf("Expected 3.14, got %v", floatVal)
 	}
 
-	boolItem, err := tower.ListIndex(key, 3)
+	boolItem, err := tower.GetListIndex(key, 3)
 	if err != nil {
 		t.Fatalf("Failed to get bool item: %v", err)
 	}
@@ -464,35 +464,35 @@ func TestListConcurrentAccess(t *testing.T) {
 
 	key := "concurrent_list"
 
-	// 리스트 생성
+	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
 	done := make(chan bool, 2)
 
-	// 동시에 PushLeft 실행
+	// ??��??PushLeft ??��
 	go func() {
 		for i := 0; i < 10; i++ {
-			tower.PushLeft(key, PrimitiveString(fmt.Sprintf("left%d", i)))
+			tower.PushLeftList(key, PrimitiveString(fmt.Sprintf("left%d", i)))
 		}
 		done <- true
 	}()
 
-	// 동시에 PushRight 실행
+	// ??��??PushRight ??��
 	go func() {
 		for i := 0; i < 10; i++ {
-			tower.PushRight(key, PrimitiveString(fmt.Sprintf("right%d", i)))
+			tower.PushRightList(key, PrimitiveString(fmt.Sprintf("right%d", i)))
 		}
 		done <- true
 	}()
 
-	// 완료 대기
+	// ??�� ????
 	<-done
 	<-done
 
-	// 최종 길이 확인
-	length, err := tower.ListLength(key)
+	// ���� ���� ??��
+	length, err := tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get final list length: %v", err)
 	}

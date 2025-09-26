@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -320,3 +320,4 @@ func TestBoolOperations(t *testing.T) {
 		}
 	})
 }
+

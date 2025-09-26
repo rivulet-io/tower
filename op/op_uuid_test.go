@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -81,7 +81,7 @@ func TestUUIDOperations(t *testing.T) {
 		}
 
 		// Test equality with same UUID
-		equal, err := tower.EqualUUID(key, &testUUID)
+		equal, err := tower.CompareUUIDEqual(key, &testUUID)
 		if err != nil {
 			t.Fatalf("Failed to check UUID equality: %v", err)
 		}
@@ -90,7 +90,7 @@ func TestUUIDOperations(t *testing.T) {
 		}
 
 		// Test inequality with different UUID
-		equal, err = tower.EqualUUID(key, &differentUUID)
+		equal, err = tower.CompareUUIDEqual(key, &differentUUID)
 		if err != nil {
 			t.Fatalf("Failed to check UUID inequality: %v", err)
 		}
@@ -155,7 +155,7 @@ func TestUUIDOperations(t *testing.T) {
 			t.Fatalf("Failed to set valid UUID: %v", err)
 		}
 
-		isValid, err := tower.IsValidUUID(key)
+		isValid, err := tower.ValidateUUID(key)
 		if err != nil {
 			t.Fatalf("Failed to check UUID validity: %v", err)
 		}
@@ -163,7 +163,7 @@ func TestUUIDOperations(t *testing.T) {
 			t.Error("Expected UUID to be valid")
 		}
 
-		isNil, err := tower.IsNilUUID(key)
+		isNil, err := tower.CheckUUIDNil(key)
 		if err != nil {
 			t.Fatalf("Failed to check if UUID is nil: %v", err)
 		}
@@ -178,7 +178,7 @@ func TestUUIDOperations(t *testing.T) {
 			t.Fatalf("Failed to set nil UUID: %v", err)
 		}
 
-		isValid, err = tower.IsValidUUID(key)
+		isValid, err = tower.ValidateUUID(key)
 		if err != nil {
 			t.Fatalf("Failed to check nil UUID validity: %v", err)
 		}
@@ -186,7 +186,7 @@ func TestUUIDOperations(t *testing.T) {
 			t.Error("Expected nil UUID to be invalid")
 		}
 
-		isNil, err = tower.IsNilUUID(key)
+		isNil, err = tower.CheckUUIDNil(key)
 		if err != nil {
 			t.Fatalf("Failed to check if UUID is nil: %v", err)
 		}
@@ -206,7 +206,7 @@ func TestUUIDOperations(t *testing.T) {
 		}
 
 		// Test UUIDToString
-		uuidString, err := tower.UUIDToString(key)
+		uuidString, err := tower.ConvertUUIDToString(key)
 		if err != nil {
 			t.Fatalf("Failed to convert UUID to string: %v", err)
 		}
@@ -217,7 +217,7 @@ func TestUUIDOperations(t *testing.T) {
 
 		// Test StringToUUID
 		newKey := "test:uuid:conversion:from_string"
-		convertedUUID, err := tower.StringToUUID(newKey, uuidString)
+		convertedUUID, err := tower.ConvertStringToUUID(newKey, uuidString)
 		if err != nil {
 			t.Fatalf("Failed to convert string to UUID: %v", err)
 		}
@@ -238,7 +238,7 @@ func TestUUIDOperations(t *testing.T) {
 
 		// Test invalid string conversion
 		invalidKey := "test:uuid:conversion:invalid"
-		_, err = tower.StringToUUID(invalidKey, "invalid-uuid-string")
+		_, err = tower.ConvertStringToUUID(invalidKey, "invalid-uuid-string")
 		if err == nil {
 			t.Error("Expected error when converting invalid UUID string")
 		}
@@ -255,7 +255,7 @@ func TestUUIDOperations(t *testing.T) {
 			t.Fatalf("Failed to set UUID v4: %v", err)
 		}
 
-		version, err := tower.UUIDVersion(key)
+		version, err := tower.GetUUIDVersion(key)
 		if err != nil {
 			t.Fatalf("Failed to get UUID version: %v", err)
 		}
@@ -263,7 +263,7 @@ func TestUUIDOperations(t *testing.T) {
 			t.Errorf("Expected version 4, got %v", version)
 		}
 
-		variant, err := tower.UUIDVariant(key)
+		variant, err := tower.GetUUIDVariant(key)
 		if err != nil {
 			t.Fatalf("Failed to get UUID variant: %v", err)
 		}
@@ -282,7 +282,7 @@ func TestUUIDOperations(t *testing.T) {
 			t.Fatalf("Failed to set UUID v7: %v", err)
 		}
 
-		version, err = tower.UUIDVersion(key)
+		version, err = tower.GetUUIDVersion(key)
 		if err != nil {
 			t.Fatalf("Failed to get UUID v7 version: %v", err)
 		}
@@ -374,7 +374,7 @@ func TestUUIDOperations(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				convertedUUID, err := tower.StringToUUID(key, tc.uuidStr)
+				convertedUUID, err := tower.ConvertStringToUUID(key, tc.uuidStr)
 				if err != nil {
 					t.Fatalf("Failed to convert UUID string: %v", err)
 				}
@@ -384,7 +384,7 @@ func TestUUIDOperations(t *testing.T) {
 				}
 
 				// Test round-trip conversion
-				backToString, err := tower.UUIDToString(key)
+				backToString, err := tower.ConvertUUIDToString(key)
 				if err != nil {
 					t.Fatalf("Failed to convert UUID back to string: %v", err)
 				}
@@ -407,19 +407,20 @@ func TestUUIDOperations(t *testing.T) {
 		}
 
 		// Test operations on non-existent key
-		_, err = tower.EqualUUID(nonExistentKey, &uuid.Nil)
+		_, err = tower.CompareUUIDEqual(nonExistentKey, &uuid.Nil)
 		if err == nil {
 			t.Error("Expected error when comparing non-existent key")
 		}
 
-		_, err = tower.UUIDToString(nonExistentKey)
+		_, err = tower.ConvertUUIDToString(nonExistentKey)
 		if err == nil {
 			t.Error("Expected error when converting non-existent key to string")
 		}
 
-		_, err = tower.IsValidUUID(nonExistentKey)
+		_, err = tower.ValidateUUID(nonExistentKey)
 		if err == nil {
 			t.Error("Expected error when checking validity of non-existent key")
 		}
 	})
 }
+

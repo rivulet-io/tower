@@ -63,7 +63,7 @@ func (op *Operator) GetRoaringBitmapBytes(key string) ([]byte, error) {
 }
 
 // 기본 비트 연산
-func (op *Operator) AddBit(key string, bit uint32) error {
+func (op *Operator) AddBitmapBit(key string, bit uint32) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -90,7 +90,7 @@ func (op *Operator) AddBit(key string, bit uint32) error {
 	return nil
 }
 
-func (op *Operator) RemoveBit(key string, bit uint32) error {
+func (op *Operator) RemoveBitmapBit(key string, bit uint32) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -117,7 +117,7 @@ func (op *Operator) RemoveBit(key string, bit uint32) error {
 	return nil
 }
 
-func (op *Operator) HasBit(key string, bit uint32) (bool, error) {
+func (op *Operator) ContainsBitmapBit(key string, bit uint32) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -135,7 +135,7 @@ func (op *Operator) HasBit(key string, bit uint32) (bool, error) {
 }
 
 // 집합 연산
-func (op *Operator) UnionRoaringBitmap(key string, other *roaring.Bitmap) error {
+func (op *Operator) UnionBitmap(key string, other *roaring.Bitmap) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -162,7 +162,7 @@ func (op *Operator) UnionRoaringBitmap(key string, other *roaring.Bitmap) error 
 	return nil
 }
 
-func (op *Operator) IntersectRoaringBitmap(key string, other *roaring.Bitmap) error {
+func (op *Operator) IntersectBitmap(key string, other *roaring.Bitmap) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -189,7 +189,7 @@ func (op *Operator) IntersectRoaringBitmap(key string, other *roaring.Bitmap) er
 	return nil
 }
 
-func (op *Operator) DifferenceRoaringBitmap(key string, other *roaring.Bitmap) error {
+func (op *Operator) DifferenceBitmap(key string, other *roaring.Bitmap) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -316,7 +316,7 @@ func (op *Operator) XorBits(key string, bits ...uint32) error {
 }
 
 // 추가 유틸리티 함수
-func (op *Operator) CardinalityRoaringBitmap(key string) (uint64, error) {
+func (op *Operator) GetBitmapCardinality(key string) (uint64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

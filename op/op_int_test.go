@@ -87,7 +87,7 @@ func TestIntOperations(t *testing.T) {
 		initial := int64(10)
 
 		tower.SetInt(key, initial)
-		result, err := tower.IncInt(key)
+		result, err := tower.IncrementInt(key)
 		if err != nil {
 			t.Errorf("IncInt failed: %v", err)
 		}
@@ -104,7 +104,7 @@ func TestIntOperations(t *testing.T) {
 		initial := int64(10)
 
 		tower.SetInt(key, initial)
-		result, err := tower.DecInt(key)
+		result, err := tower.DecrementInt(key)
 		if err != nil {
 			t.Errorf("DecInt failed: %v", err)
 		}
@@ -445,3 +445,4 @@ func TestIntOperations(t *testing.T) {
 		}
 	})
 }
+

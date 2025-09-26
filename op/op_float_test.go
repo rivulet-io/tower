@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"math"
@@ -421,3 +421,4 @@ func TestFloatOperations(t *testing.T) {
 		}
 	})
 }
+

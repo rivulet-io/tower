@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"testing"
@@ -182,7 +182,7 @@ func TestAddCandidatesForExpiration(t *testing.T) {
 
 	// Verify candidate is added (check internal list)
 	ttlKey := tower.makeTTLKey(tower.ceilTTLTimestamp(expireAt))
-	members, err := tower.ListRange(ttlKey, 0, -1)
+	members, err := tower.GetListRange(ttlKey, 0, -1)
 	if err != nil {
 		t.Errorf("Failed to list TTL candidates: %v", err)
 	}

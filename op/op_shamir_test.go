@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"bytes"
@@ -382,3 +382,4 @@ func TestShamirConcurrentAccess(t *testing.T) {
 		}
 	})
 }
+
