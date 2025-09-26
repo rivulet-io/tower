@@ -302,19 +302,19 @@ Ordered collections supporting deque operations with atomic list management:
 // Create and manage lists
 err := db.CreateList("mylist")
 exists, _ := db.ListExists("mylist")
-length, _ := db.ListLength("mylist")
+length, _ := db.GetListLength("mylist")
 
 // Push/Pop operations (returns new length or popped item)
-newLength, _ := db.PushRight("mylist", op.PrimitiveString("item1"))    // Add to end
-newLength, _ = db.PushLeft("mylist", op.PrimitiveString("item0"))      // Add to beginning
-leftItem, _ := db.PopLeft("mylist")                // Remove from beginning  
-rightItem, _ := db.PopRight("mylist")              // Remove from end
+newLength, _ := db.PushRightList("mylist", op.PrimitiveString("item1"))    // Add to end
+newLength, _ = db.PushLeftList("mylist", op.PrimitiveString("item0"))      // Add to beginning
+leftItem, _ := db.PopLeftList("mylist")                // Remove from beginning  
+rightItem, _ := db.PopRightList("mylist")              // Remove from end
 
 // Index-based access and modification
-item, _ := db.ListIndex("mylist", 0)                // Get by index
-items, _ := db.ListRange("mylist", 0, -1)          // Get range (0 to end)
-err = db.ListSet("mylist", 1, op.PrimitiveString("modified"))          // Set by index
-err = db.ListTrim("mylist", 0, 10)                 // Keep only indices 0-10
+item, _ := db.GetListIndex("mylist", 0)                // Get by index
+items, _ := db.GetListRange("mylist", 0, -1)          // Get range (0 to end)
+err = db.SetListIndex("mylist", 1, op.PrimitiveString("modified"))          // Set by index
+err = db.TrimList("mylist", 0, 10)                 // Keep only indices 0-10
 
 // Cleanup
 err = db.DeleteList("mylist")
@@ -327,20 +327,20 @@ Hash maps with field-based operations supporting any primitive type as keys and 
 // Create and manage maps
 err := db.CreateMap("mymap")
 exists, _ := db.MapExists("mymap")
-length, _ := db.MapLength("mymap")
+length, _ := db.GetMapLength("mymap")
 
 // Set fields with different types
-err = db.MapSet("mymap", op.PrimitiveString("name"), op.PrimitiveString("John"))           // String key, string value
-err = db.MapSet("mymap", op.PrimitiveString("age"), op.PrimitiveInt(30))         // String key, int value
-err = db.MapSet("mymap", op.PrimitiveInt(42), op.PrimitiveString("answer"))             // Int key, string value
+err = db.SetMapKey("mymap", op.PrimitiveString("name"), op.PrimitiveString("John"))           // String key, string value
+err = db.SetMapKey("mymap", op.PrimitiveString("age"), op.PrimitiveInt(30))         // String key, int value
+err = db.SetMapKey("mymap", op.PrimitiveInt(42), op.PrimitiveString("answer"))             // Int key, string value
 
 // Get operations
-name, _ := db.MapGet("mymap", op.PrimitiveString("name"))              // Get single field
-keys, _ := db.MapKeys("mymap")                     // Get all keys
-values, _ := db.MapValues("mymap")                 // Get all values
+name, _ := db.GetMapValue("mymap", op.PrimitiveString("name"))              // Get single field
+keys, _ := db.GetMapKeys("mymap")                     // Get all keys
+values, _ := db.GetMapValues("mymap")                 // Get all values
 
 // Management operations
-deletedCount, _ := db.MapDelete("mymap", op.PrimitiveString("age"))    // Delete field
+deletedCount, _ := db.DeleteMapKey("mymap", op.PrimitiveString("age"))    // Delete field
 err = db.ClearMap("mymap")                         // Clear all fields
 err = db.DeleteMap("mymap")                        // Delete entire map
 ```
@@ -352,16 +352,16 @@ Unique collections with membership testing (currently supports string members on
 // Create and manage sets
 err := db.CreateSet("myset")
 exists, _ := db.SetExists("myset") 
-cardinality, _ := db.SetCardinality("myset")       // Get size
+cardinality, _ := db.GetSetCardinality("myset")       // Get size
 
 // Add/Remove members (returns current set size)
-newSize, _ := db.SetAdd("myset", "member1")        // Add member
-newSize, _ = db.SetAdd("myset", "member1")         // Duplicate returns same size
-newSize, _ = db.SetRemove("myset", "member1")      // Remove member
+newSize, _ := db.AddSetMember("myset", "member1")        // Add member
+newSize, _ = db.AddSetMember("myset", "member1")         // Duplicate returns same size
+newSize, _ = db.DeleteSetMember("myset", "member1")      // Remove member
 
 // Membership and listing
-isMember, _ := db.SetIsMember("myset", "member1")  // Test membership
-members, _ := db.SetMembers("myset")               // Get all members
+isMember, _ := db.HasSetMember("myset", "member1")  // Test membership
+members, _ := db.GetSetMembers("myset")               // Get all members
 
 // Cleanup  
 err = db.ClearSet("myset")                         // Remove all members
@@ -376,22 +376,22 @@ import "time"
 import "github.com/rivulet-io/tower/op"
 
 // Create and manage time series
-err := db.TimeSeriesCreate("sensor-data")
-exists, _ := db.TimeSeriesExists("sensor-data")
+err := db.CreateTimeSeries("sensor-data")
+exists, _ := db.ExistsTimeSeries("sensor-data")
 
 // Add data points with timestamps
 now := time.Now()
-err = db.TimeSeriesAdd("sensor-data", now, op.PrimitiveFloat(23.5))           // Temperature reading
-err = db.TimeSeriesAdd("sensor-data", now.Add(time.Minute), op.PrimitiveInt(85)) // Humidity
+err = db.AddTimeSeriesPoint("sensor-data", now, op.PrimitiveFloat(23.5))           // Temperature reading
+err = db.AddTimeSeriesPoint("sensor-data", now.Add(time.Minute), op.PrimitiveInt(85)) // Humidity
 
 // Retrieve data points
-temperature, _ := db.TimeSeriesGet("sensor-data", now)                          // Get specific point
-humidity, _ := db.TimeSeriesGet("sensor-data", now.Add(time.Minute))
+temperature, _ := db.GetTimeSeriesPoint("sensor-data", now)                          // Get specific point
+humidity, _ := db.GetTimeSeriesPoint("sensor-data", now.Add(time.Minute))
 
 // Range queries
 startTime := now.Add(-time.Hour)
 endTime := now.Add(time.Hour)
-dataPoints, _ := db.TimeSeriesRange("sensor-data", startTime, endTime)          // Get all points in range
+dataPoints, _ := db.GetTimeSeriesRange("sensor-data", startTime, endTime)          // Get all points in range
 
 // Iterate through results
 for timestamp, value := range dataPoints {
@@ -399,7 +399,7 @@ for timestamp, value := range dataPoints {
 }
 
 // Remove data points
-err = db.TimeSeriesRemove("sensor-data", now)                                   // Remove specific point
+err = db.DeleteTimeSeriesPoint("sensor-data", now)                                   // Remove specific point
 
 // Cleanup
 err = db.DeleteTimeSeries("sensor-data")                                        // Delete entire time series
@@ -454,7 +454,7 @@ expireAt := time.Now().Add(1 * time.Hour)
 err := db.SetTTL("session_key", expireAt)
 
 // Remove TTL from a key
-err = db.RemoveTTL("permanent_key")
+err = db.DeleteTTL("permanent_key")
 
 // Start automatic cleanup (runs in background)
 // Note: TTL timer management is not part of the core Operator and needs to be implemented at the application level.
@@ -1048,20 +1048,20 @@ func analytics() {
     
     // Track unique visitors with Set
     op.CreateSet("visitors")
-    op.SetAdd("visitors", "user123")
-    op.SetAdd("visitors", "user456")
-    uniqueCount, _ := op.SetCardinality("visitors")
+    op.AddSetMember("visitors", "user123")
+    op.AddSetMember("visitors", "user456")
+    uniqueCount, _ := op.GetSetCardinality("visitors")
     
     // Store recent page views with List
     op.CreateList("recent_views")
-    op.PushRight("recent_views", op.PrimitiveString("/home"))
-    op.PushRight("recent_views", op.PrimitiveString("/products"))
-    op.ListTrim("recent_views", -10, -1) // Keep last 10
+    op.PushRightList("recent_views", op.PrimitiveString("/home"))
+    op.PushRightList("recent_views", op.PrimitiveString("/products"))
+    op.TrimList("recent_views", -10, -1) // Keep last 10
     
     // Cache user preferences with Map
     op.CreateMap("user123_prefs")
-    op.MapSet("user123_prefs", op.PrimitiveString("theme"), op.PrimitiveString("dark"))
-    op.MapSet("user123_prefs", op.PrimitiveString("notifications"), op.PrimitiveBool(true))
+    op.SetMapKey("user123_prefs", op.PrimitiveString("theme"), op.PrimitiveString("dark"))
+    op.SetMapKey("user123_prefs", op.PrimitiveString("notifications"), op.PrimitiveBool(true))
 }
 ```
 
