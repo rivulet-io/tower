@@ -20,27 +20,27 @@ func TestTimeSeriesOperations(t *testing.T) {
 	}
 	defer tower.Close()
 
-	// Test TimeSeriesCreate and TimeSeriesExists
+	// Test CreateTimeSeries and ExistsTimeSeries
 	t.Run("create and exists", func(t *testing.T) {
 		key := "test-timeseries-create"
-		err := tower.TimeSeriesCreate(key)
+		err := tower.CreateTimeSeries(key)
 		if err != nil {
-			t.Errorf("TimeSeriesCreate failed: %v", err)
+			t.Errorf("CreateTimeSeries failed: %v", err)
 		}
 
-		exists, err := tower.TimeSeriesExists(key)
+		exists, err := tower.ExistsTimeSeries(key)
 		if err != nil {
-			t.Errorf("TimeSeriesExists failed: %v", err)
+			t.Errorf("ExistsTimeSeries failed: %v", err)
 		}
 		if !exists {
 			t.Errorf("Expected time series to exist")
 		}
 	})
 
-	// Test TimeSeriesAdd and TimeSeriesGet
+	// Test AddTimeSeriesPoint and GetTimeSeriesPoint
 	t.Run("add and get", func(t *testing.T) {
 		key := "test-timeseries-add"
-		err := tower.TimeSeriesCreate(key)
+		err := tower.CreateTimeSeries(key)
 		if err != nil {
 			t.Fatalf("Failed to create time series: %v", err)
 		}
@@ -48,14 +48,14 @@ func TestTimeSeriesOperations(t *testing.T) {
 		now := time.Now().UTC()
 		intValue := PrimitiveInt(42)
 
-		err = tower.TimeSeriesAdd(key, now, intValue)
+		err = tower.AddTimeSeriesPoint(key, now, intValue)
 		if err != nil {
-			t.Errorf("TimeSeriesAdd failed: %v", err)
+			t.Errorf("AddTimeSeriesPoint failed: %v", err)
 		}
 
-		retrievedValue, err := tower.TimeSeriesGet(key, now)
+		retrievedValue, err := tower.GetTimeSeriesPoint(key, now)
 		if err != nil {
-			t.Errorf("TimeSeriesGet failed: %v", err)
+			t.Errorf("GetTimeSeriesPoint failed: %v", err)
 		}
 
 		retrievedInt, err := retrievedValue.Int()
@@ -68,10 +68,10 @@ func TestTimeSeriesOperations(t *testing.T) {
 		}
 	})
 
-	// Test TimeSeriesRemove
+	// Test DeleteTimeSeriesPoint
 	t.Run("remove", func(t *testing.T) {
 		key := "test-timeseries-remove"
-		err := tower.TimeSeriesCreate(key)
+		err := tower.CreateTimeSeries(key)
 		if err != nil {
 			t.Fatalf("Failed to create time series: %v", err)
 		}
@@ -79,26 +79,26 @@ func TestTimeSeriesOperations(t *testing.T) {
 		now := time.Now().UTC()
 		intValue := PrimitiveInt(42)
 
-		err = tower.TimeSeriesAdd(key, now, intValue)
+		err = tower.AddTimeSeriesPoint(key, now, intValue)
 		if err != nil {
 			t.Fatalf("Failed to add data point: %v", err)
 		}
 
-		err = tower.TimeSeriesRemove(key, now)
+		err = tower.DeleteTimeSeriesPoint(key, now)
 		if err != nil {
-			t.Errorf("TimeSeriesRemove failed: %v", err)
+			t.Errorf("DeleteTimeSeriesPoint failed: %v", err)
 		}
 
-		_, err = tower.TimeSeriesGet(key, now)
+		_, err = tower.GetTimeSeriesPoint(key, now)
 		if err == nil {
 			t.Errorf("Expected error when getting removed data point")
 		}
 	})
 
-	// Test TimeSeriesRange
+	// Test GetTimeSeriesRange
 	t.Run("range", func(t *testing.T) {
 		key := "test-timeseries-range"
-		err := tower.TimeSeriesCreate(key)
+		err := tower.CreateTimeSeries(key)
 		if err != nil {
 			t.Fatalf("Failed to create time series: %v", err)
 		}
@@ -120,15 +120,15 @@ func TestTimeSeriesOperations(t *testing.T) {
 		}
 
 		for i, timestamp := range times {
-			err = tower.TimeSeriesAdd(key, timestamp, values[i])
+			err = tower.AddTimeSeriesPoint(key, timestamp, values[i])
 			if err != nil {
 				t.Fatalf("Failed to add data point %d: %v", i, err)
 			}
 		}
 
-		rangeData, err := tower.TimeSeriesRange(key, baseTime.Add(-2*time.Hour), baseTime.Add(2*time.Hour))
+		rangeData, err := tower.GetTimeSeriesRange(key, baseTime.Add(-2*time.Hour), baseTime.Add(2*time.Hour))
 		if err != nil {
-			t.Errorf("TimeSeriesRange failed: %v", err)
+			t.Errorf("GetTimeSeriesRange failed: %v", err)
 		}
 
 		if len(rangeData) < 5 {
@@ -139,7 +139,7 @@ func TestTimeSeriesOperations(t *testing.T) {
 	// Test DeleteTimeSeries
 	t.Run("delete", func(t *testing.T) {
 		key := "test-timeseries-delete"
-		err := tower.TimeSeriesCreate(key)
+		err := tower.CreateTimeSeries(key)
 		if err != nil {
 			t.Fatalf("Failed to create time series: %v", err)
 		}
@@ -149,9 +149,9 @@ func TestTimeSeriesOperations(t *testing.T) {
 			t.Errorf("DeleteTimeSeries failed: %v", err)
 		}
 
-		exists, err := tower.TimeSeriesExists(key)
+		exists, err := tower.ExistsTimeSeries(key)
 		if err != nil {
-			t.Errorf("TimeSeriesExists failed: %v", err)
+			t.Errorf("ExistsTimeSeries failed: %v", err)
 		}
 		if exists {
 			t.Errorf("Time series should not exist after deletion")
@@ -161,7 +161,7 @@ func TestTimeSeriesOperations(t *testing.T) {
 	// Test with different types
 	t.Run("different types", func(t *testing.T) {
 		key := "test-mixed-types"
-		err := tower.TimeSeriesCreate(key)
+		err := tower.CreateTimeSeries(key)
 		if err != nil {
 			t.Fatalf("Failed to create time series: %v", err)
 		}
@@ -180,12 +180,12 @@ func TestTimeSeriesOperations(t *testing.T) {
 		}
 
 		for _, tc := range testCases {
-			err = tower.TimeSeriesAdd(key, tc.timestamp, tc.value)
+			err = tower.AddTimeSeriesPoint(key, tc.timestamp, tc.value)
 			if err != nil {
 				t.Errorf("Failed to add %s data point: %v", tc.typeName, err)
 			}
 
-			retrieved, err := tower.TimeSeriesGet(key, tc.timestamp)
+			retrieved, err := tower.GetTimeSeriesPoint(key, tc.timestamp)
 			if err != nil {
 				t.Errorf("Failed to get %s data point: %v", tc.typeName, err)
 			}
@@ -195,7 +195,7 @@ func TestTimeSeriesOperations(t *testing.T) {
 			}
 		}
 
-		rangeData, err := tower.TimeSeriesRange(key, now.Add(-5*time.Minute), now)
+		rangeData, err := tower.GetTimeSeriesRange(key, now.Add(-5*time.Minute), now)
 		if err != nil {
 			t.Errorf("Failed to get range data: %v", err)
 		}
@@ -223,7 +223,7 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 	key := "test-mixed-types"
 
 	// Create TimeSeries
-	err = tower.TimeSeriesCreate(key)
+	err = tower.CreateTimeSeries(key)
 	if err != nil {
 		t.Fatalf("Failed to create time series: %v", err)
 	}
@@ -243,13 +243,13 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		err = tower.TimeSeriesAdd(key, tc.timestamp, tc.value)
+		err = tower.AddTimeSeriesPoint(key, tc.timestamp, tc.value)
 		if err != nil {
 			t.Fatalf("Failed to add %s data point: %v", tc.typeName, err)
 		}
 
 		// Query immediately to check
-		retrieved, err := tower.TimeSeriesGet(key, tc.timestamp)
+		retrieved, err := tower.GetTimeSeriesPoint(key, tc.timestamp)
 		if err != nil {
 			t.Fatalf("Failed to get %s data point: %v", tc.typeName, err)
 		}
@@ -260,7 +260,7 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 	}
 
 	// Check all data with range query
-	rangeData, err := tower.TimeSeriesRange(key, now.Add(-5*time.Minute), now)
+	rangeData, err := tower.GetTimeSeriesRange(key, now.Add(-5*time.Minute), now)
 	if err != nil {
 		t.Fatalf("Failed to get range data: %v", err)
 	}
@@ -269,6 +269,7 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 		t.Fatalf("Expected %d data points, got %d", len(testCases), len(rangeData))
 	}
 }
+
 
 
 

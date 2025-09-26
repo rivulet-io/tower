@@ -91,7 +91,7 @@ func (op *Operator) AddBitmap64Bit(key string, bit uint64) error {
 	return nil
 }
 
-func (op *Operator) RemoveBitmap64Bit(key string, bit uint64) error {
+func (op *Operator) DeleteBitmap64Bit(key string, bit uint64) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -348,5 +348,3 @@ func (op *Operator) ClearRoaringBitmap64(key string) error {
 
 	return nil
 }
-
-

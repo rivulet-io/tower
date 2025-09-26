@@ -118,7 +118,7 @@ func (op *Operator) SetTTL(key string, expireAt time.Time) error {
 	return nil
 }
 
-func (op *Operator) RemoveTTL(key string) error {
+func (op *Operator) DeleteTTL(key string) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -169,4 +169,3 @@ func (op *Operator) StartTTLTimer() {
 		}
 	}()
 }
-

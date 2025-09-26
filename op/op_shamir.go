@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -148,8 +148,8 @@ func (op *Operator) AddShare(key string, shareID byte, share []byte) error {
 	return nil
 }
 
-// RemoveShare removes a specific share by ID
-func (op *Operator) RemoveShare(key string, shareID byte) error {
+// DeleteShare removes a specific share by ID
+func (op *Operator) DeleteShare(key string, shareID byte) error {
 	unlock := op.lock(key)
 	defer unlock()
 

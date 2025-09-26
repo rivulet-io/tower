@@ -84,7 +84,7 @@ func TestSetAddAndRemove(t *testing.T) {
 		t.Errorf("Expected cardinality 4, got %d", cardinality)
 	}
 
-	remainingCount, err := tower.RemoveSetMember(key, PrimitiveString("member2"))
+	remainingCount, err := tower.DeleteSetMember(key, PrimitiveString("member2"))
 	if err != nil {
 		t.Fatalf("Failed to remove member: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestSetAddAndRemove(t *testing.T) {
 		t.Errorf("Expected remaining count 3, got %d", remainingCount)
 	}
 
-	remainingCount, err = tower.RemoveSetMember(key, PrimitiveString("nonexistent"))
+	remainingCount, err = tower.DeleteSetMember(key, PrimitiveString("nonexistent"))
 	if err != nil {
 		t.Fatalf("Failed to remove nonexistent member: %v", err)
 	}
@@ -356,7 +356,7 @@ func TestSetErrorCases(t *testing.T) {
 		t.Error("Expected error when adding to non-existent set")
 	}
 
-	_, err = tower.RemoveSetMember(key, PrimitiveString("member"))
+	_, err = tower.DeleteSetMember(key, PrimitiveString("member"))
 	if err == nil {
 		t.Error("Expected error when removing from non-existent set")
 	}
@@ -469,4 +469,5 @@ func TestSetConcurrentAccess(t *testing.T) {
 		t.Errorf("Expected cardinality 100, got %d", cardinality)
 	}
 }
+
 

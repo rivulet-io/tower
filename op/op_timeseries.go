@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"encoding/binary"
@@ -8,8 +8,8 @@ import (
 	"github.com/cockroachdb/pebble"
 )
 
-// TimeSeriesCreate creates a new time series.
-func (op *Operator) TimeSeriesCreate(key string) error {
+// CreateTimeSeries creates a new time series.
+func (op *Operator) CreateTimeSeries(key string) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -57,8 +57,8 @@ func (op *Operator) deleteTimeSeries(key string) error {
 	return op.db.Delete([]byte(key), &pebble.WriteOptions{Sync: false})
 }
 
-// TimeSeriesExists checks if a time series exists.
-func (op *Operator) TimeSeriesExists(key string) (bool, error) {
+// ExistsTimeSeries checks if a time series exists.
+func (op *Operator) ExistsTimeSeries(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -69,8 +69,8 @@ func (op *Operator) TimeSeriesExists(key string) (bool, error) {
 	return false, nil
 }
 
-// TimeSeriesAdd adds a data point to a time series at the specified timestamp.
-func (op *Operator) TimeSeriesAdd(key string, timestamp time.Time, value PrimitiveData) error {
+// AddTimeSeriesPoint adds a data point to a time series at the specified timestamp.
+func (op *Operator) AddTimeSeriesPoint(key string, timestamp time.Time, value PrimitiveData) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -138,8 +138,8 @@ func (op *Operator) TimeSeriesAdd(key string, timestamp time.Time, value Primiti
 	return nil
 }
 
-// TimeSeriesGet retrieves a data point from a time series at the specified timestamp.
-func (op *Operator) TimeSeriesGet(key string, timestamp time.Time) (PrimitiveData, error) {
+// GetTimeSeriesPoint retrieves a data point from a time series at the specified timestamp.
+func (op *Operator) GetTimeSeriesPoint(key string, timestamp time.Time) (PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -195,8 +195,8 @@ func (op *Operator) TimeSeriesGet(key string, timestamp time.Time) (PrimitiveDat
 	}
 }
 
-// TimeSeriesRemove removes a data point from a time series at the specified timestamp.
-func (op *Operator) TimeSeriesRemove(key string, timestamp time.Time) error {
+// DeleteTimeSeriesPoint removes a data point from a time series at the specified timestamp.
+func (op *Operator) DeleteTimeSeriesPoint(key string, timestamp time.Time) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -227,8 +227,8 @@ func (op *Operator) TimeSeriesRemove(key string, timestamp time.Time) error {
 	return nil
 }
 
-// TimeSeriesRange retrieves all data points in a time series within the specified time range.
-func (op *Operator) TimeSeriesRange(key string, startTime, endTime time.Time) (map[time.Time]PrimitiveData, error) {
+// GetTimeSeriesRange retrieves all data points in a time series within the specified time range.
+func (op *Operator) GetTimeSeriesRange(key string, startTime, endTime time.Time) (map[time.Time]PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 

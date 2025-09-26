@@ -99,7 +99,7 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 
 		tower.SetRoaringBitmap64(key, bitmap)
 
-		err := tower.RemoveBitmap64Bit(key, 5)
+		err := tower.DeleteBitmap64Bit(key, 5)
 		if err != nil {
 			t.Errorf("RemoveBit64 failed: %v", err)
 		}
@@ -317,4 +317,5 @@ func TestRoaringBitmap64Operations(t *testing.T) {
 		}
 	})
 }
+
 

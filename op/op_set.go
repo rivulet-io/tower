@@ -170,7 +170,7 @@ func (op *Operator) AddSetMember(key string, member PrimitiveData) (int64, error
 	return int64(setData.Count), nil
 }
 
-func (op *Operator) RemoveSetMember(key string, member PrimitiveData) (int64, error) {
+func (op *Operator) DeleteSetMember(key string, member PrimitiveData) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -361,6 +361,3 @@ func (op *Operator) ClearSet(key string) error {
 
 	return nil
 }
-
-
-

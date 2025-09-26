@@ -102,7 +102,7 @@ func TestSetTTL(t *testing.T) {
 	}
 }
 
-func TestRemoveTTL(t *testing.T) {
+func TestDeleteTTL(t *testing.T) {
 	tower := setupTower(t)
 	defer tower.Close()
 
@@ -120,9 +120,9 @@ func TestRemoveTTL(t *testing.T) {
 	}
 
 	// Remove TTL
-	err = tower.RemoveTTL(key)
+	err = tower.DeleteTTL(key)
 	if err != nil {
-		t.Errorf("RemoveTTL failed: %v", err)
+		t.Errorf("DeleteTTL failed: %v", err)
 	}
 
 	// Verify TTL is removed
@@ -214,3 +214,4 @@ func TestExtractCandidatesForExpiration(t *testing.T) {
 		t.Errorf("Expected no candidates, got %d", len(candidates))
 	}
 }
+

@@ -99,7 +99,7 @@ func TestRoaringBitmapOperations(t *testing.T) {
 
 		tower.SetRoaringBitmap(key, bitmap)
 
-		err := tower.RemoveBitmapBit(key, 5)
+		err := tower.DeleteBitmapBit(key, 5)
 		if err != nil {
 			t.Errorf("RemoveBit failed: %v", err)
 		}
@@ -317,4 +317,5 @@ func TestRoaringBitmapOperations(t *testing.T) {
 		}
 	})
 }
+
 

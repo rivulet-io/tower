@@ -150,9 +150,9 @@ func TestShamirShareManagement(t *testing.T) {
 		}
 	})
 
-	// Test RemoveShare
-	t.Run("RemoveShare", func(t *testing.T) {
-		err := tower.RemoveShare(key, 100)
+	// Test DeleteShare
+	t.Run("DeleteShare", func(t *testing.T) {
+		err := tower.DeleteShare(key, 100)
 		if err != nil {
 			t.Fatalf("Failed to remove share: %v", err)
 		}
@@ -182,9 +182,9 @@ func TestShamirShareManagement(t *testing.T) {
 		}
 	})
 
-	// Test RemoveShare for non-existent share
-	t.Run("RemoveShare_NonExistent", func(t *testing.T) {
-		err := tower.RemoveShare(key, 200)
+	// Test DeleteShare for non-existent share
+	t.Run("DeleteShare_NonExistent", func(t *testing.T) {
+		err := tower.DeleteShare(key, 200)
 		if err == nil {
 			t.Error("Expected error when removing non-existent share")
 		}
@@ -382,4 +382,5 @@ func TestShamirConcurrentAccess(t *testing.T) {
 		}
 	})
 }
+
 

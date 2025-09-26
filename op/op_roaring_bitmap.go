@@ -90,7 +90,7 @@ func (op *Operator) AddBitmapBit(key string, bit uint32) error {
 	return nil
 }
 
-func (op *Operator) RemoveBitmapBit(key string, bit uint32) error {
+func (op *Operator) DeleteBitmapBit(key string, bit uint32) error {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -349,5 +349,3 @@ func (op *Operator) ClearRoaringBitmap(key string) error {
 
 	return nil
 }
-
-
