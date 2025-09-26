@@ -6,6 +6,7 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
+
 	"github.com/rivulet-io/tower/util/size"
 	"github.com/rivulet-io/tower/util/synx"
 )
@@ -103,6 +104,10 @@ func (op *Operator) delete(key string) error {
 		return fmt.Errorf("failed to delete key %s: %w", key, err)
 	}
 	return nil
+}
+
+func (op *Operator) Remove(key string) error {
+	return op.delete(key)
 }
 
 func (op *Operator) smartDelete(key string, dataType DataType) error {
