@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -6,20 +6,20 @@ import (
 	"strings"
 )
 
-// Map 연산
+// Map operations
 func (op *Operator) CreateMap(key string) error {
 	unlock := op.lock(key)
 	defer unlock()
 
-	// Map 메타데이터를 key에 직접 저장
+	// Store Map metadata directly to key
 	mapKey := key
 
-	// 이미 존재하는지 확인
+	// Check if already exists
 	if _, err := op.get(mapKey); err == nil {
 		return fmt.Errorf("map %s already exists", key)
 	}
 
-	// 새로운 Map 데이터 생성
+	// Create new Map data
 	mapData := &MapData{
 		Prefix: key,
 		Count:  0,
@@ -47,7 +47,7 @@ func (op *Operator) DeleteMap(key string) error {
 func (op *Operator) deleteMap(key string) error {
 	mapKey := key
 
-	// Map 메타데이터 가져오기
+	// Get Map metadata
 	df, err := op.get(mapKey)
 	if err != nil {
 		return fmt.Errorf("map %s does not exist: %w", key, err)
@@ -58,7 +58,7 @@ func (op *Operator) deleteMap(key string) error {
 		return fmt.Errorf("failed to get map data: %w", err)
 	}
 
-	// 모든 필드 삭제
+	// Delete all fields
 	if mapData.Count > 0 {
 		prefix := string(MakeMapEntryKey(mapData.Prefix)) + ":"
 		err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
@@ -69,7 +69,7 @@ func (op *Operator) deleteMap(key string) error {
 		}
 	}
 
-	// 메타데이터 삭제
+	// Delete metadata
 	if err := op.delete(mapKey); err != nil {
 		return fmt.Errorf("failed to delete map metadata: %w", err)
 	}
@@ -92,7 +92,7 @@ func (op *Operator) SetMapKey(key string, field PrimitiveData, value PrimitiveDa
 
 	mapKey := key
 
-	// Map 메타데이터 가져오기
+	// Get Map metadata
 	df, err := op.get(mapKey)
 	if err != nil {
 		return fmt.Errorf("map %s does not exist: %w", key, err)
@@ -103,25 +103,25 @@ func (op *Operator) SetMapKey(key string, field PrimitiveData, value PrimitiveDa
 		return fmt.Errorf("failed to get map data: %w", err)
 	}
 
-	// 필드 키 생성
+	// Generate field key
 	fieldStr, err := field.String()
 	if err != nil {
 		return fmt.Errorf("failed to get field string: %w", err)
 	}
 	fieldKey := string(MakeMapItemKey(key, fieldStr))
 
-	// 이미 존재하는지 확인
+	// Check if already exists
 	isNew := false
 	if _, err := op.get(fieldKey); err != nil {
 		isNew = true
 	}
 
-	// 필드 수 검사 (새로운 필드인 경우만)
+	// Check field count (only for new fields)
 	if isNew && mapData.Count >= math.MaxUint64-1 {
 		return fmt.Errorf("map has too many fields")
 	}
 
-	// DataFrame에 값 설정
+	// Set value to DataFrame
 	valueDf := NULLDataFrame()
 	switch value.Type() {
 	case TypeInt:
@@ -153,12 +153,11 @@ func (op *Operator) SetMapKey(key string, field PrimitiveData, value PrimitiveDa
 		return fmt.Errorf("unsupported value type")
 	}
 
-	// 값 저장
+	// Store value
 	if err := op.set(fieldKey, valueDf); err != nil {
 		return fmt.Errorf("failed to set map field: %w", err)
 	}
 
-	// 메타데이터 업데이트 (새로운 필드인 경우만 카운트 증가)
 	if isNew {
 		mapData.Count++
 
@@ -180,7 +179,7 @@ func (op *Operator) GetMapKey(key string, field PrimitiveData) (PrimitiveData, e
 
 	mapKey := key
 
-	// Map 메타데이터 가져오기
+	// Get Map metadata
 	df, err := op.get(mapKey)
 	if err != nil {
 		return nil, fmt.Errorf("map %s does not exist: %w", key, err)
@@ -191,20 +190,20 @@ func (op *Operator) GetMapKey(key string, field PrimitiveData) (PrimitiveData, e
 		return nil, fmt.Errorf("failed to get map data: %w", err)
 	}
 
-	// 필드 키 생성
+	// Generate field key
 	fieldStr, err := field.String()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get field string: %w", err)
 	}
 	fieldKey := string(MakeMapItemKey(key, fieldStr))
 
-	// 값 가져오기
+	// Get value
 	valueDf, err := op.get(fieldKey)
 	if err != nil {
 		return nil, fmt.Errorf("field does not exist: %w", err)
 	}
 
-	// 값 추출
+	// Extract value
 	var value PrimitiveData
 	switch valueDf.Type() {
 	case TypeInt:
@@ -235,7 +234,7 @@ func (op *Operator) DeleteMapKey(key string, field PrimitiveData) (int64, error)
 
 	mapKey := key
 
-	// Map 메타데이터 가져오기
+	// Get Map metadata
 	df, err := op.get(mapKey)
 	if err != nil {
 		return 0, fmt.Errorf("map %s does not exist: %w", key, err)
@@ -246,24 +245,24 @@ func (op *Operator) DeleteMapKey(key string, field PrimitiveData) (int64, error)
 		return 0, fmt.Errorf("failed to get map data: %w", err)
 	}
 
-	// 필드 키 생성
+	// Generate field key
 	fieldStr, err := field.String()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get field string: %w", err)
 	}
 	fieldKey := string(MakeMapItemKey(key, fieldStr))
 
-	// 존재하는지 확인
+	// Check if exists
 	if _, err := op.get(fieldKey); err != nil {
-		return int64(mapData.Count), nil // 존재하지 않으면 카운트 변경 없음
+		return int64(mapData.Count), nil // No count change if not exists
 	}
 
-	// 필드 삭제
+	// Delete field
 	if err := op.delete(fieldKey); err != nil {
 		return 0, fmt.Errorf("failed to delete map field: %w", err)
 	}
 
-	// 메타데이터 업데이트
+	// Update metadata
 	mapData.Count--
 
 	if err := df.SetMap(mapData); err != nil {
@@ -283,7 +282,7 @@ func (op *Operator) GetMapKeys(key string) ([]PrimitiveData, error) {
 
 	mapKey := key
 
-	// Map 메타데이터 가져오기
+	// Get Map metadata
 	df, err := op.get(mapKey)
 	if err != nil {
 		return nil, fmt.Errorf("map %s does not exist: %w", key, err)
@@ -298,19 +297,16 @@ func (op *Operator) GetMapKeys(key string) ([]PrimitiveData, error) {
 		return []PrimitiveData{}, nil
 	}
 
-	// 모든 키 수집
+	// Collect all keys
 	result := make([]PrimitiveData, 0, mapData.Count)
 	prefix := string(MakeMapEntryKey(mapData.Prefix)) + ":"
 	err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
-		// k는 key:{:map:}:field
-		// field 추출
 		parts := strings.Split(k, ": {:map:} :")
 		if len(parts) != 2 {
 			return nil // skip invalid key
 		}
 		fieldStr := parts[1]
 
-		// field를 PrimitiveData로 변환 (string으로 가정)
 		value := PrimitiveString(fieldStr)
 		result = append(result, value)
 		return nil
@@ -328,7 +324,7 @@ func (op *Operator) GetMapValues(key string) ([]PrimitiveData, error) {
 
 	mapKey := key
 
-	// Map 메타데이터 가져오기
+	// Get Map metadata
 	df, err := op.get(mapKey)
 	if err != nil {
 		return nil, fmt.Errorf("map %s does not exist: %w", key, err)
@@ -343,7 +339,7 @@ func (op *Operator) GetMapValues(key string) ([]PrimitiveData, error) {
 		return []PrimitiveData{}, nil
 	}
 
-	// 모든 값 수집
+	// Collect all values
 	result := make([]PrimitiveData, 0, mapData.Count)
 	prefix := string(MakeMapEntryKey(mapData.Prefix)) + ":"
 	err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
@@ -402,7 +398,7 @@ func (op *Operator) ClearMap(key string) error {
 
 	mapKey := key
 
-	// Map 메타데이터 가져오기
+	// Get Map metadata
 	df, err := op.get(mapKey)
 	if err != nil {
 		return fmt.Errorf("map %s does not exist: %w", key, err)
@@ -413,7 +409,7 @@ func (op *Operator) ClearMap(key string) error {
 		return fmt.Errorf("failed to get map data: %w", err)
 	}
 
-	// 모든 필드 삭제
+	// Delete all fields
 	if mapData.Count > 0 {
 		prefix := string(MakeMapEntryKey(mapData.Prefix)) + ":"
 		err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
@@ -424,7 +420,6 @@ func (op *Operator) ClearMap(key string) error {
 		}
 	}
 
-	// 메타데이터 업데이트 (Count를 0으로 리셋)
 	mapData.Count = 0
 
 	if err := df.SetMap(mapData); err != nil {
@@ -437,3 +432,6 @@ func (op *Operator) ClearMap(key string) error {
 
 	return nil
 }
+
+
+

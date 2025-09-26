@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ func (op *Operator) GetString(key string) (string, error) {
 	return value, nil
 }
 
-// 문자열 조작 연산
+// String manipulation operations
 func (op *Operator) AppendString(key string, suffix string) (string, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -117,7 +117,7 @@ func (op *Operator) ReplaceString(key string, old, new string) (string, error) {
 	return newValue, nil
 }
 
-// 검색 연산
+// Search operations
 func (op *Operator) ContainsString(key string, substr string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -169,7 +169,7 @@ func (op *Operator) EndsWithString(key string, suffix string) (bool, error) {
 	return strings.HasSuffix(current, suffix), nil
 }
 
-// 길이 및 부분 문자열 연산
+// Length and substring operations
 func (op *Operator) GetStringLength(key string) (int, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -214,7 +214,7 @@ func (op *Operator) GetStringSubstring(key string, start, length int) (string, e
 	return string(runes[start:end]), nil
 }
 
-// 비교 연산
+// Comparison operations
 func (op *Operator) CompareString(key string, other string) (int, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -249,7 +249,7 @@ func (op *Operator) CompareStringEqual(key string, other string) (bool, error) {
 	return current == other, nil
 }
 
-// 변환 연산
+// Conversion operations
 func (op *Operator) UpperString(key string) (string, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -301,3 +301,4 @@ func (op *Operator) LowerString(key string) (string, error) {
 
 	return newValue, nil
 }
+

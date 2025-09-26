@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/RoaringBitmap/roaring/v2/roaring64"
 )
 
-// RoaringBitmap64 연산들
+// RoaringBitmap64 operations
 func (op *Operator) SetRoaringBitmap64(key string, value *roaring64.Bitmap) error {
 	unlock := op.lock(key)
 	defer unlock()
@@ -63,7 +63,7 @@ func (op *Operator) GetRoaringBitmap64Bytes(key string) ([]byte, error) {
 	return data, nil
 }
 
-// 기본 비트 연산 (64비트)
+// Basic bit operations (64-bit)
 func (op *Operator) AddBitmap64Bit(key string, bit uint64) error {
 	unlock := op.lock(key)
 	defer unlock()
@@ -135,7 +135,7 @@ func (op *Operator) ContainsBitmap64Bit(key string, bit uint64) (bool, error) {
 	return bitmap.Contains(bit), nil
 }
 
-// 집합 연산 (64비트)
+// Set operations (64-bit)
 func (op *Operator) UnionBitmap64(key string, other *roaring64.Bitmap) error {
 	unlock := op.lock(key)
 	defer unlock()
@@ -217,7 +217,6 @@ func (op *Operator) DifferenceBitmap64(key string, other *roaring64.Bitmap) erro
 	return nil
 }
 
-// 가변 파라미터를 사용한 비트 연산 (64비트)
 func (op *Operator) AndBits64(key string, bits ...uint64) error {
 	unlock := op.lock(key)
 	defer unlock()
@@ -232,13 +231,13 @@ func (op *Operator) AndBits64(key string, bits ...uint64) error {
 		return fmt.Errorf("failed to get roaring bitmap64 value for key %s: %w", key, err)
 	}
 
-	// 새로운 비트맵 생성하여 주어진 비트들만 포함
+	// Create new bitmap containing only given bits
 	newBitmap := roaring64.New()
 	for _, bit := range bits {
 		newBitmap.Add(bit)
 	}
 
-	// AND 연산 수행
+	// Perform AND operation
 	bitmap.And(newBitmap)
 
 	if err := df.SetRoaringBitmap64(bitmap); err != nil {
@@ -266,7 +265,7 @@ func (op *Operator) OrBits64(key string, bits ...uint64) error {
 		return fmt.Errorf("failed to get roaring bitmap64 value for key %s: %w", key, err)
 	}
 
-	// 주어진 비트들 추가
+	// Add given bits
 	for _, bit := range bits {
 		bitmap.Add(bit)
 	}
@@ -296,7 +295,7 @@ func (op *Operator) XorBits64(key string, bits ...uint64) error {
 		return fmt.Errorf("failed to get roaring bitmap64 value for key %s: %w", key, err)
 	}
 
-	// 주어진 비트들 토글
+	// Toggle given bits
 	for _, bit := range bits {
 		if bitmap.Contains(bit) {
 			bitmap.Remove(bit)
@@ -316,7 +315,6 @@ func (op *Operator) XorBits64(key string, bits ...uint64) error {
 	return nil
 }
 
-// 추가 유틸리티 함수 (64비트)
 func (op *Operator) GetBitmap64Cardinality(key string) (uint64, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -350,3 +348,5 @@ func (op *Operator) ClearRoaringBitmap64(key string) error {
 
 	return nil
 }
+
+

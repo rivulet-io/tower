@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -241,7 +241,7 @@ func (op *Operator) SwapInt(key string, newValue int64) (int64, error) {
 	return current, nil
 }
 
-// 비교 연산
+// Comparison operations
 func (op *Operator) CompareInt(key string, value int64) (int, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -264,7 +264,7 @@ func (op *Operator) CompareInt(key string, value int64) (int, error) {
 	return 0, nil
 }
 
-// 조건부 설정 연산
+// Conditional set operations
 func (op *Operator) SetIntIfGreater(key string, value int64) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -343,7 +343,7 @@ func (op *Operator) SetIntIfEqual(key string, expected, newValue int64) (int64, 
 	return current, nil
 }
 
-// 범위 및 제한 연산
+// Range and limit operations
 func (op *Operator) ClampInt(key string, min, max int64) (int64, error) {
 	if min > max {
 		return 0, fmt.Errorf("min cannot be greater than max")
@@ -443,7 +443,7 @@ func (op *Operator) MaxInt(key string, value int64) (int64, error) {
 	return newValue, nil
 }
 
-// 비트 연산
+// Bit operations
 func (op *Operator) AndInt(key string, mask int64) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -581,3 +581,4 @@ func (op *Operator) ShiftRightInt(key string, bits uint) (int64, error) {
 
 	return newValue, nil
 }
+

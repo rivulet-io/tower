@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -62,7 +62,7 @@ func (op *Operator) GetRoaringBitmapBytes(key string) ([]byte, error) {
 	return data, nil
 }
 
-// 기본 비트 연산
+// Basic bit operations
 func (op *Operator) AddBitmapBit(key string, bit uint32) error {
 	unlock := op.lock(key)
 	defer unlock()
@@ -134,7 +134,7 @@ func (op *Operator) ContainsBitmapBit(key string, bit uint32) (bool, error) {
 	return bitmap.Contains(bit), nil
 }
 
-// 집합 연산
+// Set operations
 func (op *Operator) UnionBitmap(key string, other *roaring.Bitmap) error {
 	unlock := op.lock(key)
 	defer unlock()
@@ -216,7 +216,7 @@ func (op *Operator) DifferenceBitmap(key string, other *roaring.Bitmap) error {
 	return nil
 }
 
-// 가변 파라미터를 사용한 비트 연산
+// Bit operations using variable parameters
 func (op *Operator) AndBits(key string, bits ...uint32) error {
 	unlock := op.lock(key)
 	defer unlock()
@@ -231,13 +231,13 @@ func (op *Operator) AndBits(key string, bits ...uint32) error {
 		return fmt.Errorf("failed to get roaring bitmap value for key %s: %w", key, err)
 	}
 
-	// 새로운 비트맵 생성하여 주어진 비트들만 포함
+	// Create new bitmap containing only given bits
 	newBitmap := roaring.New()
 	for _, bit := range bits {
 		newBitmap.Add(bit)
 	}
 
-	// AND 연산 수행
+	// Perform AND operation
 	bitmap.And(newBitmap)
 
 	if err := df.SetRoaringBitmap(bitmap); err != nil {
@@ -265,7 +265,7 @@ func (op *Operator) OrBits(key string, bits ...uint32) error {
 		return fmt.Errorf("failed to get roaring bitmap value for key %s: %w", key, err)
 	}
 
-	// 주어진 비트들 추가
+	// Add given bits
 	for _, bit := range bits {
 		bitmap.Add(bit)
 	}
@@ -295,7 +295,7 @@ func (op *Operator) XorBits(key string, bits ...uint32) error {
 		return fmt.Errorf("failed to get roaring bitmap value for key %s: %w", key, err)
 	}
 
-	// 주어진 비트들 토글
+	// Toggle given bits
 	for _, bit := range bits {
 		if bitmap.Contains(bit) {
 			bitmap.Remove(bit)
@@ -315,7 +315,7 @@ func (op *Operator) XorBits(key string, bits ...uint32) error {
 	return nil
 }
 
-// 추가 유틸리티 함수
+// Additional utility functions
 func (op *Operator) GetBitmapCardinality(key string) (uint64, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -349,3 +349,5 @@ func (op *Operator) ClearRoaringBitmap(key string) error {
 
 	return nil
 }
+
+

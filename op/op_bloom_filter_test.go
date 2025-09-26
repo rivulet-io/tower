@@ -5,20 +5,19 @@ import (
 )
 
 func TestBloomFilter(t *testing.T) {
-	// 테스트용 Operator 생성
+	// Create Operator for testing
 	tower := createTestTower(t)
 	defer tower.Close()
 
 	key := "test_bloom_filter"
-	slots := 0 // 기본 슬롯 수 사용 (3)
+	slots := 0 // Use default slot count (3)
 
-	// Bloom filter 생성
+	// Create Bloom filter
 	err := tower.CreateBloomFilter(key, slots)
 	if err != nil {
 		t.Fatalf("Failed to create Bloom filter: %v", err)
 	}
 
-	// 추�?
 	items := []string{"apple", "banana", "cherry", "date", "elderberry"}
 
 	for _, item := range items {
@@ -28,7 +27,6 @@ func TestBloomFilter(t *testing.T) {
 		}
 	}
 
-	// 추�???
 	for _, item := range items {
 		contains, err := tower.ContainsBloomFilter(key, item)
 		if err != nil {
@@ -39,14 +37,12 @@ func TestBloomFilter(t *testing.T) {
 		}
 	}
 
-	// (거짓  가 ??
 	nonExistent := []string{"fig", "grape", "honeydew"}
 	for _, item := range nonExistent {
 		contains, err := tower.ContainsBloomFilter(key, item)
 		if err != nil {
 			t.Fatalf("Failed to check non-existent item %s: %v", item, err)
 		}
-		// 거짓  true
 		t.Logf("Non-existent item %s: contains=%v", item, contains)
 	}
 
@@ -144,3 +140,5 @@ func TestBloomFilterSlots(t *testing.T) {
 		t.Error("Item should be in 5-slot filter")
 	}
 }
+
+

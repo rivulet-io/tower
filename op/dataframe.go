@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"encoding/binary"
@@ -749,7 +749,7 @@ func (df *DataFrame) Password() (algo PasswordAlgorithm, hash []byte, salt []byt
 		return 0, nil, nil, nil, fmt.Errorf("failed to unmarshal password data: %w", err)
 	}
 
-	// 옵션이 없으면 알고리즘에 따른 기본값 사용 (하위 호환성)
+	// Use default values based on algorithm if no options (backward compatibility)
 	if value.Options == nil {
 		value.Options = DefaultPasswordOptions(value.Algorithm)
 	}
@@ -820,3 +820,4 @@ func (df *DataFrame) SafeBox() (algorithm EncryptionAlgorithm, encryptedData []b
 
 	return value.Algorithm, value.EncryptedData, value.Nonce, nil
 }
+

@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -28,12 +28,10 @@ func TestListBasicOperations(t *testing.T) {
 
 	key := "test_list"
 
-	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
-	// ����??���� ??��
 	exists, err := tower.ExistsList(key)
 	if err != nil {
 		t.Fatalf("Failed to check list existence: %v", err)
@@ -42,7 +40,6 @@ func TestListBasicOperations(t *testing.T) {
 		t.Error("Expected list to exist")
 	}
 
-	// �ʱ� ���� ??��
 	length, err := tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get list length: %v", err)
@@ -51,12 +48,10 @@ func TestListBasicOperations(t *testing.T) {
 		t.Errorf("Expected empty list length 0, got %d", length)
 	}
 
-	// ����??????
 	if err := tower.DeleteList(key); err != nil {
 		t.Fatalf("Failed to delete list: %v", err)
 	}
 
-	// ???? ??���� ??��
 	exists, err = tower.ExistsList(key)
 	if err != nil {
 		t.Fatalf("Failed to check list existence after delete: %v", err)
@@ -72,12 +67,10 @@ func TestListPushPopOperations(t *testing.T) {
 
 	key := "test_list"
 
-	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
-	// PushLeft ??��??
 	length, err := tower.PushLeftList(key, PrimitiveString("left1"))
 	if err != nil {
 		t.Fatalf("Failed to push left: %v", err)
@@ -86,7 +79,6 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected length 1, got %d", length)
 	}
 
-	// PushRight ??��??
 	length, err = tower.PushRightList(key, PrimitiveString("right1"))
 	if err != nil {
 		t.Fatalf("Failed to push right: %v", err)
@@ -95,12 +87,9 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected length 2, got %d", length)
 	}
 
-	// ??��?? ??��??��??
 	tower.PushLeftList(key, PrimitiveString("left2"))
 	tower.PushRightList(key, PrimitiveString("right2"))
-	// ??�� ??��: [left2, left1, right1, right2]
 
-	// ���� ??��
 	length, err = tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get list length: %v", err)
@@ -109,7 +98,6 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected length 4, got %d", length)
 	}
 
-	// PopLeft ??��??
 	item, err := tower.PopLeftList(key)
 	if err != nil {
 		t.Fatalf("Failed to pop left: %v", err)
@@ -122,7 +110,6 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected 'left2', got %v", itemStr)
 	}
 
-	// PopRight ??��??
 	item, err = tower.PopRightList(key)
 	if err != nil {
 		t.Fatalf("Failed to pop right: %v", err)
@@ -135,7 +122,6 @@ func TestListPushPopOperations(t *testing.T) {
 		t.Errorf("Expected 'right2', got %v", itemStr)
 	}
 
-	// ���� ??��
 	length, err = tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get list length: %v", err)
@@ -151,7 +137,6 @@ func TestListIndexAndRange(t *testing.T) {
 
 	key := "test_list"
 
-	// ����????�� ????��??��??
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
@@ -161,7 +146,6 @@ func TestListIndexAndRange(t *testing.T) {
 		tower.PushRightList(key, item)
 	}
 
-	// ListIndex ??��??
 	for i, expected := range items {
 		item, err := tower.GetListIndex(key, int64(i))
 		if err != nil {
@@ -176,7 +160,6 @@ func TestListIndexAndRange(t *testing.T) {
 		}
 	}
 
-	// ??�� ??��????��??
 	item, err := tower.GetListIndex(key, -1)
 	if err != nil {
 		t.Fatalf("Failed to get item at index -1: %v", err)
@@ -189,7 +172,6 @@ func TestListIndexAndRange(t *testing.T) {
 		t.Errorf("Expected 'item4' at index -1, got %v", itemStr)
 	}
 
-	// ListRange ??��??
 	rangeItems, err := tower.GetListRange(key, 1, 3)
 	if err != nil {
 		t.Fatalf("Failed to get range 1-3: %v", err)
@@ -208,7 +190,6 @@ func TestListIndexAndRange(t *testing.T) {
 		}
 	}
 
-	// ??ü ���� ??��??
 	allItems, err := tower.GetListRange(key, 0, -1)
 	if err != nil {
 		t.Fatalf("Failed to get full range: %v", err)
@@ -224,7 +205,6 @@ func TestListSetAndModify(t *testing.T) {
 
 	key := "test_list"
 
-	// ����????�� ????��??��??
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
@@ -233,7 +213,6 @@ func TestListSetAndModify(t *testing.T) {
 	tower.PushRightList(key, PrimitiveString("item1"))
 	tower.PushRightList(key, PrimitiveString("item2"))
 
-	// ListSet ??��??
 	if err := tower.SetListIndex(key, 1, PrimitiveString("modified_item1")); err != nil {
 		t.Fatalf("Failed to set item at index 1: %v", err)
 	}
@@ -250,7 +229,6 @@ func TestListSetAndModify(t *testing.T) {
 		t.Errorf("Expected 'modified_item1', got %v", itemStr)
 	}
 
-	// ??�� ??��??�� ??��
 	if err := tower.SetListIndex(key, -1, PrimitiveString("last_modified")); err != nil {
 		t.Fatalf("Failed to set item at index -1: %v", err)
 	}
@@ -274,7 +252,6 @@ func TestListTrim(t *testing.T) {
 
 	key := "test_list"
 
-	// ����????�� ????��??��??
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
@@ -283,12 +260,10 @@ func TestListTrim(t *testing.T) {
 		tower.PushRightList(key, PrimitiveString(fmt.Sprintf("item%d", i)))
 	}
 
-	// Trim ??��??(2-7 ����??????)
 	if err := tower.TrimList(key, 2, 7); err != nil {
 		t.Fatalf("Failed to trim list: %v", err)
 	}
 
-	// ���� ??��
 	length, err := tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get list length after trim: %v", err)
@@ -297,7 +272,6 @@ func TestListTrim(t *testing.T) {
 		t.Errorf("Expected length 6 after trim, got %d", length)
 	}
 
-	// ??�� ??��
 	firstItem, err := tower.GetListIndex(key, 0)
 	if err != nil {
 		t.Fatalf("Failed to get first item after trim: %v", err)
@@ -329,7 +303,6 @@ func TestListErrorCases(t *testing.T) {
 
 	key := "test_list"
 
-	// ����???? ??�� ����??�� ??????�� ??��??
 	_, err := tower.ExistsList(key)
 	if err != nil {
 		t.Fatalf("ListExists should not error for non-existent list: %v", err)
@@ -350,17 +323,15 @@ func TestListErrorCases(t *testing.T) {
 		t.Error("Expected error when accessing index of non-existent list")
 	}
 
-	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
-	// �ߺ� ??�� ??��
 	if err := tower.CreateList(key); err == nil {
 		t.Error("Expected error when creating list that already exists")
 	}
 
-	// 빈 리스트에서 pop 테스트
+	// Test pop from empty list
 	_, err = tower.PopLeftList(key)
 	if err == nil {
 		t.Error("Expected error when popping from empty list")
@@ -371,13 +342,11 @@ func TestListErrorCases(t *testing.T) {
 		t.Error("Expected error when popping from empty list")
 	}
 
-	// ??��????��????��
 	_, err = tower.GetListIndex(key, 0)
 	if err == nil {
 		t.Error("Expected error when accessing index 0 of empty list")
 	}
 
-	// ??��??��?? ??���� �ʰ� ??��??
 	tower.PushRightList(key, PrimitiveString("item"))
 
 	_, err = tower.GetListIndex(key, 10)
@@ -397,18 +366,15 @@ func TestListWithDifferentTypes(t *testing.T) {
 
 	key := "mixed_list"
 
-	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
-	// ??��??????�� ??��??��??
 	tower.PushRightList(key, PrimitiveString("string_value"))
 	tower.PushRightList(key, PrimitiveInt(42))
 	tower.PushRightList(key, PrimitiveFloat(3.14))
 	tower.PushRightList(key, PrimitiveBool(true))
 
-	// ??????�� ??�ٸ��� ????��??���� ??��
 	stringItem, err := tower.GetListIndex(key, 0)
 	if err != nil {
 		t.Fatalf("Failed to get string item: %v", err)
@@ -464,14 +430,12 @@ func TestListConcurrentAccess(t *testing.T) {
 
 	key := "concurrent_list"
 
-	// ����????��
 	if err := tower.CreateList(key); err != nil {
 		t.Fatalf("Failed to create list: %v", err)
 	}
 
 	done := make(chan bool, 2)
 
-	// ??��??PushLeft ??��
 	go func() {
 		for i := 0; i < 10; i++ {
 			tower.PushLeftList(key, PrimitiveString(fmt.Sprintf("left%d", i)))
@@ -479,7 +443,6 @@ func TestListConcurrentAccess(t *testing.T) {
 		done <- true
 	}()
 
-	// ??��??PushRight ??��
 	go func() {
 		for i := 0; i < 10; i++ {
 			tower.PushRightList(key, PrimitiveString(fmt.Sprintf("right%d", i)))
@@ -487,11 +450,9 @@ func TestListConcurrentAccess(t *testing.T) {
 		done <- true
 	}()
 
-	// ??�� ????
 	<-done
 	<-done
 
-	// ���� ���� ??��
 	length, err := tower.GetListLength(key)
 	if err != nil {
 		t.Fatalf("Failed to get final list length: %v", err)
@@ -500,3 +461,4 @@ func TestListConcurrentAccess(t *testing.T) {
 		t.Errorf("Expected length 20, got %d", length)
 	}
 }
+

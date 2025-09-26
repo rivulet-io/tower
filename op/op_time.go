@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ func (op *Operator) GetTime(key string) (time.Time, error) {
 	return value, nil
 }
 
-// 시간 계산 연산
+// Time calculation operations
 func (op *Operator) AddTimeWithDuration(key string, duration time.Duration) (time.Time, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -69,7 +69,7 @@ func (op *Operator) SubTimeWithDuration(key string, duration time.Duration) (tim
 	return op.AddTimeWithDuration(key, -duration)
 }
 
-// 비교 연산
+// Comparison operations
 func (op *Operator) CompareTimeBefore(key string, other time.Time) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -138,7 +138,7 @@ func (op *Operator) CalculateTimeDiff(key string, other time.Time) (time.Duratio
 	return current.Sub(other), nil
 }
 
-// 유틸리티 연산
+// Utility operations
 func (op *Operator) CheckTimeZero(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -237,7 +237,7 @@ func (op *Operator) SetTimeIfEqual(key string, expected, newValue time.Time) (ti
 	return current, nil
 }
 
-// 시간 요소 추출
+// Time element extraction
 func (op *Operator) GetTimeYear(key string) (int, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -356,3 +356,4 @@ func (op *Operator) GetTimeNanosecond(key string) (int, error) {
 
 	return current.Nanosecond(), nil
 }
+

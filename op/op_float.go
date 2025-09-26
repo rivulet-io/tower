@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -201,7 +201,7 @@ func (op *Operator) SwapFloat(key string, newValue float64) (float64, error) {
 	return current, nil
 }
 
-// 비교 연산
+// Comparison operations
 func (op *Operator) CompareFloat(key string, value float64) (int, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -302,7 +302,7 @@ func (op *Operator) SetFloatIfEqual(key string, expected, newValue float64) (flo
 	return current, nil
 }
 
-// 범위 및 제한 연산
+// Range and limit operations
 func (op *Operator) ClampFloat(key string, min, max float64) (float64, error) {
 	if min > max {
 		return 0, fmt.Errorf("min cannot be greater than max")
@@ -401,3 +401,4 @@ func (op *Operator) MaxFloat(key string, value float64) (float64, error) {
 
 	return newValue, nil
 }
+

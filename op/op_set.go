@@ -1,24 +1,24 @@
-package op
+﻿package op
 
 import (
 	"fmt"
 	"math"
 )
 
-// Set 연산
+// Set operations
 func (op *Operator) CreateSet(key string) error {
 	unlock := op.lock(key)
 	defer unlock()
 
-	// Set 메타데이터를 key에 직접 저장
+	// Store Set metadata directly to key
 	setKey := key
 
-	// 이미 존재하는지 확인
+	// Check if already exists
 	if _, err := op.get(setKey); err == nil {
 		return fmt.Errorf("set %s already exists", key)
 	}
 
-	// 새로운 Set 데이터 생성
+	// Create new Set data
 	setData := &SetData{
 		Prefix: key,
 		Count:  0,
@@ -46,7 +46,7 @@ func (op *Operator) DeleteSet(key string) error {
 func (op *Operator) deleteSet(key string) error {
 	setKey := key
 
-	// Set 메타데이터 가져오기
+	// Get Set metadata
 	df, err := op.get(setKey)
 	if err != nil {
 		return fmt.Errorf("set %s does not exist: %w", key, err)
@@ -57,7 +57,7 @@ func (op *Operator) deleteSet(key string) error {
 		return fmt.Errorf("failed to get set data: %w", err)
 	}
 
-	// 모든 멤버 삭제
+	// Delete all members
 	if setData.Count > 0 {
 		prefix := string(MakeSetEntryKey(setData.Prefix)) + ":"
 		err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
@@ -68,7 +68,7 @@ func (op *Operator) deleteSet(key string) error {
 		}
 	}
 
-	// 메타데이터 삭제
+	// Delete metadata
 	if err := op.delete(setKey); err != nil {
 		return fmt.Errorf("failed to delete set metadata: %w", err)
 	}
@@ -91,7 +91,7 @@ func (op *Operator) AddSetMember(key string, member PrimitiveData) (int64, error
 
 	setKey := key
 
-	// Set 메타데이터 가져오기
+	// Get Set metadata
 	df, err := op.get(setKey)
 	if err != nil {
 		return 0, fmt.Errorf("set %s does not exist: %w", key, err)
@@ -102,24 +102,24 @@ func (op *Operator) AddSetMember(key string, member PrimitiveData) (int64, error
 		return 0, fmt.Errorf("failed to get set data: %w", err)
 	}
 
-	// 멤버 키 생성
+	// Generate member key
 	memberStr, err := member.String()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get member string: %w", err)
 	}
 	memberKey := string(MakeSetItemKey(key, memberStr))
 
-	// 이미 존재하는지 확인
+	// Check if already exists
 	if _, err := op.get(memberKey); err == nil {
-		return int64(setData.Count), nil // 이미 존재하면 카운트 변경 없음
+		return int64(setData.Count), nil // No count change if already exists
 	}
 
-	// 멤버 수 검사
+	// Check member count
 	if setData.Count >= math.MaxUint64-1 {
 		return 0, fmt.Errorf("set has too many members")
 	}
 
-	// DataFrame에 값 설정
+	// Set value to DataFrame
 	memberDf := NULLDataFrame()
 	switch member.Type() {
 	case TypeInt:
@@ -151,12 +151,12 @@ func (op *Operator) AddSetMember(key string, member PrimitiveData) (int64, error
 		return 0, fmt.Errorf("unsupported value type")
 	}
 
-	// 멤버 저장
+	// Store member
 	if err := op.set(memberKey, memberDf); err != nil {
 		return 0, fmt.Errorf("failed to set set member: %w", err)
 	}
 
-	// 메타데이터 업데이트
+	// Update metadata
 	setData.Count++
 
 	if err := df.SetSet(setData); err != nil {
@@ -176,7 +176,7 @@ func (op *Operator) RemoveSetMember(key string, member PrimitiveData) (int64, er
 
 	setKey := key
 
-	// Set 메타데이터 가져오기
+	// Get Set metadata
 	df, err := op.get(setKey)
 	if err != nil {
 		return 0, fmt.Errorf("set %s does not exist: %w", key, err)
@@ -187,24 +187,24 @@ func (op *Operator) RemoveSetMember(key string, member PrimitiveData) (int64, er
 		return 0, fmt.Errorf("failed to get set data: %w", err)
 	}
 
-	// 멤버 키 생성
+	// Generate member key
 	memberStr, err := member.String()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get member string: %w", err)
 	}
 	memberKey := string(MakeSetItemKey(key, memberStr))
 
-	// 존재하는지 확인
+	// Check if exists
 	if _, err := op.get(memberKey); err != nil {
-		return int64(setData.Count), nil // 존재하지 않으면 카운트 변경 없음
+		return int64(setData.Count), nil // No count change if not exists
 	}
 
-	// 멤버 삭제
+	// Delete member
 	if err := op.delete(memberKey); err != nil {
 		return 0, fmt.Errorf("failed to delete set member: %w", err)
 	}
 
-	// 메타데이터 업데이트
+	// Update metadata
 	setData.Count--
 
 	if err := df.SetSet(setData); err != nil {
@@ -224,7 +224,7 @@ func (op *Operator) ContainsSetMember(key string, member PrimitiveData) (bool, e
 
 	setKey := key
 
-	// Set 메타데이터 가져오기
+	// Get Set metadata
 	df, err := op.get(setKey)
 	if err != nil {
 		return false, fmt.Errorf("set %s does not exist: %w", key, err)
@@ -235,14 +235,14 @@ func (op *Operator) ContainsSetMember(key string, member PrimitiveData) (bool, e
 		return false, fmt.Errorf("failed to get set data: %w", err)
 	}
 
-	// 멤버 키 생성
+	// Generate member key
 	memberStr, err := member.String()
 	if err != nil {
 		return false, fmt.Errorf("failed to get member string: %w", err)
 	}
 	memberKey := string(MakeSetItemKey(key, memberStr))
 
-	// 존재하는지 확인
+	// Check if exists
 	_, err = op.get(memberKey)
 	return err == nil, nil
 }
@@ -253,7 +253,7 @@ func (op *Operator) GetSetMembers(key string) ([]PrimitiveData, error) {
 
 	setKey := key
 
-	// Set 메타데이터 가져오기
+	// Get Set metadata
 	df, err := op.get(setKey)
 	if err != nil {
 		return nil, fmt.Errorf("set %s does not exist: %w", key, err)
@@ -268,7 +268,7 @@ func (op *Operator) GetSetMembers(key string) ([]PrimitiveData, error) {
 		return []PrimitiveData{}, nil
 	}
 
-	// 모든 멤버 수집
+	// Collect all members
 	result := make([]PrimitiveData, 0, setData.Count)
 	prefix := string(MakeSetEntryKey(setData.Prefix)) + ":"
 	err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
@@ -327,7 +327,7 @@ func (op *Operator) ClearSet(key string) error {
 
 	setKey := key
 
-	// Set 메타데이터 가져오기
+	// Get Set metadata
 	df, err := op.get(setKey)
 	if err != nil {
 		return fmt.Errorf("set %s does not exist: %w", key, err)
@@ -338,7 +338,7 @@ func (op *Operator) ClearSet(key string) error {
 		return fmt.Errorf("failed to get set data: %w", err)
 	}
 
-	// 모든 멤버 삭제
+	// Delete all members
 	if setData.Count > 0 {
 		prefix := string(MakeSetEntryKey(setData.Prefix)) + ":"
 		err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
@@ -349,7 +349,6 @@ func (op *Operator) ClearSet(key string) error {
 		}
 	}
 
-	// 메타데이터 업데이트 (Count를 0으로 리셋)
 	setData.Count = 0
 
 	if err := df.SetSet(setData); err != nil {
@@ -362,3 +361,6 @@ func (op *Operator) ClearSet(key string) error {
 
 	return nil
 }
+
+
+

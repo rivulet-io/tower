@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"bytes"
@@ -38,7 +38,7 @@ func (op *Operator) GetBinary(key string) ([]byte, error) {
 	return value, nil
 }
 
-// 바이트 조작 연산
+// Byte manipulation operations
 func (op *Operator) AppendBinary(key string, data []byte) ([]byte, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -91,7 +91,7 @@ func (op *Operator) PrependBinary(key string, data []byte) ([]byte, error) {
 	return newValue, nil
 }
 
-// 길이 및 부분 바이트 연산
+// Length and sub-byte operations
 func (op *Operator) GetBinaryLength(key string) (int, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -137,7 +137,7 @@ func (op *Operator) GetBinarySubstring(key string, start, length int) ([]byte, e
 	return result, nil
 }
 
-// 비교 연산
+// Comparison operations
 func (op *Operator) CompareBinaryEqual(key string, other []byte) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -172,7 +172,7 @@ func (op *Operator) CompareBinary(key string, other []byte) (int, error) {
 	return bytes.Compare(current, other), nil
 }
 
-// 비트 연산
+// Bit operations
 func (op *Operator) AndBinary(key string, mask []byte) ([]byte, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -284,7 +284,7 @@ func (op *Operator) XorBinary(key string, mask []byte) ([]byte, error) {
 	return newValue, nil
 }
 
-// 검색 연산
+// Search operations
 func (op *Operator) ContainsBinary(key string, sub []byte) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -319,7 +319,7 @@ func (op *Operator) GetBinaryIndex(key string, sub []byte) (int, error) {
 	return bytes.Index(current, sub), nil
 }
 
-// 변환 연산
+// Conversion operations
 func (op *Operator) ReverseBinary(key string) ([]byte, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -351,3 +351,4 @@ func (op *Operator) ReverseBinary(key string) ([]byte, error) {
 
 	return newValue, nil
 }
+

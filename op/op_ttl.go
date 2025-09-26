@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -94,7 +94,7 @@ func (op *Operator) addCandidatesForExpiration(key string, expireAt time.Time) e
 func (op *Operator) SetTTL(key string, expireAt time.Time) error {
 	now := Now()
 	if !expireAt.After(now) {
-		return nil // 이미 만료된 시간이면 무시
+		return nil // Ignore if already expired
 	}
 
 	unlock := op.lock(key)
@@ -169,3 +169,4 @@ func (op *Operator) StartTTLTimer() {
 		}
 	}()
 }
+

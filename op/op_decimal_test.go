@@ -118,7 +118,6 @@ func TestDecimalOperations(t *testing.T) {
 			t.Errorf("MulDecimal failed: %v", err)
 		}
 
-		// Expected: 30.85 (coefficient=3085, scale=2) -> 수정: 30.850 (coefficient=30850, scale=3)
 		expectedCoeff := big.NewInt(30850)
 		expectedScale := int32(3)
 

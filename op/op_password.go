@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"bytes"
@@ -47,7 +47,7 @@ type PasswordOptions struct {
 	Argon2KeyLen  uint32 `json:"argon2_key_len,omitempty,omitzero"`
 }
 
-// 각 알고리즘별 기본값 생성자들
+// Default constructors for each algorithm
 func DefaultBcryptOptions() *PasswordOptions {
 	return &PasswordOptions{
 		BcryptCost: bcrypt.DefaultCost,
@@ -79,7 +79,7 @@ func DefaultArgon2Options() *PasswordOptions {
 	}
 }
 
-// 알고리즘에 따른 기본 옵션 반환
+// Return default options based on algorithm
 func DefaultPasswordOptions(algorithm PasswordAlgorithm) *PasswordOptions {
 	switch algorithm {
 	case PasswordAlgorithmBcrypt:
@@ -95,7 +95,7 @@ func DefaultPasswordOptions(algorithm PasswordAlgorithm) *PasswordOptions {
 	}
 }
 
-// 함수형 옵션 패턴
+// Functional option pattern
 type PasswordOption func(*PasswordOptions)
 
 func WithBcryptCost(cost int) PasswordOption {
@@ -160,7 +160,7 @@ func (op *Operator) UpsertPassword(key string, password []byte, algorithm Passwo
 	return nil
 }
 
-// 통합된 패스워드 해시 계산 함수
+// Unified password hash calculation function
 func (op *Operator) computePasswordHash(password, salt []byte, algorithm PasswordAlgorithm, opts *PasswordOptions) ([]byte, error) {
 	switch algorithm {
 	case PasswordAlgorithmBcrypt:
@@ -206,7 +206,7 @@ func (op *Operator) VerifyPassword(key string, password []byte) (bool, error) {
 
 	switch algorithm {
 	case PasswordAlgorithmBcrypt:
-		// Bcrypt는 특별 처리 (내부적으로 이미 해시된 값과 비교)
+		// Special handling for Bcrypt (compare with already hashed value internally)
 		salted := make([]byte, len(password)+len(salt)*2)
 		copy(salted, salt)
 		copy(salted[len(salt):], password)
@@ -220,7 +220,7 @@ func (op *Operator) VerifyPassword(key string, password []byte) (bool, error) {
 		}
 		return true, nil
 	default:
-		// 다른 알고리즘들은 통합 헬퍼 함수 사용
+		// Other algorithms use unified helper function
 		computed, err := op.computePasswordHash(password, salt, algorithm, opts)
 		if err != nil {
 			return false, fmt.Errorf("failed to compute password hash: %w", err)
@@ -228,3 +228,4 @@ func (op *Operator) VerifyPassword(key string, password []byte) (bool, error) {
 		return bytes.Equal(computed, hash), nil
 	}
 }
+

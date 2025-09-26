@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"encoding/binary"
@@ -6,10 +6,10 @@ import (
 	"hash/fnv"
 )
 
-// CreateBloomFilter는 새로운 Bloom filter를 생성
+// CreateBloomFilter creates a new Bloom filter
 func (op *Operator) CreateBloomFilter(key string, slots int) error {
 	if slots == 0 {
-		slots = 3 // 기본 슬롯 수
+		slots = 3 // Default slot count
 	}
 	if slots < 3 || slots > 5 {
 		return fmt.Errorf("slots must be between 3 and 5")
@@ -18,13 +18,13 @@ func (op *Operator) CreateBloomFilter(key string, slots int) error {
 	unlock := op.lock(key)
 	defer unlock()
 
-	// 이미 존재하는지 확인
+	// Check if already exists
 	_, err := op.get(key)
 	if err == nil {
 		return fmt.Errorf("bloom filter %s already exists", key)
 	}
 
-	// BloomFilterData 생성
+	// Create BloomFilterData
 	data := &BloomFilterData{
 		Prefix: key,
 		Slots:  slots,
@@ -41,12 +41,12 @@ func (op *Operator) CreateBloomFilter(key string, slots int) error {
 	return op.set(key, df)
 }
 
-// AddBloomFilter는 Bloom filter에 요소를 추가
+// AddBloomFilter adds an element to the Bloom filter
 func (op *Operator) AddBloomFilter(key, item string) error {
 	unlock := op.lock(key)
 	defer unlock()
 
-	// 메타데이터 가져오기
+	// Get metadata
 	df, err := op.get(key)
 	if err != nil {
 		return fmt.Errorf("bloom filter %s does not exist: %w", key, err)
@@ -57,16 +57,16 @@ func (op *Operator) AddBloomFilter(key, item string) error {
 		return fmt.Errorf("failed to get bloom filter data: %w", err)
 	}
 
-	// 해시 슬롯 계산
+	// Calculate hash slot
 	slots := op.getBloomFilterSlots(item, bfd.Slots, bfd.Salt)
 
-	// 슬롯 값을 바이트로 변환
+	// Convert slot value to bytes
 	slotBytes := make([]byte, bfd.Slots*4)
 	for i, slot := range slots {
 		binary.BigEndian.PutUint32(slotBytes[i*4:], uint32(slot))
 	}
 
-	// 항목 저장
+	// Store item
 	itemKey := string(MakeBloomFilterItemKey(bfd.Prefix, item))
 	itemDf := NULLDataFrame()
 	err = itemDf.SetBinary(slotBytes)
@@ -79,7 +79,7 @@ func (op *Operator) AddBloomFilter(key, item string) error {
 		return fmt.Errorf("failed to set item: %w", err)
 	}
 
-	// Count 업데이트
+	// Update Count
 	bfd.Count++
 	err = df.SetBloomFilter(bfd)
 	if err != nil {
@@ -89,12 +89,12 @@ func (op *Operator) AddBloomFilter(key, item string) error {
 	return op.set(key, df)
 }
 
-// ContainsBloomFilter는 요소가 Bloom filter에 있는지 확인
+// ContainsBloomFilter checks if element exists in Bloom filter
 func (op *Operator) ContainsBloomFilter(key, item string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
-	// 메타데이터 가져오기
+	// Get metadata
 	df, err := op.get(key)
 	if err != nil {
 		return false, fmt.Errorf("bloom filter %s does not exist: %w", key, err)
@@ -105,14 +105,14 @@ func (op *Operator) ContainsBloomFilter(key, item string) (bool, error) {
 		return false, fmt.Errorf("failed to get bloom filter data: %w", err)
 	}
 
-	// 해시 슬롯 계산
+	// Calculate hash slot
 	slots := op.getBloomFilterSlots(item, bfd.Slots, bfd.Salt)
 
-	// 항목 가져오기
+	// Get item
 	itemKey := string(MakeBloomFilterItemKey(bfd.Prefix, item))
 	itemDf, err := op.get(itemKey)
 	if err != nil {
-		// 키가 없으면 포함되지 않음
+		// Not included if key does not exist
 		return false, nil
 	}
 
@@ -125,7 +125,7 @@ func (op *Operator) ContainsBloomFilter(key, item string) (bool, error) {
 		return false, fmt.Errorf("invalid slot data length")
 	}
 
-	// 슬롯 비교
+	// Compare slots
 	for i := 0; i < bfd.Slots; i++ {
 		storedSlot := int(binary.BigEndian.Uint32(slotBytes[i*4:]))
 		if storedSlot != slots[i] {
@@ -136,12 +136,12 @@ func (op *Operator) ContainsBloomFilter(key, item string) (bool, error) {
 	return true, nil
 }
 
-// ClearBloomFilter는 Bloom filter를 초기화
+// ClearBloomFilter initializes the Bloom filter
 func (op *Operator) ClearBloomFilter(key string) error {
 	unlock := op.lock(key)
 	defer unlock()
 
-	// 메타데이터 가져오기
+	// Get metadata
 	df, err := op.get(key)
 	if err != nil {
 		return fmt.Errorf("bloom filter %s does not exist: %w", key, err)
@@ -152,7 +152,7 @@ func (op *Operator) ClearBloomFilter(key string) error {
 		return fmt.Errorf("failed to get bloom filter data: %w", err)
 	}
 
-	// 모든 항목 삭제
+	// Delete all items
 	prefix := string(MakeBloomFilterEntryKey(bfd.Prefix)) + ":"
 	err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
 		return op.delete(k)
@@ -161,7 +161,7 @@ func (op *Operator) ClearBloomFilter(key string) error {
 		return fmt.Errorf("failed to clear items: %w", err)
 	}
 
-	// Count 리셋
+	// Reset Count
 	bfd.Count = 0
 	err = df.SetBloomFilter(bfd)
 	if err != nil {
@@ -171,7 +171,7 @@ func (op *Operator) ClearBloomFilter(key string) error {
 	return op.set(key, df)
 }
 
-// CountBloomFilter는 Bloom filter의 요소 수를 반환
+// CountBloomFilter returns the number of elements in Bloom filter
 func (op *Operator) CountBloomFilter(key string) (uint64, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -189,7 +189,7 @@ func (op *Operator) CountBloomFilter(key string) (uint64, error) {
 	return bfd.Count, nil
 }
 
-// DeleteBloomFilter는 Bloom filter를 완전히 삭제
+// DeleteBloomFilter completely deletes the Bloom filter
 func (op *Operator) DeleteBloomFilter(key string) error {
 	unlock := op.lock(key)
 	defer unlock()
@@ -198,7 +198,7 @@ func (op *Operator) DeleteBloomFilter(key string) error {
 }
 
 func (op *Operator) deleteBloomFilter(key string) error {
-	// 메타데이터 가져오기
+	// Get metadata
 	df, err := op.get(key)
 	if err != nil {
 		return fmt.Errorf("bloom filter %s does not exist: %w", key, err)
@@ -209,7 +209,7 @@ func (op *Operator) deleteBloomFilter(key string) error {
 		return fmt.Errorf("failed to get bloom filter data: %w", err)
 	}
 
-	// 모든 항목 삭제
+	// Delete all items
 	prefix := string(MakeBloomFilterEntryKey(bfd.Prefix)) + ":"
 	err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
 		return op.delete(k)
@@ -218,11 +218,11 @@ func (op *Operator) deleteBloomFilter(key string) error {
 		return fmt.Errorf("failed to delete items: %w", err)
 	}
 
-	// 메타데이터 삭제
+	// Delete metadata
 	return op.delete(key)
 }
 
-// getBloomFilterSlots는 요소에 대한 해시 슬롯을 계산
+// getBloomFilterSlots calculates hash slots for element
 func (op *Operator) getBloomFilterSlots(item string, slots int, salt string) []int {
 	h := fnv.New64a()
 	h.Write([]byte(item + salt))
@@ -236,3 +236,6 @@ func (op *Operator) getBloomFilterSlots(item string, slots int, salt string) []i
 
 	return result
 }
+
+
+

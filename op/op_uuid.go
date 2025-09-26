@@ -39,7 +39,7 @@ func (op *Operator) GetUUID(key string) (*uuid.UUID, error) {
 	return value, nil
 }
 
-// UUID 생성 연산
+// UUID generation operations
 func (op *Operator) GenerateUUID(key string) (*uuid.UUID, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -61,7 +61,7 @@ func (op *Operator) GenerateUUID(key string) (*uuid.UUID, error) {
 	return &newUUID, nil
 }
 
-// 비교 연산
+// Comparison operations
 func (op *Operator) CompareUUIDEqual(key string, other *uuid.UUID) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -104,7 +104,7 @@ func (op *Operator) CompareUUID(key string, other *uuid.UUID) (int, error) {
 	return 0, nil
 }
 
-// 검증 연산
+// Validation operations
 func (op *Operator) ValidateUUID(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -139,7 +139,7 @@ func (op *Operator) CheckUUIDNil(key string) (bool, error) {
 	return current.String() == uuid.Nil.String(), nil
 }
 
-// 변환 연산
+// Conversion operations
 func (op *Operator) ConvertUUIDToString(key string) (string, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -178,7 +178,7 @@ func (op *Operator) ConvertStringToUUID(key string, uuidStr string) (*uuid.UUID,
 	return &parsedUUID, nil
 }
 
-// UUID 정보 연산
+// UUID information operations
 func (op *Operator) GetUUIDVersion(key string) (uuid.Version, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -213,7 +213,7 @@ func (op *Operator) GetUUIDVariant(key string) (uuid.Variant, error) {
 	return current.Variant(), nil
 }
 
-// 조건부 설정 연산
+// Conditional set operations
 func (op *Operator) SetUUIDIfNil(key string) (*uuid.UUID, error) {
 	unlock := op.lock(key)
 	defer unlock()

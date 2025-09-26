@@ -1,4 +1,4 @@
-package op
+﻿package op
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ func (op *Operator) GetBool(key string) (bool, error) {
 	return value, nil
 }
 
-// 논리 연산
+// Logical operations
 func (op *Operator) AndBool(key string, other bool) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -142,7 +142,7 @@ func (op *Operator) NotBool(key string) (bool, error) {
 	return newValue, nil
 }
 
-// 비교 연산
+// Comparison operations
 func (op *Operator) EqualBool(key string, other bool) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -160,7 +160,7 @@ func (op *Operator) EqualBool(key string, other bool) (bool, error) {
 	return current == other, nil
 }
 
-// 토글 연산
+// Toggle operations
 func (op *Operator) ToggleBool(key string) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -187,7 +187,7 @@ func (op *Operator) ToggleBool(key string) (bool, error) {
 	return newValue, nil
 }
 
-// 조건부 설정 연산
+// Conditional set operations
 func (op *Operator) SetBoolIfTrue(key string, condition bool) (bool, error) {
 	unlock := op.lock(key)
 	defer unlock()
@@ -268,3 +268,5 @@ func (op *Operator) SetBoolIfEqual(key string, expected, newValue bool) (bool, e
 
 	return current, nil
 }
+
+

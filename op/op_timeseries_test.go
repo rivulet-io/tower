@@ -207,7 +207,7 @@ func TestTimeSeriesOperations(t *testing.T) {
 }
 
 func TestTimeSeriesWithDifferentTypes(t *testing.T) {
-	// 테스트용 Operator 인스턴스 생성
+	// Create Operator instance for testing
 	tower, err := NewOperator(&Options{
 		Path:         "test-timeseries-types.db",
 		BytesPerSync: size.SizeKilobytes,
@@ -222,7 +222,7 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 
 	key := "test-mixed-types"
 
-	// TimeSeries 생성
+	// Create TimeSeries
 	err = tower.TimeSeriesCreate(key)
 	if err != nil {
 		t.Fatalf("Failed to create time series: %v", err)
@@ -230,7 +230,7 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 
 	now := time.Now().UTC()
 
-	// 다양한 타입의 데이터 추가
+	// Add various types of data
 	testCases := []struct {
 		timestamp time.Time
 		value     PrimitiveData
@@ -248,7 +248,7 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 			t.Fatalf("Failed to add %s data point: %v", tc.typeName, err)
 		}
 
-		// 즉시 조회해서 확인
+		// Query immediately to check
 		retrieved, err := tower.TimeSeriesGet(key, tc.timestamp)
 		if err != nil {
 			t.Fatalf("Failed to get %s data point: %v", tc.typeName, err)
@@ -259,7 +259,7 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 		}
 	}
 
-	// 범위 조회로 모든 데이터 확인
+	// Check all data with range query
 	rangeData, err := tower.TimeSeriesRange(key, now.Add(-5*time.Minute), now)
 	if err != nil {
 		t.Fatalf("Failed to get range data: %v", err)
@@ -269,4 +269,6 @@ func TestTimeSeriesWithDifferentTypes(t *testing.T) {
 		t.Fatalf("Expected %d data points, got %d", len(testCases), len(rangeData))
 	}
 }
+
+
 
