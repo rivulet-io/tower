@@ -40,7 +40,7 @@ func NewOperator(opt *Options) (*Operator, error) {
 		MemTableSize: uint64(opt.MemTableSize.Bytes()),
 	}
 
-	db, err := pebble.Open("tower.db", options)
+	db, err := pebble.Open(opt.Path, options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open pebble db: %w", err)
 	}
