@@ -481,7 +481,7 @@ func TestSetMembersFiltered(t *testing.T) {
 	}
 
 	// Test filtering on empty set
-	filteredMembers, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	filteredMembers, err := tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		return true
 	})
 	if err != nil {
@@ -509,7 +509,7 @@ func TestSetMembersFiltered(t *testing.T) {
 	}
 
 	// Test filter that accepts all members
-	allMembers, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	allMembers, err := tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		return true
 	})
 	if err != nil {
@@ -520,7 +520,7 @@ func TestSetMembersFiltered(t *testing.T) {
 	}
 
 	// Test filter that rejects all members
-	noMembers, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	noMembers, err := tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		return false
 	})
 	if err != nil {
@@ -531,7 +531,7 @@ func TestSetMembersFiltered(t *testing.T) {
 	}
 
 	// Test filter for strings starting with specific letter
-	startsWithA, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	startsWithA, err := tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		if str, err := data.String(); err == nil {
 			return len(str) > 0 && str[0] == 'a'
 		}
@@ -550,7 +550,7 @@ func TestSetMembersFiltered(t *testing.T) {
 	}
 
 	// Test filter for strings with specific length
-	lengthFive, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	lengthFive, err := tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		if str, err := data.String(); err == nil {
 			return len(str) == 5
 		}
@@ -565,7 +565,7 @@ func TestSetMembersFiltered(t *testing.T) {
 	}
 
 	// Test filter for strings containing specific substring
-	containsE, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	containsE, err := tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		if str, err := data.String(); err == nil {
 			return len(str) > 0 && str[len(str)-1] == 'e'
 		}
@@ -608,7 +608,7 @@ func TestSetMembersFilteredWithMixedTypes(t *testing.T) {
 	}
 
 	// Filter for numeric-like strings
-	numericStrings, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	numericStrings, err := tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		if str, err := data.String(); err == nil {
 			// Simple check if string contains only digits
 			for _, r := range str {
@@ -629,7 +629,7 @@ func TestSetMembersFilteredWithMixedTypes(t *testing.T) {
 	}
 
 	// Filter for alphabetic strings
-	alphabeticStrings, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	alphabeticStrings, err := tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		if str, err := data.String(); err == nil {
 			// Simple check if string contains only letters
 			for _, r := range str {
@@ -657,7 +657,7 @@ func TestSetMembersFilteredErrorCases(t *testing.T) {
 	key := "nonexistent_set"
 
 	// Test filtering on non-existent set
-	_, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	_, err := tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		return true
 	})
 	if err == nil {
@@ -670,7 +670,7 @@ func TestSetMembersFilteredErrorCases(t *testing.T) {
 	}
 
 	// Test filter that might panic (but shouldn't crash the system)
-	_, err = tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+	_, err = tower.GetSetMembersFiltered(key, func(k string, data PrimitiveData) bool {
 		// Safe filter that always returns false
 		return false
 	})

@@ -302,7 +302,7 @@ func (op *Operator) GetSetMembers(key string) ([]PrimitiveData, error) {
 	return result, nil
 }
 
-func (op *Operator) GetSetMembersFiltered(key string, filter func(PrimitiveData) bool) ([]PrimitiveData, error) {
+func (op *Operator) GetSetMembersFiltered(key string, filter func(string, PrimitiveData) bool) ([]PrimitiveData, error) {
 	unlock := op.lock(key)
 	defer unlock()
 
@@ -347,7 +347,7 @@ func (op *Operator) GetSetMembersFiltered(key string, filter func(PrimitiveData)
 		default:
 			return nil // skip unsupported types
 		}
-		if filter(value) {
+		if filter(k, value) {
 			result = append(result, value)
 		}
 		return nil
