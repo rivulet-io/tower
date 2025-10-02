@@ -302,6 +302,63 @@ func (op *Operator) GetSetMembers(key string) ([]PrimitiveData, error) {
 	return result, nil
 }
 
+func (op *Operator) GetSetMembersFiltered(key string, filter func(PrimitiveData) bool) ([]PrimitiveData, error) {
+	unlock := op.lock(key)
+	defer unlock()
+
+	setKey := key
+
+	// Get Set metadata
+	df, err := op.get(setKey)
+	if err != nil {
+		return nil, fmt.Errorf("set %s does not exist: %w", key, err)
+	}
+
+	setData, err := df.Set()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get set data: %w", err)
+	}
+
+	if setData.Count == 0 {
+		return []PrimitiveData{}, nil
+	}
+
+	// Collect all members
+	result := make([]PrimitiveData, 0, setData.Count)
+	prefix := string(MakeSetEntryKey(setData.Prefix)) + ":"
+	err = op.rangePrefix(prefix, func(k string, df *DataFrame) error {
+		var value PrimitiveData
+		switch df.Type() {
+		case TypeInt:
+			intVal, _ := df.Int()
+			value = PrimitiveInt(intVal)
+		case TypeFloat:
+			floatVal, _ := df.Float()
+			value = PrimitiveFloat(floatVal)
+		case TypeString:
+			strVal, _ := df.String()
+			value = PrimitiveString(strVal)
+		case TypeBool:
+			boolVal, _ := df.Bool()
+			value = PrimitiveBool(boolVal)
+		case TypeBinary:
+			binVal, _ := df.Binary()
+			value = PrimitiveBinary(binVal)
+		default:
+			return nil // skip unsupported types
+		}
+		if filter(value) {
+			result = append(result, value)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to range set members: %w", err)
+	}
+
+	return result, nil
+}
+
 func (op *Operator) GetSetCardinality(key string) (int64, error) {
 	unlock := op.lock(key)
 	defer unlock()

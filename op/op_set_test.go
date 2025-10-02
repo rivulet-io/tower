@@ -470,4 +470,211 @@ func TestSetConcurrentAccess(t *testing.T) {
 	}
 }
 
+func TestSetMembersFiltered(t *testing.T) {
+	tower := createTestTower(t)
+	defer tower.Close()
 
+	key := "filtered_test_set"
+
+	if err := tower.CreateSet(key); err != nil {
+		t.Fatalf("Failed to create set: %v", err)
+	}
+
+	// Test filtering on empty set
+	filteredMembers, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		return true
+	})
+	if err != nil {
+		t.Fatalf("Failed to get filtered members of empty set: %v", err)
+	}
+	if len(filteredMembers) != 0 {
+		t.Errorf("Expected 0 filtered members in empty set, got %d", len(filteredMembers))
+	}
+
+	// Add diverse test data
+	testMembers := []PrimitiveData{
+		PrimitiveString("apple"),
+		PrimitiveString("banana"),
+		PrimitiveString("cherry"),
+		PrimitiveString("date"),
+		PrimitiveString("elderberry"),
+		PrimitiveString("fig"),
+		PrimitiveString("grape"),
+	}
+
+	for _, member := range testMembers {
+		if _, err := tower.AddSetMember(key, member); err != nil {
+			t.Fatalf("Failed to add member %v: %v", member, err)
+		}
+	}
+
+	// Test filter that accepts all members
+	allMembers, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		return true
+	})
+	if err != nil {
+		t.Fatalf("Failed to get all filtered members: %v", err)
+	}
+	if len(allMembers) != len(testMembers) {
+		t.Errorf("Expected %d members with accept-all filter, got %d", len(testMembers), len(allMembers))
+	}
+
+	// Test filter that rejects all members
+	noMembers, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		return false
+	})
+	if err != nil {
+		t.Fatalf("Failed to get filtered members with reject-all filter: %v", err)
+	}
+	if len(noMembers) != 0 {
+		t.Errorf("Expected 0 members with reject-all filter, got %d", len(noMembers))
+	}
+
+	// Test filter for strings starting with specific letter
+	startsWithA, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		if str, err := data.String(); err == nil {
+			return len(str) > 0 && str[0] == 'a'
+		}
+		return false
+	})
+	if err != nil {
+		t.Fatalf("Failed to get members starting with 'a': %v", err)
+	}
+	if len(startsWithA) != 1 {
+		t.Errorf("Expected 1 member starting with 'a', got %d", len(startsWithA))
+	}
+	if len(startsWithA) > 0 {
+		if str, _ := startsWithA[0].String(); str != "apple" {
+			t.Errorf("Expected 'apple', got %s", str)
+		}
+	}
+
+	// Test filter for strings with specific length
+	lengthFive, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		if str, err := data.String(); err == nil {
+			return len(str) == 5
+		}
+		return false
+	})
+	if err != nil {
+		t.Fatalf("Failed to get members with length 5: %v", err)
+	}
+	expectedCount := 2 // "apple" and "grape"
+	if len(lengthFive) != expectedCount {
+		t.Errorf("Expected %d members with length 5, got %d", expectedCount, len(lengthFive))
+	}
+
+	// Test filter for strings containing specific substring
+	containsE, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		if str, err := data.String(); err == nil {
+			return len(str) > 0 && str[len(str)-1] == 'e'
+		}
+		return false
+	})
+	if err != nil {
+		t.Fatalf("Failed to get members ending with 'e': %v", err)
+	}
+	// Members ending with 'e': "apple", "grape", but also "date" - so 3 total
+	expectedEndingE := 3 // "apple", "grape", "date"
+	if len(containsE) != expectedEndingE {
+		t.Errorf("Expected %d members ending with 'e', got %d", expectedEndingE, len(containsE))
+	}
+}
+
+func TestSetMembersFilteredWithMixedTypes(t *testing.T) {
+	tower := createTestTower(t)
+	defer tower.Close()
+
+	key := "mixed_filtered_set"
+
+	if err := tower.CreateSet(key); err != nil {
+		t.Fatalf("Failed to create set: %v", err)
+	}
+
+	// Add mixed type members (as strings since sets store everything as strings in this implementation)
+	mixedMembers := []PrimitiveData{
+		PrimitiveString("100"),
+		PrimitiveString("200"),
+		PrimitiveString("hello"),
+		PrimitiveString("world"),
+		PrimitiveString("42"),
+		PrimitiveString("test"),
+	}
+
+	for _, member := range mixedMembers {
+		if _, err := tower.AddSetMember(key, member); err != nil {
+			t.Fatalf("Failed to add member %v: %v", member, err)
+		}
+	}
+
+	// Filter for numeric-like strings
+	numericStrings, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		if str, err := data.String(); err == nil {
+			// Simple check if string contains only digits
+			for _, r := range str {
+				if r < '0' || r > '9' {
+					return false
+				}
+			}
+			return len(str) > 0
+		}
+		return false
+	})
+	if err != nil {
+		t.Fatalf("Failed to get numeric string members: %v", err)
+	}
+	expectedNumeric := 3 // "100", "200", "42"
+	if len(numericStrings) != expectedNumeric {
+		t.Errorf("Expected %d numeric string members, got %d", expectedNumeric, len(numericStrings))
+	}
+
+	// Filter for alphabetic strings
+	alphabeticStrings, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		if str, err := data.String(); err == nil {
+			// Simple check if string contains only letters
+			for _, r := range str {
+				if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') {
+					return false
+				}
+			}
+			return len(str) > 0
+		}
+		return false
+	})
+	if err != nil {
+		t.Fatalf("Failed to get alphabetic string members: %v", err)
+	}
+	expectedAlphabetic := 3 // "hello", "world", "test"
+	if len(alphabeticStrings) != expectedAlphabetic {
+		t.Errorf("Expected %d alphabetic string members, got %d", expectedAlphabetic, len(alphabeticStrings))
+	}
+}
+
+func TestSetMembersFilteredErrorCases(t *testing.T) {
+	tower := createTestTower(t)
+	defer tower.Close()
+
+	key := "nonexistent_set"
+
+	// Test filtering on non-existent set
+	_, err := tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		return true
+	})
+	if err == nil {
+		t.Error("Expected error when filtering members of non-existent set")
+	}
+
+	// Create set and test with nil filter (this would panic, so we don't test it)
+	if err := tower.CreateSet(key); err != nil {
+		t.Fatalf("Failed to create set: %v", err)
+	}
+
+	// Test filter that might panic (but shouldn't crash the system)
+	_, err = tower.GetSetMembersFiltered(key, func(data PrimitiveData) bool {
+		// Safe filter that always returns false
+		return false
+	})
+	if err != nil {
+		t.Fatalf("Expected no error with empty set and safe filter: %v", err)
+	}
+}
